@@ -1,0 +1,192 @@
+import { useState } from 'react';
+import { Search, ImageIcon, ChevronDown } from 'lucide-react';
+import TradeDetailsModal from './TradeDetailsModal';
+
+function RecentTrades({ trades }) {
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filterPeriod, setFilterPeriod] = useState('all');
+  const [selectedTrade, setSelectedTrade] = useState(null);
+
+  // Filter trades
+  const filteredTrades = trades.filter(trade => {
+    const matchesSearch = 
+      (trade.ticker?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
+      (trade.comment?.toLowerCase() || '').includes(searchTerm.toLowerCase());
+
+    if (!matchesSearch) return false;
+
+    // Filter by period
+    const now = new Date();
+    const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
+
+    switch (filterPeriod) {
+      case 'today':
+        return tradeDate.toDateString() === now.toDateString();
+      case 'week':
+        const weekAgo = new Date(now);
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        return tradeDate >= weekAgo;
+      case 'month':
+        return tradeDate.getMonth() === now.getMonth() && 
+               tradeDate.getFullYear() === now.getFullYear();
+      default:
+        return true;
+    }
+  });
+
+  return (
+    <>
+      <div className="bg-dark-card border border-dark-border rounded-lg p-4 md:p-6">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 space-y-3 md:space-y-0">
+          <h2 className="text-xl font-bold text-white">Recent Trades</h2>
+          
+          <div className="flex flex-col sm:flex-row gap-2">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
+              <input
+                type="text"
+                placeholder="Search trades..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="pl-10 pr-4 py-2 bg-dark-bg border border-dark-border rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 w-full sm:w-auto"
+              />
+            </div>
+            
+            <select
+              value={filterPeriod}
+              onChange={(e) => setFilterPeriod(e.target.value)}
+              className="px-4 py-2 bg-dark-bg border border-dark-border rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
+            >
+              <option value="all">All Time</option>
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Desktop Table */}
+        <div className="hidden md:block overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-dark-border text-gray-400 text-sm">
+                <th className="text-left py-3 px-2">Date</th>
+                <th className="text-left py-3 px-2">Ticker</th>
+                <th className="text-left py-3 px-2">Direction</th>
+                <th className="text-right py-3 px-2">P&L%</th>
+                <th className="text-right py-3 px-2">Gain</th>
+                <th className="text-center py-3 px-2">Chart</th>
+              </tr>
+            </thead>
+            <tbody>
+              {filteredTrades.length > 0 ? (
+                filteredTrades.map((trade) => {
+                  const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
+                  return (
+                    <tr
+                      key={trade.id}
+                      onClick={() => setSelectedTrade(trade)}
+                      className="border-b border-dark-border hover:bg-dark-bg cursor-pointer transition-colors"
+                    >
+                      <td className="py-3 px-2 text-gray-300 text-sm">
+                        {tradeDate.toLocaleDateString('en-US', { month: 'numeric', day: 'numeric' })}
+                      </td>
+                      <td className="py-3 px-2 text-white font-medium">{trade.ticker || 'BTC'}</td>
+                      <td className="py-3 px-2">
+                        <span className={`${
+                          trade.direction === 'long' ? 'text-green-500' : 'text-red-500'
+                        }`}>
+                          {trade.direction === 'long' ? '🟢 L' : '🔴 S'}
+                        </span>
+                      </td>
+                      <td className={`py-3 px-2 text-right font-medium ${
+                        trade.pnlPercent >= 0 ? 'text-green-500' : 'text-red-500'
+                      }`}>
+                        {trade.pnlPercent?.toFixed(2)}%
+                      </td>
+                      <td className={`py-3 px-2 text-right font-medium ${
+                        trade.gainLoss >= 0 ? 'text-green-500' : 'text-red-500'
+                      }`}>
+                        ${trade.gainLoss?.toFixed(2)}
+                      </td>
+                      <td className="py-3 px-2 text-center">
+                        {trade.chartImageUrl && (
+                          <ImageIcon size={18} className="inline text-blue-500" />
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })
+              ) : (
+                <tr>
+                  <td colSpan="6" className="py-8 text-center text-gray-500">
+                    No trades found
+                  </td>
+                </tr>
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Mobile Cards */}
+        <div className="md:hidden space-y-3">
+          {filteredTrades.length > 0 ? (
+            filteredTrades.map((trade) => {
+              const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
+              return (
+                <div
+                  key={trade.id}
+                  onClick={() => setSelectedTrade(trade)}
+                  className="bg-dark-bg border border-dark-border rounded-lg p-4 cursor-pointer hover:border-gray-600 transition-colors"
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="text-gray-400 text-xs">
+                        {tradeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}
+                      </div>
+                      <div className="text-white font-medium">{trade.ticker || 'BTC'}</div>
+                    </div>
+                    <div className={`text-xl font-bold ${
+                      trade.direction === 'long' ? 'text-green-500' : 'text-red-500'
+                    }`}>
+                      {trade.direction === 'long' ? '🟢' : '🔴'}
+                    </div>
+                  </div>
+                  <div className="flex justify-between items-center">
+                    <div className={`text-lg font-bold ${
+                      trade.pnlPercent >= 0 ? 'text-green-500' : 'text-red-500'
+                    }`}>
+                      {trade.pnlPercent?.toFixed(2)}%
+                    </div>
+                    <div className={`text-lg font-bold ${
+                      trade.gainLoss >= 0 ? 'text-green-500' : 'text-red-500'
+                    }`}>
+                      ${trade.gainLoss?.toFixed(2)}
+                    </div>
+                    {trade.chartImageUrl && (
+                      <ImageIcon size={18} className="text-blue-500" />
+                    )}
+                  </div>
+                </div>
+              );
+            })
+          ) : (
+            <div className="py-8 text-center text-gray-500">
+              No trades found
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Trade Details Modal */}
+      {selectedTrade && (
+        <TradeDetailsModal
+          trade={selectedTrade}
+          onClose={() => setSelectedTrade(null)}
+        />
+      )}
+    </>
+  );
+}
+
+export default RecentTrades;
