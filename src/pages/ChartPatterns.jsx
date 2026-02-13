@@ -1,11 +1,8 @@
 import { useState, useEffect } from 'react';
 import { Plus, X, Upload, Pencil, Trash2, ImageIcon } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
-
-const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
-const MAX_INLINE_IMAGE_BYTES = 900 * 1024;
+import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 
 const withTimeout = (promise, ms, timeoutMessage) => {
   let timeoutId;
@@ -15,82 +12,6 @@ const withTimeout = (promise, ms, timeoutMessage) => {
 
   return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
 };
-
-const isStorageError = (error) => {
-  const statusCode = error?.status_ || error?.customData?.status;
-  const storageCode = error?.code || '';
-  return statusCode === 404 || storageCode.startsWith('storage/');
-};
-
-const fileToInlineDataUrl = (file) => new Promise((resolve, reject) => {
-  const img = new Image();
-  const objectUrl = URL.createObjectURL(file);
-
-  img.onload = () => {
-    URL.revokeObjectURL(objectUrl);
-
-    let width = img.width;
-    let height = img.height;
-    const maxDimension = 1200;
-
-    if (width > maxDimension || height > maxDimension) {
-      const scale = Math.min(maxDimension / width, maxDimension / height);
-      width = Math.round(width * scale);
-      height = Math.round(height * scale);
-    }
-
-    const canvas = document.createElement('canvas');
-    const ctx = canvas.getContext('2d');
-
-    if (!ctx) {
-      reject(new Error('Could not process chart image.'));
-      return;
-    }
-
-    const tryCompress = (w, h, quality, attemptsRemaining) => {
-      canvas.width = w;
-      canvas.height = h;
-      ctx.clearRect(0, 0, w, h);
-      ctx.drawImage(img, 0, 0, w, h);
-
-      canvas.toBlob((blob) => {
-        if (!blob) {
-          reject(new Error('Could not process chart image.'));
-          return;
-        }
-
-        if (blob.size <= MAX_INLINE_IMAGE_BYTES) {
-          const reader = new FileReader();
-          reader.onloadend = () => resolve(reader.result);
-          reader.onerror = () => reject(new Error('Could not encode chart image.'));
-          reader.readAsDataURL(blob);
-          return;
-        }
-
-        if (attemptsRemaining <= 0) {
-          reject(new Error('Image is too large to save without Firebase Storage. Enable Storage or use a smaller image.'));
-          return;
-        }
-
-        if (quality > 0.45) {
-          tryCompress(w, h, quality - 0.12, attemptsRemaining - 1);
-          return;
-        }
-
-        tryCompress(Math.round(w * 0.82), Math.round(h * 0.82), 0.82, attemptsRemaining - 1);
-      }, 'image/jpeg', quality);
-    };
-
-    tryCompress(width, height, 0.82, 8);
-  };
-
-  img.onerror = () => {
-    URL.revokeObjectURL(objectUrl);
-    reject(new Error('Could not read selected image file.'));
-  };
-
-  img.src = objectUrl;
-});
 
 function ChartPatterns() {
   const [patterns, setPatterns] = useState([]);
@@ -221,31 +142,14 @@ function ChartPatterns() {
       let imageSource = editingPattern?.imageSource || '';
 
       if (patternImage) {
-        try {
-          const imageRef = ref(storage, `patterns/${Date.now()}_${patternImage.name}`);
-          await withTimeout(
-            uploadBytes(imageRef, patternImage),
-            45000,
-            'Upload timed out. Please try a smaller image or check your connection.'
-          );
-          imageUrl = await withTimeout(
-            getDownloadURL(imageRef),
-            15000,
-            'Could not get image URL from Firebase Storage.'
-          );
-          imageSource = 'storage';
-        } catch (storageError) {
-          if (!isStorageError(storageError)) {
-            throw storageError;
-          }
-
-          imageUrl = await withTimeout(
-            fileToInlineDataUrl(patternImage),
-            15000,
-            'Could not prepare image fallback. Try a smaller image.'
-          );
-          imageSource = 'inline';
-        }
+        const uploaded = await uploadImageWithFallback({
+          file: patternImage,
+          storage,
+          pathPrefix: 'patterns',
+          storageTimeoutMs: 10000
+        });
+        imageUrl = uploaded.imageUrl;
+        imageSource = uploaded.imageSource;
       }
 
       if (!imageUrl) {

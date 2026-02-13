@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { X, Upload, RefreshCw } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, updateDoc, doc } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
+import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 
 const formatDateForInput = (date) => {
   const year = date.getFullYear();
@@ -51,6 +51,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   const [lastTicker, setLastTicker] = useState('BTC');
   const [loading, setLoading] = useState(false);
   const [calculatedPnl, setCalculatedPnl] = useState(0);
+  const [formError, setFormError] = useState('');
 
   useEffect(() => {
     loadLastTicker();
@@ -131,6 +132,13 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        setFormError('Image is too large. Please use an image under 10MB.');
+        e.target.value = '';
+        return;
+      }
+
+      setFormError('');
       setChartImage(file);
       setRemoveExistingChart(false);
       const reader = new FileReader();
@@ -147,15 +155,22 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
     setLoading(true);
 
     try {
       let chartImageUrl = removeExistingChart ? null : (editTrade?.chartImageUrl || null);
+      let chartImageSource = removeExistingChart ? null : (editTrade?.chartImageSource || null);
 
       if (chartImage) {
-        const imageRef = ref(storage, `charts/${Date.now()}_${chartImage.name}`);
-        await uploadBytes(imageRef, chartImage);
-        chartImageUrl = await getDownloadURL(imageRef);
+        const uploaded = await uploadImageWithFallback({
+          file: chartImage,
+          storage,
+          pathPrefix: 'charts',
+          storageTimeoutMs: 10000
+        });
+        chartImageUrl = uploaded.imageUrl;
+        chartImageSource = uploaded.imageSource;
       }
 
       const tradeData = {
@@ -170,6 +185,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
         result: formData.result,
         comment: formData.comment,
         chartImageUrl,
+        chartImageSource,
         tradeDate: mergeDateWithExistingTime(
           formData.tradeDate,
           editTrade ? (editTrade.tradeDate?.toDate?.() || new Date(editTrade.tradeDate)) : new Date()
@@ -211,7 +227,9 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       onClose();
     } catch (error) {
       console.error('Error saving trade:', error);
-      alert('Error saving trade. Please try again.');
+      const message = error?.message || 'Error saving trade. Please try again.';
+      setFormError(message);
+      alert(message);
     } finally {
       setLoading(false);
     }
@@ -452,7 +470,11 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               />
             </div>
 
-            <div className="flex gap-3 pt-4">
+            {formError && (
+              <p className="text-sm text-red-400 pt-2">{formError}</p>
+            )}
+
+            <div className="flex gap-3 pt-2">
               <button
                 type="button"
                 onClick={onClose}
