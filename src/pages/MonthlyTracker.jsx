@@ -182,27 +182,27 @@ function MonthlyTracker() {
                   className="border-t border-dark-border hover:bg-dark-bg transition-colors"
                 >
                   <td className="py-3 px-4 text-white font-medium">{month.monthLabel}</td>
-                  <td className="text-center py-3 px-2 text-gray-300">{month.totalTrades}</td>
-                  <td className="text-center py-3 px-2 text-green-500 font-medium">{month.wins}</td>
-                  <td className="text-center py-3 px-2 text-red-500 font-medium">{month.losses}</td>
+                  <td className="text-center py-3 px-2 text-white">{month.totalTrades}</td>
+                  <td className="text-center py-3 px-2 text-white font-medium">{month.wins}</td>
+                  <td className="text-center py-3 px-2 text-white font-medium">{month.losses}</td>
                   <td className="text-center py-3 px-2">
                     <span className={`${month.color} text-white px-3 py-1 rounded font-bold`}>
                       {month.grade}
                     </span>
                   </td>
-                  <td className={`text-right py-3 px-3 font-bold ${month.totalPnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  <td className="text-right py-3 px-3 font-bold text-white">
                     ${month.totalPnl.toFixed(2)}
                   </td>
-                  <td className="text-right py-3 px-3 text-gray-400">
+                  <td className="text-right py-3 px-3 text-white">
                     ${month.totalFees.toFixed(2)}
                   </td>
                   <td className={`text-right py-3 px-3 font-bold ${month.monthlyPnlPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {month.monthlyPnlPercent.toFixed(2)}%
                   </td>
                   <td className="text-right py-3 px-3 text-white">{month.winRate.toFixed(2)}%</td>
-                  <td className="text-right py-3 px-3 text-green-500">{month.avgWin.toFixed(2)}%</td>
-                  <td className="text-right py-3 px-3 text-red-500">{month.avgLoss.toFixed(2)}%</td>
-                  <td className={`text-right py-3 px-3 ${month.expectancy >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  <td className="text-right py-3 px-3 text-white">{month.avgWin.toFixed(2)}%</td>
+                  <td className="text-right py-3 px-3 text-white">{month.avgLoss.toFixed(2)}%</td>
+                  <td className="text-right py-3 px-3 text-white">
                     {month.expectancy.toFixed(2)}%
                   </td>
                   <td className="text-right py-3 px-3 text-white">{month.profitFactor.toFixed(2)}</td>
@@ -220,16 +220,16 @@ function MonthlyTracker() {
                 <div>
                   <h3 className="text-white font-medium">{month.monthLabel}</h3>
                   <div className="flex space-x-3 mt-1 text-sm">
-                    <span className="text-gray-400">{month.totalTrades} trades</span>
-                    <span className="text-green-500">{month.wins}W</span>
-                    <span className="text-red-500">{month.losses}L</span>
+                    <span className="text-white">{month.totalTrades} trades</span>
+                    <span className="text-white">{month.wins}W</span>
+                    <span className="text-white">{month.losses}L</span>
                   </div>
                 </div>
                 <div className="flex flex-col items-end space-y-2">
                   <span className={`${month.color} text-white px-3 py-1 rounded font-bold`}>
                     {month.grade}
                   </span>
-                  <div className={`text-xl font-bold ${month.totalPnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  <div className="text-xl font-bold text-white">
                     ${month.totalPnl.toFixed(2)}
                   </div>
                 </div>
@@ -238,7 +238,7 @@ function MonthlyTracker() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <div className="text-gray-400">Fees</div>
-                  <div className="text-gray-300 font-medium">${month.totalFees.toFixed(2)}</div>
+                  <div className="text-white font-medium">${month.totalFees.toFixed(2)}</div>
                 </div>
                 <div>
                   <div className="text-gray-400">Win Rate</div>
@@ -252,7 +252,7 @@ function MonthlyTracker() {
                 </div>
                 <div>
                   <div className="text-gray-400">Expectancy</div>
-                  <div className={`font-medium ${month.expectancy >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  <div className="font-medium text-white">
                     {month.expectancy.toFixed(2)}%
                   </div>
                 </div>
@@ -262,11 +262,11 @@ function MonthlyTracker() {
                 </div>
                 <div>
                   <div className="text-gray-400">Avg Win</div>
-                  <div className="text-green-500 font-medium">{month.avgWin.toFixed(2)}%</div>
+                  <div className="text-white font-medium">{month.avgWin.toFixed(2)}%</div>
                 </div>
                 <div>
                   <div className="text-gray-400">Avg Loss</div>
-                  <div className="text-red-500 font-medium">{month.avgLoss.toFixed(2)}%</div>
+                  <div className="text-white font-medium">{month.avgLoss.toFixed(2)}%</div>
                 </div>
               </div>
             </div>

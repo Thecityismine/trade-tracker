@@ -138,19 +138,19 @@ function WeeklyTracker() {
                     onClick={() => setExpandedWeek(expandedWeek === idx ? null : idx)}
                   >
                     <td className="py-3 px-4 text-white font-medium">{week.weekLabel}</td>
-                    <td className="text-center py-3 px-2 text-green-500 font-medium">{week.wins}</td>
-                    <td className="text-center py-3 px-2 text-red-500 font-medium">{week.losses}</td>
+                    <td className="text-center py-3 px-2 text-white font-medium">{week.wins}</td>
+                    <td className="text-center py-3 px-2 text-white font-medium">{week.losses}</td>
                     <td className={`text-right py-3 px-3 font-medium ${week.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                       ${week.pnl.toFixed(2)}
                     </td>
-                    <td className="text-right py-3 px-3 text-gray-400">${week.fees.toFixed(2)}</td>
+                    <td className="text-right py-3 px-3 text-white">${week.fees.toFixed(2)}</td>
                     <td className={`text-right py-3 px-3 font-bold ${week.pnlPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                       {week.pnlPercent.toFixed(2)}%
                     </td>
                     <td className="text-right py-3 px-3 text-white">{week.winRate.toFixed(2)}%</td>
-                    <td className="text-right py-3 px-3 text-green-500">{week.avgWin.toFixed(2)}%</td>
-                    <td className="text-right py-3 px-3 text-red-500">-{week.avgLoss.toFixed(2)}%</td>
-                    <td className={`text-right py-3 px-3 ${week.expectancy >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    <td className="text-right py-3 px-3 text-white">{week.avgWin.toFixed(2)}%</td>
+                    <td className="text-right py-3 px-3 text-white">-{week.avgLoss.toFixed(2)}%</td>
+                    <td className="text-right py-3 px-3 text-white">
                       {week.expectancy.toFixed(2)}%
                     </td>
                     <td className="text-right py-3 px-3 text-white">{week.profitFactor.toFixed(2)}</td>
@@ -205,8 +205,8 @@ function WeeklyTracker() {
                 <div>
                   <h3 className="text-white font-medium">{week.weekLabel}</h3>
                   <div className="flex space-x-3 mt-1 text-sm">
-                    <span className="text-green-500">{week.wins}W</span>
-                    <span className="text-red-500">{week.losses}L</span>
+                    <span className="text-white">{week.wins}W</span>
+                    <span className="text-white">{week.losses}L</span>
                   </div>
                 </div>
                 <div className={`text-xl font-bold ${week.pnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
@@ -227,7 +227,7 @@ function WeeklyTracker() {
                 </div>
                 <div>
                   <div className="text-gray-400">Expectancy</div>
-                  <div className={`font-medium ${week.expectancy >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  <div className="font-medium text-white">
                     {week.expectancy.toFixed(2)}%
                   </div>
                 </div>
