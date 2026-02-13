@@ -4,6 +4,33 @@ import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, up
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
 
+const formatDateForInput = (date) => {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+};
+
+const parseLocalDate = (dateString) => {
+  const [year, month, day] = dateString.split('-').map(Number);
+  return new Date(year, month - 1, day);
+};
+
+const mergeDateWithExistingTime = (dateString, existingDate) => {
+  const merged = parseLocalDate(dateString);
+
+  if (existingDate && !Number.isNaN(existingDate.getTime())) {
+    merged.setHours(
+      existingDate.getHours(),
+      existingDate.getMinutes(),
+      existingDate.getSeconds(),
+      existingDate.getMilliseconds()
+    );
+  }
+
+  return merged;
+};
+
 function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   const [formData, setFormData] = useState({
     ticker: 'BTC',
@@ -15,7 +42,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     fee: '',
     result: 'win',
     comment: '',
-    tradeDate: new Date().toISOString().split('T')[0]
+    tradeDate: formatDateForInput(new Date())
   });
   
   const [chartImage, setChartImage] = useState(null);
@@ -37,8 +64,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
 
     const tradeDate = editTrade.tradeDate?.toDate?.() || new Date(editTrade.tradeDate);
     const formattedDate = Number.isNaN(tradeDate.getTime())
-      ? new Date().toISOString().split('T')[0]
-      : tradeDate.toISOString().split('T')[0];
+      ? formatDateForInput(new Date())
+      : formatDateForInput(tradeDate);
 
     setFormData({
       ticker: editTrade.ticker || 'BTC',
@@ -146,7 +173,10 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
         result: formData.result,
         comment: formData.comment,
         chartImageUrl,
-        tradeDate: new Date(formData.tradeDate)
+        tradeDate: mergeDateWithExistingTime(
+          formData.tradeDate,
+          editTrade ? (editTrade.tradeDate?.toDate?.() || new Date(editTrade.tradeDate)) : null
+        )
       };
 
       if (editTrade?.id) {
@@ -173,7 +203,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
           fee: '',
           result: 'win',
           comment: '',
-          tradeDate: new Date().toISOString().split('T')[0]
+          tradeDate: formatDateForInput(new Date())
         });
       }
       setChartImage(null);
