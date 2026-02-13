@@ -3,7 +3,6 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 function MonthlyTracker() {
-  const [trades, setTrades] = useState([]);
   const [monthlyData, setMonthlyData] = useState([]);
 
   useEffect(() => {
@@ -13,42 +12,68 @@ function MonthlyTracker() {
         id: doc.id,
         ...doc.data()
       }));
-      setTrades(tradesData);
       calculateMonthlyStats(tradesData);
     });
 
     return () => unsubscribe();
   }, []);
 
-  const getGrade = (pnlPercent, profitFactor, expectancy) => {
-    // Grading based on multiple factors
+  const downgradeGrade = (grade) => {
+    if (grade === 'A') return 'B';
+    if (grade === 'B') return 'C';
+    if (grade === 'C') return 'D';
+    return grade;
+  };
+
+  const getGrade = (monthlyPnlPercent, profitFactor, expectancyPercent, totalPnl) => {
+    // Score blends monthly return %, profit factor, and expectancy %
     let score = 0;
-    
-    // P&L% contribution (40%)
-    if (pnlPercent >= 300) score += 40;
-    else if (pnlPercent >= 200) score += 35;
-    else if (pnlPercent >= 100) score += 30;
-    else if (pnlPercent >= 50) score += 20;
-    else if (pnlPercent >= 0) score += 10;
-    
-    // Profit Factor contribution (30%)
-    if (profitFactor >= 3) score += 30;
-    else if (profitFactor >= 2) score += 25;
-    else if (profitFactor >= 1.5) score += 20;
+
+    // Monthly P&L% contribution
+    if (monthlyPnlPercent >= 300) score += 40;
+    else if (monthlyPnlPercent >= 200) score += 35;
+    else if (monthlyPnlPercent >= 150) score += 30;
+    else if (monthlyPnlPercent >= 100) score += 25;
+    else if (monthlyPnlPercent >= 50) score += 15;
+    else if (monthlyPnlPercent >= 0) score += 8;
+
+    // Profit factor contribution
+    if (profitFactor >= 2.5) score += 30;
+    else if (profitFactor >= 2) score += 26;
+    else if (profitFactor >= 1.5) score += 22;
+    else if (profitFactor >= 1.2) score += 16;
     else if (profitFactor >= 1) score += 10;
-    
-    // Expectancy contribution (30%)
-    if (expectancy >= 15) score += 30;
-    else if (expectancy >= 10) score += 25;
-    else if (expectancy >= 5) score += 20;
-    else if (expectancy >= 0) score += 10;
-    
-    // Assign grade
-    if (score >= 85) return { grade: 'A', color: 'bg-green-600' };
-    if (score >= 70) return { grade: 'B', color: 'bg-blue-600' };
-    if (score >= 50) return { grade: 'C', color: 'bg-yellow-600' };
-    if (score >= 30) return { grade: 'D', color: 'bg-orange-600' };
-    return { grade: 'F', color: 'bg-red-600' };
+    else if (profitFactor >= 0.8) score += 5;
+
+    // Expectancy contribution
+    if (expectancyPercent >= 12) score += 30;
+    else if (expectancyPercent >= 8) score += 24;
+    else if (expectancyPercent >= 5) score += 18;
+    else if (expectancyPercent >= 3) score += 14;
+    else if (expectancyPercent >= 0) score += 8;
+    else if (expectancyPercent > -5) score += 4;
+
+    let grade = 'F';
+
+    if (score >= 85) grade = 'A';
+    else if (score >= 65) grade = 'B';
+    else if (score >= 50) grade = 'C';
+    else if (score >= 35) grade = 'D';
+
+    // Penalize one grade level when month is net negative in USD
+    if (totalPnl < 0) {
+      grade = downgradeGrade(grade);
+    }
+
+    const colorMap = {
+      A: 'bg-green-600',
+      B: 'bg-blue-600',
+      C: 'bg-yellow-600',
+      D: 'bg-orange-600',
+      F: 'bg-red-600'
+    };
+
+    return { grade, color: colorMap[grade] };
   };
 
   const calculateMonthlyStats = (tradesData) => {
@@ -66,10 +91,10 @@ function MonthlyTracker() {
           trades: [],
           wins: 0,
           losses: 0,
-          totalGain: 0,
-          totalLoss: 0,
+          totalWinPercent: 0,
+          totalLossPercentAbs: 0,
           totalPnl: 0,
-          fees: 0
+          totalPnlPercent: 0
         });
       }
 
@@ -78,32 +103,29 @@ function MonthlyTracker() {
 
       if (trade.result === 'win') {
         month.wins++;
-        month.totalGain += trade.gainLoss || 0;
+        month.totalWinPercent += Math.max(0, trade.pnlPercent || 0);
       } else if (trade.result === 'loss') {
         month.losses++;
-        month.totalLoss += Math.abs(trade.gainLoss || 0);
+        month.totalLossPercentAbs += Math.abs(Math.min(0, trade.pnlPercent || 0));
       }
 
       month.totalPnl += trade.gainLoss || 0;
-      month.fees += trade.fee || 0;
+      month.totalPnlPercent += trade.pnlPercent || 0;
     });
 
     const months = Array.from(monthMap.values()).map(month => {
       const totalTrades = month.wins + month.losses;
       const winRate = totalTrades > 0 ? (month.wins / totalTrades) * 100 : 0;
-      const avgWin = month.wins > 0 ? month.totalGain / month.wins : 0;
-      const avgLoss = month.losses > 0 ? month.totalLoss / month.losses : 0;
-      const expectancy = totalTrades > 0 
-        ? ((winRate / 100) * avgWin) - ((1 - winRate / 100) * avgLoss)
+      const avgWin = month.wins > 0 ? month.totalWinPercent / month.wins : 0;
+      const avgLoss = month.losses > 0 ? -(month.totalLossPercentAbs / month.losses) : 0;
+      const expectancyPercent = totalTrades > 0
+        ? ((winRate / 100) * avgWin) + ((1 - winRate / 100) * avgLoss)
         : 0;
-      const profitFactor = month.totalLoss > 0 ? month.totalGain / month.totalLoss : 0;
-      
-      // Calculate monthly P&L%
-      const monthlyPnlPercent = totalTrades > 0 ? (month.totalPnl / totalTrades) * 10 : 0;
-      
-      const expectancyPercent = avgLoss > 0 ? (expectancy / avgLoss) * 100 : 0;
-      
-      const gradeInfo = getGrade(monthlyPnlPercent, profitFactor, expectancyPercent);
+      const profitFactor = month.totalLossPercentAbs > 0 ? month.totalWinPercent / month.totalLossPercentAbs : 0;
+
+      const monthlyPnlPercent = month.totalPnlPercent;
+
+      const gradeInfo = getGrade(monthlyPnlPercent, profitFactor, expectancyPercent, month.totalPnl);
 
       return {
         ...month,
@@ -173,7 +195,7 @@ function MonthlyTracker() {
                   </td>
                   <td className="text-right py-3 px-3 text-white">{month.winRate.toFixed(2)}%</td>
                   <td className="text-right py-3 px-3 text-green-500">{month.avgWin.toFixed(2)}%</td>
-                  <td className="text-right py-3 px-3 text-red-500">-{month.avgLoss.toFixed(2)}%</td>
+                  <td className="text-right py-3 px-3 text-red-500">{month.avgLoss.toFixed(2)}%</td>
                   <td className={`text-right py-3 px-3 ${month.expectancy >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {month.expectancy.toFixed(2)}%
                   </td>
@@ -234,7 +256,7 @@ function MonthlyTracker() {
                 </div>
                 <div>
                   <div className="text-gray-400">Avg Loss</div>
-                  <div className="text-red-500 font-medium">-{month.avgLoss.toFixed(2)}%</div>
+                  <div className="text-red-500 font-medium">{month.avgLoss.toFixed(2)}%</div>
                 </div>
               </div>
             </div>
