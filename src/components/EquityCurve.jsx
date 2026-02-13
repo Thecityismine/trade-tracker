@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
 function EquityCurve({ trades }) {
-  const [timeframe, setTimeframe] = useState('all');
+  const [timeframe, setTimeframe] = useState('weekly');
 
   // Calculate cumulative P&L for equity curve
   const calculateEquityCurve = () => {

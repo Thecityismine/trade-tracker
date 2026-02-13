@@ -94,7 +94,8 @@ function MonthlyTracker() {
           totalWinPercent: 0,
           totalLossPercentAbs: 0,
           totalPnl: 0,
-          totalPnlPercent: 0
+          totalPnlPercent: 0,
+          totalFees: 0
         });
       }
 
@@ -111,6 +112,7 @@ function MonthlyTracker() {
 
       month.totalPnl += trade.gainLoss || 0;
       month.totalPnlPercent += trade.pnlPercent || 0;
+      month.totalFees += trade.fee || 0;
     });
 
     const months = Array.from(monthMap.values()).map(month => {
@@ -164,6 +166,7 @@ function MonthlyTracker() {
                 <th className="text-center py-3 px-2 font-medium">Losses</th>
                 <th className="text-center py-3 px-2 font-medium">Grade</th>
                 <th className="text-right py-3 px-3 font-medium">Total Gain</th>
+                <th className="text-right py-3 px-3 font-medium">Fees</th>
                 <th className="text-right py-3 px-3 font-medium">Monthly P&L%</th>
                 <th className="text-right py-3 px-3 font-medium">Win Rate</th>
                 <th className="text-right py-3 px-3 font-medium">Avg Win %</th>
@@ -189,6 +192,9 @@ function MonthlyTracker() {
                   </td>
                   <td className={`text-right py-3 px-3 font-bold ${month.totalPnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                     ${month.totalPnl.toFixed(2)}
+                  </td>
+                  <td className="text-right py-3 px-3 text-gray-400">
+                    ${month.totalFees.toFixed(2)}
                   </td>
                   <td className={`text-right py-3 px-3 font-bold ${month.monthlyPnlPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                     {month.monthlyPnlPercent.toFixed(2)}%
@@ -230,6 +236,10 @@ function MonthlyTracker() {
               </div>
               
               <div className="grid grid-cols-2 gap-3 text-sm">
+                <div>
+                  <div className="text-gray-400">Fees</div>
+                  <div className="text-gray-300 font-medium">${month.totalFees.toFixed(2)}</div>
+                </div>
                 <div>
                   <div className="text-gray-400">Win Rate</div>
                   <div className="text-white font-medium">{month.winRate.toFixed(1)}%</div>
