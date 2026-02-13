@@ -67,12 +67,22 @@ function RecentTrades({ trades }) {
 
         {/* Desktop Table */}
         <div className="hidden md:block overflow-x-auto">
-          <table className="w-full">
+          <table className="table-fixed w-max min-w-[980px]">
+            <colgroup>
+              <col className="w-[80px]" />
+              <col className="w-[120px]" />
+              <col className="w-[110px]" />
+              <col className="w-[240px]" />
+              <col className="w-[110px]" />
+              <col className="w-[120px]" />
+              <col className="w-[70px]" />
+            </colgroup>
             <thead>
               <tr className="border-b border-dark-border text-gray-400 text-sm">
                 <th className="text-left py-3 px-2">Date</th>
                 <th className="text-left py-3 px-2">Ticker</th>
                 <th className="text-left py-3 px-2">Direction</th>
+                <th className="text-left py-3 px-2">Comment</th>
                 <th className="text-right py-3 px-2">P&L%</th>
                 <th className="text-right py-3 px-2">Gain</th>
                 <th className="text-center py-3 px-2">Chart</th>
@@ -99,11 +109,16 @@ function RecentTrades({ trades }) {
                           {trade.direction === 'long' ? '🟢 L' : '🔴 S'}
                         </span>
                       </td>
-                      <td className={`py-3 px-2 text-right font-medium ${
-                        trade.pnlPercent >= 0 ? 'text-green-500' : 'text-red-500'
-                      }`}>
-                        {trade.pnlPercent?.toFixed(2)}%
-                      </td>
+                        <td className="py-3 px-2 text-gray-400 text-sm">
+                          <span className="block truncate" title={trade.comment || ''}>
+                            {trade.comment?.trim() ? trade.comment : '-'}
+                          </span>
+                        </td>
+                        <td className={`py-3 px-2 text-right font-medium ${
+                          trade.pnlPercent >= 0 ? 'text-green-500' : 'text-red-500'
+                        }`}>
+                          {trade.pnlPercent?.toFixed(2)}%
+                        </td>
                       <td className={`py-3 px-2 text-right font-medium ${
                         trade.gainLoss >= 0 ? 'text-green-500' : 'text-red-500'
                       }`}>
@@ -119,11 +134,11 @@ function RecentTrades({ trades }) {
                 })
               ) : (
                 <tr>
-                  <td colSpan="6" className="py-8 text-center text-gray-500">
-                    No trades found
-                  </td>
-                </tr>
-              )}
+                    <td colSpan="7" className="py-8 text-center text-gray-500">
+                      No trades found
+                    </td>
+                  </tr>
+                )}
             </tbody>
           </table>
         </div>
