@@ -6,7 +6,8 @@
     "dev": "vite",
     "build": "vite build",
     "preview": "vite preview",
-    "seed:feb-week1-2026": "node scripts/seed-february-2026-week1.mjs"
+    "seed:feb-week1-2026": "node scripts/seed-february-2026-week1.mjs",
+    "seed:jan-2026": "node scripts/seed-january-2026.mjs"
   },
   "dependencies": {
     "react": "^18.2.0",
