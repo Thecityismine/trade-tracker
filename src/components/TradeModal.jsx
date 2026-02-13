@@ -1,10 +1,10 @@
 import { useState, useEffect } from 'react';
 import { X, Upload, RefreshCw } from 'lucide-react';
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, updateDoc, doc } from 'firebase/firestore';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
 
-function TradeModal({ isOpen, onClose, editTrade = null }) {
+function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   const [formData, setFormData] = useState({
     ticker: 'BTC',
     direction: 'long',
@@ -20,6 +20,7 @@ function TradeModal({ isOpen, onClose, editTrade = null }) {
   
   const [chartImage, setChartImage] = useState(null);
   const [chartPreview, setChartPreview] = useState(null);
+  const [removeExistingChart, setRemoveExistingChart] = useState(false);
   const [lastTicker, setLastTicker] = useState('BTC');
   const [loading, setLoading] = useState(false);
   const [calculatedPnl, setCalculatedPnl] = useState(0);
@@ -28,6 +29,33 @@ function TradeModal({ isOpen, onClose, editTrade = null }) {
   useEffect(() => {
     loadLastTicker();
   }, []);
+
+  useEffect(() => {
+    if (!editTrade) {
+      return;
+    }
+
+    const tradeDate = editTrade.tradeDate?.toDate?.() || new Date(editTrade.tradeDate);
+    const formattedDate = Number.isNaN(tradeDate.getTime())
+      ? new Date().toISOString().split('T')[0]
+      : tradeDate.toISOString().split('T')[0];
+
+    setFormData({
+      ticker: editTrade.ticker || 'BTC',
+      direction: editTrade.direction || 'long',
+      entryPrice: editTrade.entryPrice?.toString() || '',
+      exitPrice: editTrade.exitPrice?.toString() || '',
+      leverage: editTrade.leverage?.toString() || '25',
+      gainLoss: editTrade.gainLoss?.toString() || '',
+      fee: editTrade.fee?.toString() || '',
+      result: editTrade.result || 'win',
+      comment: editTrade.comment || '',
+      tradeDate: formattedDate
+    });
+    setChartImage(null);
+    setChartPreview(editTrade.chartImageUrl || null);
+    setRemoveExistingChart(false);
+  }, [editTrade]);
 
   // Calculate P&L% when prices change
   useEffect(() => {
@@ -51,6 +79,8 @@ function TradeModal({ isOpen, onClose, editTrade = null }) {
       } else if (pnl < 0) {
         setFormData(prev => ({ ...prev, result: 'loss' }));
       }
+    } else {
+      setCalculatedPnl(0);
     }
   }, [formData.entryPrice, formData.exitPrice, formData.direction, formData.leverage]);
 
@@ -76,6 +106,7 @@ function TradeModal({ isOpen, onClose, editTrade = null }) {
     const file = e.target.files[0];
     if (file) {
       setChartImage(file);
+      setRemoveExistingChart(false);
       const reader = new FileReader();
       reader.onloadend = () => {
         setChartPreview(reader.result);
@@ -93,7 +124,7 @@ function TradeModal({ isOpen, onClose, editTrade = null }) {
     setLoading(true);
 
     try {
-      let chartImageUrl = null;
+      let chartImageUrl = removeExistingChart ? null : (editTrade?.chartImageUrl || null);
 
       // Upload chart image if provided
       if (chartImage) {
@@ -115,30 +146,42 @@ function TradeModal({ isOpen, onClose, editTrade = null }) {
         result: formData.result,
         comment: formData.comment,
         chartImageUrl,
-        tradeDate: new Date(formData.tradeDate),
-        createdAt: serverTimestamp()
+        tradeDate: new Date(formData.tradeDate)
       };
 
-      // Add to Firestore
-      await addDoc(collection(db, 'trades'), tradeData);
+      if (editTrade?.id) {
+        await updateDoc(doc(db, 'trades', editTrade.id), {
+          ...tradeData,
+          updatedAt: serverTimestamp()
+        });
+      } else {
+        await addDoc(collection(db, 'trades'), {
+          ...tradeData,
+          createdAt: serverTimestamp()
+        });
+      }
 
       // Reset form
-      setFormData({
-        ticker: formData.ticker, // Keep ticker
-        direction: formData.direction, // Keep direction
-        entryPrice: '',
-        exitPrice: '',
-        leverage: '25',
-        gainLoss: '',
-        fee: '',
-        result: 'win',
-        comment: '',
-        tradeDate: new Date().toISOString().split('T')[0]
-      });
+      if (!editTrade) {
+        setFormData({
+          ticker: formData.ticker, // Keep ticker
+          direction: formData.direction, // Keep direction
+          entryPrice: '',
+          exitPrice: '',
+          leverage: '25',
+          gainLoss: '',
+          fee: '',
+          result: 'win',
+          comment: '',
+          tradeDate: new Date().toISOString().split('T')[0]
+        });
+      }
       setChartImage(null);
       setChartPreview(null);
+      setRemoveExistingChart(false);
       setCalculatedPnl(0);
       
+      onSaved?.();
       onClose();
     } catch (error) {
       console.error('Error saving trade:', error);
@@ -155,7 +198,7 @@ function TradeModal({ isOpen, onClose, editTrade = null }) {
       <div className="bg-dark-card border border-dark-border rounded-lg w-full max-w-lg my-8">
         {/* Header */}
         <div className="flex items-center justify-between p-6 border-b border-dark-border">
-          <h2 className="text-xl font-bold text-white">New Trade</h2>
+          <h2 className="text-xl font-bold text-white">{editTrade ? 'Edit Trade' : 'New Trade'}</h2>
           <button
             onClick={onClose}
             className="text-gray-400 hover:text-white transition-colors"
@@ -353,6 +396,9 @@ function TradeModal({ isOpen, onClose, editTrade = null }) {
                     onClick={() => {
                       setChartImage(null);
                       setChartPreview(null);
+                      if (editTrade?.chartImageUrl) {
+                        setRemoveExistingChart(true);
+                      }
                     }}
                     className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full hover:bg-red-700"
                   >
@@ -400,7 +446,7 @@ function TradeModal({ isOpen, onClose, editTrade = null }) {
               disabled={loading}
               className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg py-3 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              {loading ? 'Saving...' : 'Save Trade'}
+              {loading ? 'Saving...' : (editTrade ? 'Save Changes' : 'Save Trade')}
             </button>
           </div>
         </form>
