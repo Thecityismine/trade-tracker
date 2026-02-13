@@ -36,7 +36,7 @@ function TradeDetailsModal({ trade, onClose }) {
 
   return (
     <>
-      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto">
+      <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4 overflow-y-auto">
         <div className="bg-dark-card border border-dark-border rounded-lg w-full max-w-2xl my-8">
           <div className="flex items-center justify-between p-6 border-b border-dark-border">
             <div>
@@ -154,25 +154,27 @@ function TradeDetailsModal({ trade, onClose }) {
               </div>
             )}
 
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+            <div className="flex items-center justify-between gap-3">
+              <div className="flex items-center gap-2">
               <button
                 onClick={handleDeleteTrade}
                 disabled={deleting}
-                className="w-full bg-red-600 hover:bg-red-700 rounded-lg py-3 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2"
+                  aria-label={deleting ? 'Deleting trade' : 'Delete trade'}
+                className="w-12 h-12 bg-red-600 hover:bg-red-700 rounded-lg text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
               >
                 <Trash2 size={18} />
-                {deleting ? 'Deleting...' : 'Delete'}
               </button>
               <button
                 onClick={() => setIsEditing(true)}
-                className="w-full bg-dark-bg border border-dark-border hover:border-gray-500 rounded-lg py-3 text-white font-medium transition-colors flex items-center justify-center gap-2"
+                  aria-label="Edit trade"
+                className="w-12 h-12 bg-dark-bg border border-dark-border hover:border-gray-500 rounded-lg text-white transition-colors flex items-center justify-center"
               >
                 <Pencil size={18} />
-                Edit
               </button>
+              </div>
               <button
                 onClick={onClose}
-                className="w-full bg-blue-600 hover:bg-blue-700 rounded-lg py-3 text-white font-medium transition-colors"
+                className="min-w-[120px] bg-blue-600 hover:bg-blue-700 rounded-lg py-3 px-4 text-white font-medium transition-colors"
               >
                 Close
               </button>

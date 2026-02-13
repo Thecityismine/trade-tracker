@@ -4,6 +4,17 @@ import { collection, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc } from 
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
 
+const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+
+const withTimeout = (promise, ms, timeoutMessage) => {
+  let timeoutId;
+  const timeoutPromise = new Promise((_, reject) => {
+    timeoutId = setTimeout(() => reject(new Error(timeoutMessage)), ms);
+  });
+
+  return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
+};
+
 function ChartPatterns() {
   const [patterns, setPatterns] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -29,9 +40,27 @@ function ChartPatterns() {
     return () => unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!isModalOpen) {
+      return;
+    }
+
+    const previousOverflow = document.body.style.overflow;
+    document.body.style.overflow = 'hidden';
+
+    return () => {
+      document.body.style.overflow = previousOverflow;
+    };
+  }, [isModalOpen]);
+
   const handleImageUpload = (e) => {
     const file = e.target.files[0];
     if (file) {
+      if (file.size > MAX_IMAGE_SIZE_BYTES) {
+        alert('Image is too large. Please use an image under 10MB.');
+        e.target.value = '';
+        return;
+      }
       setPatternImage(file);
       const reader = new FileReader();
       reader.onloadend = () => {
@@ -53,17 +82,28 @@ function ChartPatterns() {
     try {
       // Upload image
       const imageRef = ref(storage, `patterns/${Date.now()}_${patternImage.name}`);
-      await uploadBytes(imageRef, patternImage);
-      const imageUrl = await getDownloadURL(imageRef);
+      await withTimeout(
+        uploadBytes(imageRef, patternImage),
+        45000,
+        'Upload timed out. Please try a smaller image or check your connection.'
+      );
+      const imageUrl = await withTimeout(
+        getDownloadURL(imageRef),
+        15000,
+        'Could not get image URL from Firebase Storage.'
+      );
 
       // Save pattern
-      await addDoc(collection(db, 'chartPatterns'), {
+      await withTimeout(addDoc(collection(db, 'chartPatterns'), {
         name: formData.name,
         description: formData.description,
-        tags: formData.tags.split(',').map(tag => tag.trim()),
+        tags: formData.tags
+          .split(',')
+          .map(tag => tag.trim())
+          .filter(Boolean),
         imageUrl,
         dateAdded: serverTimestamp()
-      });
+      }), 15000, 'Saving pattern data timed out. Please try again.');
 
       // Reset form
       setFormData({ name: '', description: '', tags: '' });
@@ -72,7 +112,16 @@ function ChartPatterns() {
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error saving pattern:', error);
-      alert('Error saving pattern. Please try again.');
+      const statusCode = error?.status_ || error?.customData?.status;
+      const storageCode = error?.code || '';
+
+      if (statusCode === 404 || storageCode.includes('storage/object-not-found') || storageCode.includes('storage/unknown')) {
+        alert('Storage is not configured in Firebase project `trade-tracker-fb893`. In Firebase Console, go to Storage and click Get started, then try again.');
+      } else if (error?.message) {
+        alert(error.message);
+      } else {
+        alert('Error saving pattern. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -163,8 +212,8 @@ function ChartPatterns() {
 
       {/* Add Pattern Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4 overflow-y-auto">
-          <div className="bg-dark-card border border-dark-border rounded-lg w-full max-w-lg my-8">
+        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-2 sm:p-4 overflow-y-auto">
+          <div className="bg-dark-card border border-dark-border rounded-lg w-full max-w-lg my-2 sm:my-8 max-h-[calc(100vh-1rem)] overflow-y-auto">
             <div className="flex items-center justify-between p-6 border-b border-dark-border">
               <h3 className="text-xl font-bold text-white">Add Chart Pattern</h3>
               <button
@@ -253,7 +302,7 @@ function ChartPatterns() {
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg py-3 text-white font-medium transition-colors disabled:opacity-50"
+                  className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg py-3 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Saving...' : 'Add Pattern'}
                 </button>
