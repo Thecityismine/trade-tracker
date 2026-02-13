@@ -73,6 +73,7 @@ function RecentTrades({ trades }) {
               <col className="w-[130px]" />
               <col className="w-[110px]" />
               <col className="w-[120px]" />
+              <col className="w-[100px]" />
               <col className="w-[80px]" />
               <col />
             </colgroup>
@@ -83,6 +84,7 @@ function RecentTrades({ trades }) {
                 <th className="text-left py-3 px-2">Direction</th>
                 <th className="text-right py-3 px-2">P&L%</th>
                 <th className="text-right py-3 px-2">Gain</th>
+                <th className="text-right py-3 px-2">Fee</th>
                 <th className="text-center py-3 px-2">Chart</th>
                 <th className="text-left py-3 px-2">Comment</th>
               </tr>
@@ -123,6 +125,9 @@ function RecentTrades({ trades }) {
                       }`}>
                         ${trade.gainLoss?.toFixed(2)}
                       </td>
+                      <td className="py-3 px-2 text-right text-gray-300">
+                        ${Number(trade.fee || 0).toFixed(2)}
+                      </td>
                       <td className="py-3 px-2 text-center">
                         {trade.chartImageUrl && (
                           <ImageIcon size={18} className="inline text-blue-500" />
@@ -138,7 +143,7 @@ function RecentTrades({ trades }) {
                 })
               ) : (
                 <tr>
-                  <td colSpan="7" className="py-8 text-center text-gray-500">
+                  <td colSpan="8" className="py-8 text-center text-gray-500">
                     No trades found
                   </td>
                 </tr>
