@@ -4,7 +4,6 @@ import MetricCard from '../components/MetricCard';
 import EquityCurve from '../components/EquityCurve';
 import RecentTrades from '../components/RecentTrades';
 import TradeModal from '../components/TradeModal';
-import ImportDataButton from '../components/ImportDataButton';
 import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
@@ -82,11 +81,6 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {/* Import Button */}
-      <div className="flex justify-end">
-        <ImportDataButton />
-      </div>
-
       {/* Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
