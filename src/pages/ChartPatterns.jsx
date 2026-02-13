@@ -16,6 +16,7 @@ const withTimeout = (promise, ms, timeoutMessage) => {
 function ChartPatterns() {
   const [patterns, setPatterns] = useState([]);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [expandedImage, setExpandedImage] = useState(null);
   const [editingPattern, setEditingPattern] = useState(null);
   const [formData, setFormData] = useState({
     name: '',
@@ -51,7 +52,7 @@ function ChartPatterns() {
   }, []);
 
   useEffect(() => {
-    if (!isModalOpen) {
+    if (!isModalOpen && !expandedImage) {
       return;
     }
 
@@ -61,7 +62,7 @@ function ChartPatterns() {
     return () => {
       document.body.style.overflow = previousOverflow;
     };
-  }, [isModalOpen]);
+  }, [isModalOpen, expandedImage]);
 
   useEffect(() => {
     if (!statusMessage) {
@@ -248,23 +249,36 @@ function ChartPatterns() {
                       <span className="text-xs">Image unavailable</span>
                     </div>
                   ) : (
-                    <img
-                      src={pattern.imageUrl}
-                      alt={pattern.name}
-                      className="w-full h-full object-contain"
-                      onError={() => setBrokenImages((prev) => ({ ...prev, [pattern.id]: true }))}
-                    />
+                    <button
+                      type="button"
+                      onClick={() => setExpandedImage({ url: pattern.imageUrl, name: pattern.name })}
+                      className="w-full h-full cursor-zoom-in"
+                      aria-label={`Expand ${pattern.name}`}
+                    >
+                      <img
+                        src={pattern.imageUrl}
+                        alt={pattern.name}
+                        className="w-full h-full object-cover"
+                        onError={() => setBrokenImages((prev) => ({ ...prev, [pattern.id]: true }))}
+                      />
+                    </button>
                   )}
                   <div className="absolute top-2 right-2 flex items-center gap-2">
                     <button
-                      onClick={() => openEditModal(pattern)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        openEditModal(pattern);
+                      }}
                       className="bg-dark-card/90 hover:bg-dark-card text-white p-2 rounded-full border border-dark-border transition-colors"
                       aria-label="Edit pattern"
                     >
                       <Pencil size={14} />
                     </button>
                     <button
-                      onClick={() => handleDelete(pattern.id)}
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleDelete(pattern.id);
+                      }}
                       className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full transition-colors"
                       aria-label="Delete pattern"
                     >
@@ -276,7 +290,7 @@ function ChartPatterns() {
                 {/* Content */}
                 <div className="p-4 space-y-3">
                   <h3 className="text-white font-bold text-lg">{pattern.name}</h3>
-                  <p className="text-gray-400 text-sm">{pattern.description}</p>
+                  <p className="text-gray-400 text-sm whitespace-pre-wrap break-words">{pattern.description}</p>
                   
                   {/* Tags */}
                   {pattern.tags && pattern.tags.length > 0 && (
@@ -407,6 +421,29 @@ function ChartPatterns() {
               </div>
             </form>
           </div>
+        </div>
+      )}
+
+      {/* Image Viewer */}
+      {expandedImage && (
+        <div
+          className="fixed inset-0 z-[80] bg-black/90 p-4 flex items-center justify-center"
+          onClick={() => setExpandedImage(null)}
+        >
+          <button
+            type="button"
+            onClick={() => setExpandedImage(null)}
+            className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors"
+            aria-label="Close image viewer"
+          >
+            <X size={28} />
+          </button>
+          <img
+            src={expandedImage.url}
+            alt={expandedImage.name}
+            className="max-w-full max-h-full object-contain rounded-lg border border-dark-border"
+            onClick={(e) => e.stopPropagation()}
+          />
         </div>
       )}
     </div>
