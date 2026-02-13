@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { X, Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2 } from 'lucide-react';
 import { doc, deleteDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import TradeModal from './TradeModal';
@@ -39,27 +39,20 @@ function TradeDetailsModal({ trade, onClose }) {
       {!isEditing && (
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4 overflow-y-auto">
         <div className="bg-dark-card border border-dark-border rounded-lg w-full max-w-2xl my-8">
-          <div className="flex items-center justify-between p-6 border-b border-dark-border">
-            <div>
-              <h2 className="text-xl font-bold text-white">{trade.ticker || 'BTC'} Trade</h2>
-              <p className="text-gray-400 text-sm mt-1">
-                {tradeDate.toLocaleDateString('en-US', {
-                  weekday: 'long',
-                  year: 'numeric',
-                  month: 'long',
-                  day: 'numeric'
-                })}
-              </p>
-            </div>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <X size={24} />
-            </button>
+          <div className="p-5 border-b border-dark-border">
+            <h2 className="text-xl font-bold text-white">{trade.ticker || 'BTC'} Trade</h2>
           </div>
 
           <div className="p-6 space-y-6">
+            <p className="text-gray-400 text-sm">
+              {tradeDate.toLocaleDateString('en-US', {
+                weekday: 'long',
+                year: 'numeric',
+                month: 'long',
+                day: 'numeric'
+              })}
+            </p>
+
             {trade.chartImageUrl && (
               <div>
                 <h3 className="text-white font-medium mb-3">Trade Chart</h3>
@@ -156,21 +149,21 @@ function TradeDetailsModal({ trade, onClose }) {
             )}
 
             <div className="flex items-center justify-between gap-3">
-              <div className="flex items-center gap-2">
+              <div className="flex items-center gap-4">
               <button
                 onClick={handleDeleteTrade}
                 disabled={deleting}
                   aria-label={deleting ? 'Deleting trade' : 'Delete trade'}
-                className="w-12 h-12 bg-red-600 hover:bg-red-700 rounded-lg text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center"
+                className="text-red-500 hover:text-red-400 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                <Trash2 size={18} />
+                <Trash2 size={22} />
               </button>
               <button
                 onClick={() => setIsEditing(true)}
                   aria-label="Edit trade"
-                className="w-12 h-12 bg-dark-bg border border-dark-border hover:border-gray-500 rounded-lg text-white transition-colors flex items-center justify-center"
+                className="text-gray-300 hover:text-white transition-colors"
               >
-                <Pencil size={18} />
+                <Pencil size={22} />
               </button>
               </div>
               <button
