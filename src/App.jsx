@@ -39,16 +39,16 @@ function App() {
   };
 
   return (
-    <div className="min-h-screen bg-dark-bg">
+    <div className="min-h-screen bg-black">
       {/* Header */}
-      <header className="bg-dark-card border-b border-dark-border sticky top-0 z-50">
+      <header className="bg-black border-b border-dark-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
           <h1 className="text-2xl font-bold text-white">Trade Tracker</h1>
         </div>
       </header>
 
       {/* Navigation Tabs */}
-      <nav className="bg-dark-card border-b border-dark-border sticky top-16 z-40 overflow-x-auto">
+      <nav className="bg-black border-b border-dark-border sticky top-16 z-40 overflow-x-auto">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex space-x-1 min-w-max">
             {tabs.map((tab) => {
