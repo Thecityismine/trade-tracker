@@ -21,6 +21,24 @@ const COLORS = {
   muted: '#9ca3af'
 };
 
+const TOOLTIP_THEME = {
+  contentStyle: {
+    background: '#111827',
+    border: '1px solid #374151',
+    borderRadius: '8px'
+  },
+  labelStyle: {
+    color: '#f9fafb',
+    fontWeight: 600
+  },
+  itemStyle: {
+    color: '#e5e7eb'
+  },
+  cursor: {
+    fill: 'rgba(59, 130, 246, 0.08)'
+  }
+};
+
 const TIME_BUCKETS = [
   { key: 'overnight', label: 'Overnight', start: 0, end: 5 },
   { key: 'morning', label: 'Morning', start: 6, end: 11 },
@@ -364,7 +382,10 @@ function Analytics() {
                     <XAxis dataKey="direction" stroke="#9ca3af" />
                     <YAxis stroke="#9ca3af" tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
                     <Tooltip
-                      contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
+                      contentStyle={TOOLTIP_THEME.contentStyle}
+                      labelStyle={TOOLTIP_THEME.labelStyle}
+                      itemStyle={TOOLTIP_THEME.itemStyle}
+                      cursor={TOOLTIP_THEME.cursor}
                       formatter={(value, name) => {
                         if (name === 'winRate') return [`${Number(value).toFixed(2)}%`, 'Win Rate'];
                         return [value, name];
@@ -406,7 +427,10 @@ function Analytics() {
                     <XAxis dataKey="name" stroke="#9ca3af" />
                     <YAxis stroke="#9ca3af" tickFormatter={(value) => `${value.toFixed(0)}%`} />
                     <Tooltip
-                      contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
+                      contentStyle={TOOLTIP_THEME.contentStyle}
+                      labelStyle={TOOLTIP_THEME.labelStyle}
+                      itemStyle={TOOLTIP_THEME.itemStyle}
+                      cursor={TOOLTIP_THEME.cursor}
                       formatter={(value, name, props) => {
                         if (name === 'avgPnlPercent') return [`${Number(value).toFixed(2)}%`, 'Avg P&L%'];
                         if (name === 'trades') return [value, 'Trades'];
@@ -451,7 +475,10 @@ function Analytics() {
                     <XAxis dataKey="name" stroke="#9ca3af" />
                     <YAxis stroke="#9ca3af" tickFormatter={(value) => `$${Math.abs(value).toFixed(0)}`} />
                     <Tooltip
-                      contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
+                      contentStyle={TOOLTIP_THEME.contentStyle}
+                      labelStyle={TOOLTIP_THEME.labelStyle}
+                      itemStyle={TOOLTIP_THEME.itemStyle}
+                      cursor={TOOLTIP_THEME.cursor}
                       formatter={(value) => [`$${Math.abs(Number(value)).toFixed(2)}`, 'Average Size']}
                     />
                     <Bar dataKey="value" radius={[6, 6, 0, 0]}>
@@ -516,7 +543,10 @@ function Analytics() {
                     <YAxis yAxisId="left" stroke="#9ca3af" tickFormatter={(value) => `$${value.toFixed(0)}`} />
                     <YAxis yAxisId="right" orientation="right" stroke="#9ca3af" tickFormatter={(value) => `${value.toFixed(0)}%`} domain={[0, 100]} />
                     <Tooltip
-                      contentStyle={{ background: '#1a1a1a', border: '1px solid #2a2a2a' }}
+                      contentStyle={TOOLTIP_THEME.contentStyle}
+                      labelStyle={TOOLTIP_THEME.labelStyle}
+                      itemStyle={TOOLTIP_THEME.itemStyle}
+                      cursor={TOOLTIP_THEME.cursor}
                       formatter={(value, name) => {
                         if (name === 'totalPnl') return [`$${Number(value).toFixed(2)}`, 'Total P&L'];
                         if (name === 'winRate') return [`${Number(value).toFixed(2)}%`, 'Win Rate'];
