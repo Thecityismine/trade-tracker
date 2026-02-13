@@ -79,6 +79,45 @@ function Dashboard() {
     });
   };
 
+  const getTradeDate = (trade) => trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
+
+  const calculatePeriodPercent = (period) => {
+    const now = new Date();
+
+    const periodTrades = trades.filter((trade) => {
+      const tradeDate = getTradeDate(trade);
+      if (Number.isNaN(tradeDate.getTime())) {
+        return false;
+      }
+
+      switch (period) {
+        case 'day':
+          return tradeDate.toDateString() === now.toDateString();
+        case 'week': {
+          const weekAgo = new Date(now);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return tradeDate >= weekAgo && tradeDate <= now;
+        }
+        case 'month':
+          return tradeDate.getMonth() === now.getMonth() &&
+            tradeDate.getFullYear() === now.getFullYear();
+        case 'year':
+          return tradeDate.getFullYear() === now.getFullYear();
+        default:
+          return false;
+      }
+    });
+
+    return periodTrades.reduce((sum, trade) => sum + (Number(trade.pnlPercent) || 0), 0);
+  };
+
+  const percentSummary = {
+    day: calculatePeriodPercent('day'),
+    week: calculatePeriodPercent('week'),
+    month: calculatePeriodPercent('month'),
+    year: calculatePeriodPercent('year')
+  };
+
   return (
     <div className="space-y-6">
       {/* Metric Cards */}
@@ -106,6 +145,34 @@ function Dashboard() {
           value={metrics.profitFactor.toFixed(2)}
           subtitle="Win/Loss ratio"
           isPositive={metrics.profitFactor >= 1}
+        />
+      </div>
+
+      {/* Percentage Gain Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <MetricCard
+          title="Day % Gain"
+          value={`${percentSummary.day >= 0 ? '+' : ''}${percentSummary.day.toFixed(2)}%`}
+          subtitle="Today"
+          isPositive={percentSummary.day >= 0}
+        />
+        <MetricCard
+          title="Week % Gain"
+          value={`${percentSummary.week >= 0 ? '+' : ''}${percentSummary.week.toFixed(2)}%`}
+          subtitle="Last 7 days"
+          isPositive={percentSummary.week >= 0}
+        />
+        <MetricCard
+          title="Month % Gain"
+          value={`${percentSummary.month >= 0 ? '+' : ''}${percentSummary.month.toFixed(2)}%`}
+          subtitle={new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
+          isPositive={percentSummary.month >= 0}
+        />
+        <MetricCard
+          title="Year % Gain"
+          value={`${percentSummary.year >= 0 ? '+' : ''}${percentSummary.year.toFixed(2)}%`}
+          subtitle={new Date().getFullYear().toString()}
+          isPositive={percentSummary.year >= 0}
         />
       </div>
 
