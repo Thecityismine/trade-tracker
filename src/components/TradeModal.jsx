@@ -172,7 +172,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
         chartImageUrl,
         tradeDate: mergeDateWithExistingTime(
           formData.tradeDate,
-          editTrade ? (editTrade.tradeDate?.toDate?.() || new Date(editTrade.tradeDate)) : null
+          editTrade ? (editTrade.tradeDate?.toDate?.() || new Date(editTrade.tradeDate)) : new Date()
         )
       };
 

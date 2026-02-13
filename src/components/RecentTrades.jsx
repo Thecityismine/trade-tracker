@@ -46,14 +46,14 @@ function RecentTrades({ trades }) {
   });
 
   const sortedTrades = [...filteredTrades].sort((a, b) => {
-    const tradeTimeDiff = getTradeDate(b).getTime() - getTradeDate(a).getTime();
-    if (tradeTimeDiff !== 0) {
-      return tradeTimeDiff;
-    }
-
     const createdTimeDiff = getCreatedTime(b) - getCreatedTime(a);
     if (createdTimeDiff !== 0) {
       return createdTimeDiff;
+    }
+
+    const tradeTimeDiff = getTradeDate(b).getTime() - getTradeDate(a).getTime();
+    if (tradeTimeDiff !== 0) {
+      return tradeTimeDiff;
     }
 
     return (b.id || '').localeCompare(a.id || '');
