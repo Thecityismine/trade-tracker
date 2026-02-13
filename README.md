@@ -1,4 +1,4 @@
-# BTC Trade Tracker
+# Trade Tracker
 
 A comprehensive Bitcoin trading journal and performance tracker built with React, Firebase, and Tailwind CSS.
 

@@ -43,7 +43,7 @@ function App() {
       {/* Header */}
       <header className="bg-dark-card border-b border-dark-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-white">BTC Trade Tracker</h1>
+          <h1 className="text-2xl font-bold text-white">Trade Tracker</h1>
         </div>
       </header>
 
