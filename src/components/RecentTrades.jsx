@@ -7,6 +7,18 @@ function RecentTrades({ trades }) {
   const [filterPeriod, setFilterPeriod] = useState('today');
   const [selectedTrade, setSelectedTrade] = useState(null);
 
+  const getTradeDate = (trade) => trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
+  const getCreatedTime = (trade) => {
+    if (trade.createdAt?.toMillis) {
+      return trade.createdAt.toMillis();
+    }
+    if (trade.createdAt) {
+      const created = new Date(trade.createdAt).getTime();
+      return Number.isNaN(created) ? 0 : created;
+    }
+    return 0;
+  };
+
   const filteredTrades = trades.filter((trade) => {
     const matchesSearch =
       (trade.ticker?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
@@ -15,7 +27,7 @@ function RecentTrades({ trades }) {
     if (!matchesSearch) return false;
 
     const now = new Date();
-    const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
+    const tradeDate = getTradeDate(trade);
 
     switch (filterPeriod) {
       case 'today':
@@ -31,6 +43,20 @@ function RecentTrades({ trades }) {
       default:
         return true;
     }
+  });
+
+  const sortedTrades = [...filteredTrades].sort((a, b) => {
+    const tradeTimeDiff = getTradeDate(b).getTime() - getTradeDate(a).getTime();
+    if (tradeTimeDiff !== 0) {
+      return tradeTimeDiff;
+    }
+
+    const createdTimeDiff = getCreatedTime(b) - getCreatedTime(a);
+    if (createdTimeDiff !== 0) {
+      return createdTimeDiff;
+    }
+
+    return (b.id || '').localeCompare(a.id || '');
   });
 
   return (
@@ -90,9 +116,9 @@ function RecentTrades({ trades }) {
               </tr>
             </thead>
             <tbody>
-              {filteredTrades.length > 0 ? (
-                filteredTrades.map((trade) => {
-                  const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
+              {sortedTrades.length > 0 ? (
+                sortedTrades.map((trade) => {
+                  const tradeDate = getTradeDate(trade);
                   return (
                     <tr
                       key={trade.id}
@@ -154,9 +180,9 @@ function RecentTrades({ trades }) {
 
         {/* Mobile Cards */}
         <div className="md:hidden space-y-3">
-          {filteredTrades.length > 0 ? (
-            filteredTrades.map((trade) => {
-              const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
+          {sortedTrades.length > 0 ? (
+            sortedTrades.map((trade) => {
+              const tradeDate = getTradeDate(trade);
               return (
                 <div
                   key={trade.id}

@@ -36,6 +36,7 @@ function TradeDetailsModal({ trade, onClose }) {
 
   return (
     <>
+      {!isEditing && (
       <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-[60] p-4 overflow-y-auto">
         <div className="bg-dark-card border border-dark-border rounded-lg w-full max-w-2xl my-8">
           <div className="flex items-center justify-between p-6 border-b border-dark-border">
@@ -182,6 +183,7 @@ function TradeDetailsModal({ trade, onClose }) {
           </div>
         </div>
       </div>
+      )}
 
       {isEditing && (
         <TradeModal

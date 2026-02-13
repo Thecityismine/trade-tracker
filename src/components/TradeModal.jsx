@@ -57,19 +57,6 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   }, []);
 
   useEffect(() => {
-    if (!isOpen) {
-      return;
-    }
-
-    const previousOverflow = document.body.style.overflow;
-    document.body.style.overflow = 'hidden';
-
-    return () => {
-      document.body.style.overflow = previousOverflow;
-    };
-  }, [isOpen]);
-
-  useEffect(() => {
     if (!editTrade) {
       return;
     }
@@ -233,18 +220,30 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 z-50 p-2 sm:p-4 overflow-y-auto">
+    <div className="fixed inset-0 bg-black bg-opacity-75 z-[70] p-2 sm:p-4 overflow-y-auto">
       <div className="min-h-full flex items-start sm:items-center justify-center">
         <div className="bg-dark-card border border-dark-border rounded-lg w-full max-w-lg my-2 sm:my-8 max-h-[calc(100vh-1rem)] overflow-y-auto">
-          <div className="flex items-center justify-between p-4 sm:p-6 border-b border-dark-border">
-            <h2 className="text-xl font-bold text-white">{editTrade ? 'Edit Trade' : 'New Trade'}</h2>
-            <button
-              onClick={onClose}
-              className="text-gray-400 hover:text-white transition-colors"
-            >
-              <X size={24} />
-            </button>
-          </div>
+          {editTrade ? (
+            <div className="flex items-center justify-between p-4 sm:p-6 border-b border-dark-border">
+              <h2 className="text-xl font-bold text-white">Edit Trade</h2>
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-white transition-colors"
+              >
+                <X size={24} />
+              </button>
+            </div>
+          ) : (
+            <div className="flex justify-end px-4 sm:px-6 pt-4 sm:pt-6">
+              <button
+                onClick={onClose}
+                className="text-gray-400 hover:text-white transition-colors"
+                aria-label="Close"
+              >
+                <X size={24} />
+              </button>
+            </div>
+          )}
 
           <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
             <div>
