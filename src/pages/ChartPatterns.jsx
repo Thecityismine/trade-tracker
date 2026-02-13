@@ -263,7 +263,7 @@ function ChartPatterns() {
                       />
                     </button>
                   )}
-                  <div className="absolute top-2 right-2 flex items-center gap-2">
+                  <div className="absolute bottom-2 right-2 flex items-center gap-2">
                     <button
                       onClick={(e) => {
                         e.stopPropagation();
