@@ -4,6 +4,42 @@ import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 function EquityCurve({ trades }) {
   const [timeframe, setTimeframe] = useState('all');
 
+  const getTradeDate = (trade) => trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
+
+  const calculatePeriodPnlPercent = (period) => {
+    if (!trades || trades.length === 0) {
+      return { value: 0, count: 0 };
+    }
+
+    const now = new Date();
+    const filtered = trades.filter((trade) => {
+      const tradeDate = getTradeDate(trade);
+      if (Number.isNaN(tradeDate.getTime())) {
+        return false;
+      }
+
+      switch (period) {
+        case 'day':
+          return tradeDate.toDateString() === now.toDateString();
+        case 'week': {
+          const weekAgo = new Date(now);
+          weekAgo.setDate(weekAgo.getDate() - 7);
+          return tradeDate >= weekAgo && tradeDate <= now;
+        }
+        case 'month':
+          return tradeDate.getMonth() === now.getMonth() &&
+            tradeDate.getFullYear() === now.getFullYear();
+        case 'year':
+          return tradeDate.getFullYear() === now.getFullYear();
+        default:
+          return false;
+      }
+    });
+
+    const totalPercent = filtered.reduce((sum, trade) => sum + (Number(trade.pnlPercent) || 0), 0);
+    return { value: totalPercent, count: filtered.length };
+  };
+
   // Calculate cumulative P&L for equity curve
   const calculateEquityCurve = () => {
     if (!trades || trades.length === 0) return [];
@@ -11,15 +47,15 @@ function EquityCurve({ trades }) {
     const sortedTrades = [...trades]
       .filter(t => t.tradeDate)
       .sort((a, b) => {
-        const dateA = a.tradeDate?.toDate?.() || new Date(a.tradeDate);
-        const dateB = b.tradeDate?.toDate?.() || new Date(b.tradeDate);
+        const dateA = getTradeDate(a);
+        const dateB = getTradeDate(b);
         return dateA - dateB;
       });
 
     let cumulativePnl = 0;
     const data = sortedTrades.map(trade => {
       cumulativePnl += trade.gainLoss || 0;
-      const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
+      const tradeDate = getTradeDate(trade);
       
       return {
         date: tradeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
@@ -58,6 +94,15 @@ function EquityCurve({ trades }) {
   };
 
   const data = calculateEquityCurve();
+  const periodCards = [
+    { key: 'day', label: 'Day P&L %' },
+    { key: 'week', label: 'Week P&L %' },
+    { key: 'month', label: 'Month P&L %' },
+    { key: 'year', label: 'Year P&L %' }
+  ].map((period) => {
+    const stats = calculatePeriodPnlPercent(period.key);
+    return { ...period, ...stats };
+  });
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
@@ -76,10 +121,26 @@ function EquityCurve({ trades }) {
 
   return (
     <div className="bg-dark-card border border-dark-border rounded-lg p-4 md:p-6">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 space-y-3 md:space-y-0">
+      <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 space-y-3 md:space-y-0">
         <h2 className="text-xl font-bold text-white">Equity Curve</h2>
-        
-        <div className="flex space-x-2 overflow-x-auto">
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-3 mb-6">
+        {periodCards.map((card) => (
+          <div
+            key={card.key}
+            className="bg-dark-bg border border-dark-border rounded-lg px-4 py-3"
+          >
+            <p className="text-xs text-gray-400">{card.label}</p>
+            <p className={`text-xl font-bold mt-1 ${card.value >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+              {card.value >= 0 ? '+' : ''}{card.value.toFixed(2)}%
+            </p>
+            <p className="text-xs text-gray-500 mt-1">{card.count} trade{card.count === 1 ? '' : 's'}</p>
+          </div>
+        ))}
+
+        <div className="bg-dark-bg border border-dark-border rounded-lg p-2 flex items-center">
+          <div className="flex space-x-2 overflow-x-auto w-full">
           {['daily', 'weekly', 'monthly', 'all'].map((tf) => (
             <button
               key={tf}
@@ -93,6 +154,7 @@ function EquityCurve({ trades }) {
               {tf.charAt(0).toUpperCase() + tf.slice(1)}
             </button>
           ))}
+          </div>
         </div>
       </div>
 
