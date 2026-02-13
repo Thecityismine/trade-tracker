@@ -5,6 +5,7 @@ import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { db, storage } from '../config/firebase';
 
 const MAX_IMAGE_SIZE_BYTES = 10 * 1024 * 1024;
+const MAX_INLINE_IMAGE_BYTES = 900 * 1024;
 
 const withTimeout = (promise, ms, timeoutMessage) => {
   let timeoutId;
@@ -14,6 +15,66 @@ const withTimeout = (promise, ms, timeoutMessage) => {
 
   return Promise.race([promise, timeoutPromise]).finally(() => clearTimeout(timeoutId));
 };
+
+const isStorageError = (error) => {
+  const statusCode = error?.status_ || error?.customData?.status;
+  const storageCode = error?.code || '';
+  return statusCode === 404 || storageCode.startsWith('storage/');
+};
+
+const fileToInlineDataUrl = (file) => new Promise((resolve, reject) => {
+  const img = new Image();
+  const objectUrl = URL.createObjectURL(file);
+
+  img.onload = () => {
+    URL.revokeObjectURL(objectUrl);
+
+    const maxDimension = 1400;
+    let width = img.width;
+    let height = img.height;
+
+    if (width > maxDimension || height > maxDimension) {
+      const scale = Math.min(maxDimension / width, maxDimension / height);
+      width = Math.round(width * scale);
+      height = Math.round(height * scale);
+    }
+
+    const canvas = document.createElement('canvas');
+    canvas.width = width;
+    canvas.height = height;
+    const ctx = canvas.getContext('2d');
+
+    if (!ctx) {
+      reject(new Error('Could not process chart image.'));
+      return;
+    }
+
+    ctx.drawImage(img, 0, 0, width, height);
+    canvas.toBlob((blob) => {
+      if (!blob) {
+        reject(new Error('Could not process chart image.'));
+        return;
+      }
+
+      if (blob.size > MAX_INLINE_IMAGE_BYTES) {
+        reject(new Error('Image is too large to save without Firebase Storage. Enable Storage or use a smaller image.'));
+        return;
+      }
+
+      const reader = new FileReader();
+      reader.onloadend = () => resolve(reader.result);
+      reader.onerror = () => reject(new Error('Could not encode chart image.'));
+      reader.readAsDataURL(blob);
+    }, 'image/jpeg', 0.82);
+  };
+
+  img.onerror = () => {
+    URL.revokeObjectURL(objectUrl);
+    reject(new Error('Could not read selected image file.'));
+  };
+
+  img.src = objectUrl;
+});
 
 function ChartPatterns() {
   const [patterns, setPatterns] = useState([]);
@@ -26,6 +87,7 @@ function ChartPatterns() {
   const [patternImage, setPatternImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
+  const [formError, setFormError] = useState('');
 
   // Fetch patterns from Firebase
   useEffect(() => {
@@ -62,6 +124,7 @@ function ChartPatterns() {
         return;
       }
       setPatternImage(file);
+      setFormError('');
       const reader = new FileReader();
       reader.onloadend = () => {
         setImagePreview(reader.result);
@@ -72,6 +135,8 @@ function ChartPatterns() {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError('');
+
     if (!patternImage) {
       alert('Please upload a chart image');
       return;
@@ -80,18 +145,33 @@ function ChartPatterns() {
     setLoading(true);
 
     try {
-      // Upload image
-      const imageRef = ref(storage, `patterns/${Date.now()}_${patternImage.name}`);
-      await withTimeout(
-        uploadBytes(imageRef, patternImage),
-        45000,
-        'Upload timed out. Please try a smaller image or check your connection.'
-      );
-      const imageUrl = await withTimeout(
-        getDownloadURL(imageRef),
-        15000,
-        'Could not get image URL from Firebase Storage.'
-      );
+      let imageUrl = '';
+      let imageSource = 'storage';
+
+      try {
+        const imageRef = ref(storage, `patterns/${Date.now()}_${patternImage.name}`);
+        await withTimeout(
+          uploadBytes(imageRef, patternImage),
+          45000,
+          'Upload timed out. Please try a smaller image or check your connection.'
+        );
+        imageUrl = await withTimeout(
+          getDownloadURL(imageRef),
+          15000,
+          'Could not get image URL from Firebase Storage.'
+        );
+      } catch (storageError) {
+        if (!isStorageError(storageError)) {
+          throw storageError;
+        }
+
+        imageUrl = await withTimeout(
+          fileToInlineDataUrl(patternImage),
+          15000,
+          'Could not prepare image fallback. Try a smaller image.'
+        );
+        imageSource = 'inline';
+      }
 
       // Save pattern
       await withTimeout(addDoc(collection(db, 'chartPatterns'), {
@@ -102,6 +182,7 @@ function ChartPatterns() {
           .map(tag => tag.trim())
           .filter(Boolean),
         imageUrl,
+        imageSource,
         dateAdded: serverTimestamp()
       }), 15000, 'Saving pattern data timed out. Please try again.');
 
@@ -112,16 +193,8 @@ function ChartPatterns() {
       setIsModalOpen(false);
     } catch (error) {
       console.error('Error saving pattern:', error);
-      const statusCode = error?.status_ || error?.customData?.status;
-      const storageCode = error?.code || '';
-
-      if (statusCode === 404 || storageCode.includes('storage/object-not-found') || storageCode.includes('storage/unknown')) {
-        alert('Storage is not configured in Firebase project `trade-tracker-fb893`. In Firebase Console, go to Storage and click Get started, then try again.');
-      } else if (error?.message) {
-        alert(error.message);
-      } else {
-        alert('Error saving pattern. Please try again.');
-      }
+      const message = error?.message || 'Error saving pattern. Please try again.';
+      setFormError(message);
     } finally {
       setLoading(false);
     }
@@ -144,7 +217,10 @@ function ChartPatterns() {
       <div className="flex items-center justify-between">
         <h2 className="text-2xl font-bold text-white">Chart Patterns</h2>
         <button
-          onClick={() => setIsModalOpen(true)}
+          onClick={() => {
+            setFormError('');
+            setIsModalOpen(true);
+          }}
           className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
         >
           <Plus size={20} />
@@ -251,7 +327,6 @@ function ChartPatterns() {
                     accept="image/*"
                     onChange={handleImageUpload}
                     className="hidden"
-                    required
                   />
                 </label>
                 {imagePreview && (
@@ -291,6 +366,9 @@ function ChartPatterns() {
               </div>
 
               {/* Buttons */}
+              {formError && (
+                <p className="text-sm text-red-400">{formError}</p>
+              )}
               <div className="flex gap-3 pt-4">
                 <button
                   type="button"
