@@ -23,8 +23,7 @@ function ChartPatterns() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    tradeType: 'both',
-    patternBias: 'neutral'
+    tradeType: 'both'
   });
   const [patternImage, setPatternImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -133,7 +132,7 @@ function ChartPatterns() {
 
   const resetForm = () => {
     setEditingPattern(null);
-    setFormData({ name: '', description: '', tradeType: 'both', patternBias: 'neutral' });
+    setFormData({ name: '', description: '', tradeType: 'both' });
     setPatternImage(null);
     setImagePreview(null);
     setFormError('');
@@ -159,8 +158,7 @@ function ChartPatterns() {
     setFormData({
       name: pattern.name || '',
       description: pattern.description || '',
-      tradeType: pattern.tradeType || inferTradeType(pattern),
-      patternBias: pattern.patternBias || inferPatternBias(pattern)
+      tradeType: pattern.tradeType || inferTradeType(pattern)
     });
     setIsModalOpen(true);
   };
@@ -221,7 +219,11 @@ function ChartPatterns() {
         description: formData.description,
         tags: Array.isArray(editingPattern?.tags) ? editingPattern.tags : [],
         tradeType: formData.tradeType,
-        patternBias: formData.patternBias,
+        patternBias: editingPattern?.patternBias || inferPatternBias({
+          name: formData.name,
+          description: formData.description,
+          tags: []
+        }),
         imageUrl,
         imageSource,
       };
@@ -346,8 +348,6 @@ function ChartPatterns() {
         {filteredPatterns.length > 0 ? (
           filteredPatterns.map((pattern) => {
             const dateAdded = pattern.dateAdded?.toDate?.() || new Date();
-            const tradeType = inferTradeType(pattern);
-            const patternBias = inferPatternBias(pattern);
             return (
               <div
                 key={pattern.id}
@@ -404,37 +404,6 @@ function ChartPatterns() {
                   <h3 className="text-white font-bold text-lg">{pattern.name}</h3>
                   <p className="text-gray-400 text-sm whitespace-pre-wrap break-words">{pattern.description}</p>
 
-                  <div className="flex flex-wrap gap-2">
-                    {tradeType !== 'both' && (
-                      <span className="bg-indigo-600/20 text-indigo-300 px-2 py-1 rounded text-xs">
-                        {tradeType === 'long' ? 'Long Trade' : 'Short Trade'}
-                      </span>
-                    )}
-                    {patternBias !== 'neutral' && (
-                      <span className={`px-2 py-1 rounded text-xs ${
-                        patternBias === 'bullish'
-                          ? 'bg-green-600/20 text-green-300'
-                          : 'bg-red-600/20 text-red-300'
-                      }`}>
-                        {patternBias === 'bullish' ? 'Bullish' : 'Bearish'}
-                      </span>
-                    )}
-                  </div>
-                  
-                  {/* Tags */}
-                  {pattern.tags && pattern.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-2">
-                      {pattern.tags.map((tag, idx) => (
-                        <span
-                          key={idx}
-                          className="bg-blue-600 bg-opacity-20 text-blue-400 px-2 py-1 rounded text-xs"
-                        >
-                          {tag}
-                        </span>
-                      ))}
-                    </div>
-                  )}
-
                   <p className="text-gray-500 text-xs">
                     Added: {dateAdded.toLocaleDateString()}
                   </p>
@@ -488,18 +457,6 @@ function ChartPatterns() {
                     <option value="both">Both / General</option>
                     <option value="long">Long Trades</option>
                     <option value="short">Short Trades</option>
-                  </select>
-                </div>
-                <div>
-                  <label className="block text-gray-400 text-sm mb-2">Pattern Bias</label>
-                  <select
-                    value={formData.patternBias}
-                    onChange={(e) => setFormData((prev) => ({ ...prev, patternBias: e.target.value }))}
-                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                  >
-                    <option value="neutral">Neutral / Mixed</option>
-                    <option value="bullish">Bullish</option>
-                    <option value="bearish">Bearish</option>
                   </select>
                 </div>
               </div>
