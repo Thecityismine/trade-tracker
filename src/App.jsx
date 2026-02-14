@@ -47,7 +47,9 @@ function App() {
       {/* Header */}
       <header className="bg-black border-b border-dark-border sticky top-0 z-50">
         <div className="max-w-7xl mx-auto px-4 py-4">
-          <h1 className="text-2xl font-bold text-white">Trade Tracker</h1>
+          <h1 className="text-2xl font-bold text-white">
+            <span className="text-blue-500">T</span>rade <span className="text-red-500">T</span>racker
+          </h1>
         </div>
       </header>
 
