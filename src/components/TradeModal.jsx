@@ -100,16 +100,19 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       }
 
       setCalculatedPnl(pnl);
-
-      if (pnl > 0) {
-        setFormData((prev) => ({ ...prev, result: 'win' }));
-      } else if (pnl < 0) {
-        setFormData((prev) => ({ ...prev, result: 'loss' }));
-      }
     } else {
       setCalculatedPnl(0);
     }
   }, [formData.entryPrice, formData.exitPrice, formData.direction, formData.leverage]);
+
+  useEffect(() => {
+    const gainText = String(formData.gainLoss ?? '').trim();
+    const nextResult = gainText.startsWith('-') ? 'loss' : 'win';
+
+    if (formData.result !== nextResult) {
+      setFormData((prev) => ({ ...prev, result: nextResult }));
+    }
+  }, [formData.gainLoss, formData.result]);
 
   const loadLastTicker = async () => {
     try {
@@ -338,7 +341,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   value={formData.exitPrice}
                   onChange={handleInputChange}
                   step="0.01"
-                  placeholder="Optional"
+                  placeholder="0.00"
                   className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
