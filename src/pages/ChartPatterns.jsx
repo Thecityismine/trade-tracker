@@ -19,7 +19,6 @@ function ChartPatterns() {
   const [expandedImage, setExpandedImage] = useState(null);
   const [editingPattern, setEditingPattern] = useState(null);
   const [tradeFilter, setTradeFilter] = useState('all');
-  const [biasFilter, setBiasFilter] = useState('all');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -117,18 +116,14 @@ function ChartPatterns() {
   const filteredPatterns = useMemo(() => {
     return patterns.filter((pattern) => {
       const patternTradeType = inferTradeType(pattern);
-      const patternBias = inferPatternBias(pattern);
 
       const matchesTrade = tradeFilter === 'all'
         || patternTradeType === 'both'
         || patternTradeType === tradeFilter;
 
-      const matchesBias = biasFilter === 'all'
-        || patternBias === biasFilter;
-
-      return matchesTrade && matchesBias;
+      return matchesTrade;
     });
-  }, [patterns, tradeFilter, biasFilter]);
+  }, [patterns, tradeFilter]);
 
   const resetForm = () => {
     setEditingPattern(null);
@@ -292,7 +287,7 @@ function ChartPatterns() {
       )}
 
       <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div>
           <div>
             <p className="text-gray-400 text-sm mb-2">Trade Side</p>
             <div className="flex gap-2">
@@ -307,30 +302,6 @@ function ChartPatterns() {
                   onClick={() => setTradeFilter(option.value)}
                   className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
                     tradeFilter === option.value
-                      ? 'bg-blue-600 text-white border-blue-600'
-                      : 'bg-dark-bg text-gray-300 border-dark-border hover:border-gray-500'
-                  }`}
-                >
-                  {option.label}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          <div>
-            <p className="text-gray-400 text-sm mb-2">Pattern Bias</p>
-            <div className="flex gap-2">
-              {[
-                { value: 'all', label: 'All' },
-                { value: 'bullish', label: 'Bullish' },
-                { value: 'bearish', label: 'Bearish' }
-              ].map((option) => (
-                <button
-                  key={option.value}
-                  type="button"
-                  onClick={() => setBiasFilter(option.value)}
-                  className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
-                    biasFilter === option.value
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-dark-bg text-gray-300 border-dark-border hover:border-gray-500'
                   }`}
