@@ -286,10 +286,9 @@ function ChartPatterns() {
         </div>
       )}
 
-      <div className="bg-dark-card border border-dark-border rounded-lg p-4">
+      <div className="bg-dark-card border border-dark-border rounded-lg px-4 py-3">
         <div>
           <div>
-            <p className="text-gray-400 text-sm mb-2">Trade Side</p>
             <div className="flex gap-2">
               {[
                 { value: 'all', label: 'All' },
@@ -300,7 +299,7 @@ function ChartPatterns() {
                   key={option.value}
                   type="button"
                   onClick={() => setTradeFilter(option.value)}
-                  className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
+                  className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                     tradeFilter === option.value
                       ? 'bg-blue-600 text-white border-blue-600'
                       : 'bg-dark-bg text-gray-300 border-dark-border hover:border-gray-500'
