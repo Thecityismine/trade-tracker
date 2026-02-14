@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import { Plus, X, Upload, Pencil, Trash2, ImageIcon } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { db, storage } from '../config/firebase';
@@ -18,10 +18,14 @@ function ChartPatterns() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expandedImage, setExpandedImage] = useState(null);
   const [editingPattern, setEditingPattern] = useState(null);
+  const [tradeFilter, setTradeFilter] = useState('all');
+  const [biasFilter, setBiasFilter] = useState('all');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    tags: ''
+    tags: '',
+    tradeType: 'both',
+    patternBias: 'neutral'
   });
   const [patternImage, setPatternImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -73,9 +77,64 @@ function ChartPatterns() {
     return () => clearTimeout(timeoutId);
   }, [statusMessage]);
 
+  const inferTradeType = (pattern) => {
+    if (pattern.tradeType) {
+      return pattern.tradeType;
+    }
+
+    const haystack = [
+      pattern.name,
+      pattern.description,
+      ...(Array.isArray(pattern.tags) ? pattern.tags : [])
+    ].join(' ').toLowerCase();
+
+    const hasLong = /\blong\b/.test(haystack);
+    const hasShort = /\bshort\b/.test(haystack);
+
+    if (hasLong && !hasShort) return 'long';
+    if (hasShort && !hasLong) return 'short';
+    if (hasLong && hasShort) return 'both';
+    return 'both';
+  };
+
+  const inferPatternBias = (pattern) => {
+    if (pattern.patternBias && pattern.patternBias !== 'neutral') {
+      return pattern.patternBias;
+    }
+
+    const haystack = [
+      pattern.name,
+      pattern.description,
+      ...(Array.isArray(pattern.tags) ? pattern.tags : [])
+    ].join(' ').toLowerCase();
+
+    const hasBullish = /\bbullish\b/.test(haystack);
+    const hasBearish = /\bbearish\b/.test(haystack);
+
+    if (hasBullish && !hasBearish) return 'bullish';
+    if (hasBearish && !hasBullish) return 'bearish';
+    return 'neutral';
+  };
+
+  const filteredPatterns = useMemo(() => {
+    return patterns.filter((pattern) => {
+      const patternTradeType = inferTradeType(pattern);
+      const patternBias = inferPatternBias(pattern);
+
+      const matchesTrade = tradeFilter === 'all'
+        || patternTradeType === 'both'
+        || patternTradeType === tradeFilter;
+
+      const matchesBias = biasFilter === 'all'
+        || patternBias === biasFilter;
+
+      return matchesTrade && matchesBias;
+    });
+  }, [patterns, tradeFilter, biasFilter]);
+
   const resetForm = () => {
     setEditingPattern(null);
-    setFormData({ name: '', description: '', tags: '' });
+    setFormData({ name: '', description: '', tags: '', tradeType: 'both', patternBias: 'neutral' });
     setPatternImage(null);
     setImagePreview(null);
     setFormError('');
@@ -101,7 +160,9 @@ function ChartPatterns() {
     setFormData({
       name: pattern.name || '',
       description: pattern.description || '',
-      tags: Array.isArray(pattern.tags) ? pattern.tags.join(', ') : ''
+      tags: Array.isArray(pattern.tags) ? pattern.tags.join(', ') : '',
+      tradeType: pattern.tradeType || inferTradeType(pattern),
+      patternBias: pattern.patternBias || inferPatternBias(pattern)
     });
     setIsModalOpen(true);
   };
@@ -164,6 +225,8 @@ function ChartPatterns() {
           .split(',')
           .map(tag => tag.trim())
           .filter(Boolean),
+        tradeType: formData.tradeType,
+        patternBias: formData.patternBias,
         imageUrl,
         imageSource,
       };
@@ -231,11 +294,65 @@ function ChartPatterns() {
         </div>
       )}
 
+      <div className="bg-dark-card border border-dark-border rounded-lg p-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div>
+            <p className="text-gray-400 text-sm mb-2">Trade Side</p>
+            <div className="flex gap-2">
+              {[
+                { value: 'all', label: 'All' },
+                { value: 'long', label: 'Long Trades' },
+                { value: 'short', label: 'Short Trades' }
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setTradeFilter(option.value)}
+                  className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
+                    tradeFilter === option.value
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-dark-bg text-gray-300 border-dark-border hover:border-gray-500'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+
+          <div>
+            <p className="text-gray-400 text-sm mb-2">Pattern Bias</p>
+            <div className="flex gap-2">
+              {[
+                { value: 'all', label: 'All' },
+                { value: 'bullish', label: 'Bullish' },
+                { value: 'bearish', label: 'Bearish' }
+              ].map((option) => (
+                <button
+                  key={option.value}
+                  type="button"
+                  onClick={() => setBiasFilter(option.value)}
+                  className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
+                    biasFilter === option.value
+                      ? 'bg-blue-600 text-white border-blue-600'
+                      : 'bg-dark-bg text-gray-300 border-dark-border hover:border-gray-500'
+                  }`}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+      </div>
+
       {/* Patterns Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-        {patterns.length > 0 ? (
-          patterns.map((pattern) => {
+        {filteredPatterns.length > 0 ? (
+          filteredPatterns.map((pattern) => {
             const dateAdded = pattern.dateAdded?.toDate?.() || new Date();
+            const tradeType = inferTradeType(pattern);
+            const patternBias = inferPatternBias(pattern);
             return (
               <div
                 key={pattern.id}
@@ -291,6 +408,23 @@ function ChartPatterns() {
                 <div className="p-4 space-y-3">
                   <h3 className="text-white font-bold text-lg">{pattern.name}</h3>
                   <p className="text-gray-400 text-sm whitespace-pre-wrap break-words">{pattern.description}</p>
+
+                  <div className="flex flex-wrap gap-2">
+                    {tradeType !== 'both' && (
+                      <span className="bg-indigo-600/20 text-indigo-300 px-2 py-1 rounded text-xs">
+                        {tradeType === 'long' ? 'Long Trade' : 'Short Trade'}
+                      </span>
+                    )}
+                    {patternBias !== 'neutral' && (
+                      <span className={`px-2 py-1 rounded text-xs ${
+                        patternBias === 'bullish'
+                          ? 'bg-green-600/20 text-green-300'
+                          : 'bg-red-600/20 text-red-300'
+                      }`}>
+                        {patternBias === 'bullish' ? 'Bullish' : 'Bearish'}
+                      </span>
+                    )}
+                  </div>
                   
                   {/* Tags */}
                   {pattern.tags && pattern.tags.length > 0 && (
@@ -346,6 +480,33 @@ function ChartPatterns() {
                   className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
                   required
                 />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">Trade Side</label>
+                  <select
+                    value={formData.tradeType}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, tradeType: e.target.value }))}
+                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="both">Both / General</option>
+                    <option value="long">Long Trades</option>
+                    <option value="short">Short Trades</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">Pattern Bias</label>
+                  <select
+                    value={formData.patternBias}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, patternBias: e.target.value }))}
+                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  >
+                    <option value="neutral">Neutral / Mixed</option>
+                    <option value="bullish">Bullish</option>
+                    <option value="bearish">Bearish</option>
+                  </select>
+                </div>
               </div>
 
               {/* Chart Image */}
