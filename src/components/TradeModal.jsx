@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { X, Upload, RefreshCw } from 'lucide-react';
+import { X, Upload } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, updateDoc, doc } from 'firebase/firestore';
 import { db, storage } from '../config/firebase';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
@@ -149,10 +149,6 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     }
   };
 
-  const useLastTicker = () => {
-    setFormData((prev) => ({ ...prev, ticker: lastTicker }));
-  };
-
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
@@ -266,22 +262,36 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
           <form onSubmit={handleSubmit} className="p-4 sm:p-6 space-y-4">
             <div>
               <label className="block text-gray-400 text-sm mb-2">Ticker</label>
-              <div className="flex gap-2">
+              <div className="grid grid-cols-[minmax(0,1fr)_84px_84px] gap-2 items-center">
                 <input
                   type="text"
                   name="ticker"
                   value={formData.ticker}
                   onChange={handleInputChange}
-                  className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
                   required
                 />
                 <button
                   type="button"
-                  onClick={useLastTicker}
-                  className="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-gray-400 hover:text-white hover:border-gray-500 transition-colors"
-                  title="Use last ticker"
+                  onClick={() => setFormData((prev) => ({ ...prev, result: 'win' }))}
+                  className={`rounded-lg py-2 text-sm font-medium transition-colors ${
+                    formData.result === 'win'
+                      ? 'bg-green-600 text-white'
+                      : 'bg-dark-bg text-gray-400 border border-dark-border hover:border-gray-500'
+                  }`}
                 >
-                  <RefreshCw size={18} />
+                  Win
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setFormData((prev) => ({ ...prev, result: 'loss' }))}
+                  className={`rounded-lg py-2 text-sm font-medium transition-colors ${
+                    formData.result === 'loss'
+                      ? 'bg-red-600 text-white'
+                      : 'bg-dark-bg text-gray-400 border border-dark-border hover:border-gray-500'
+                  }`}
+                >
+                  Loss
                 </button>
               </div>
               <p className="text-xs text-gray-500 mt-1">Last: {lastTicker}</p>
@@ -312,25 +322,6 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                 >
                   SHORT
                 </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">Result</label>
-              <div className="flex gap-4">
-                {['win', 'loss'].map((status) => (
-                  <label key={status} className="flex items-center cursor-pointer">
-                    <input
-                      type="radio"
-                      name="result"
-                      value={status}
-                      checked={formData.result === status}
-                      onChange={handleInputChange}
-                      className="mr-2"
-                    />
-                    <span className="text-white capitalize">{status}</span>
-                  </label>
-                ))}
               </div>
             </div>
 
@@ -375,16 +366,16 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Leverage</label>
+                <label className="block text-gray-400 text-sm mb-2">Gain (USD)</label>
                 <input
                   type="number"
-                  name="leverage"
-                  value={formData.leverage}
+                  name="gainLoss"
+                  value={formData.gainLoss}
                   onChange={handleInputChange}
-                  step="1"
-                  placeholder="25"
+                  step="0.01"
+                  placeholder="0.00"
                   className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
                   required
                 />
@@ -402,20 +393,20 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
-            </div>
 
-            <div>
-              <label className="block text-gray-400 text-sm mb-2">Gain/Loss (USD)</label>
-              <input
-                type="number"
-                name="gainLoss"
-                value={formData.gainLoss}
-                onChange={handleInputChange}
-                step="0.01"
-                placeholder="0.00"
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
-                required
-              />
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">Leverage</label>
+                <input
+                  type="number"
+                  name="leverage"
+                  value={formData.leverage}
+                  onChange={handleInputChange}
+                  step="1"
+                  placeholder="25"
+                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  required
+                />
+              </div>
             </div>
 
             <div>
