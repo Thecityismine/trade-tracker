@@ -23,7 +23,6 @@ function ChartPatterns() {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    tags: '',
     tradeType: 'both',
     patternBias: 'neutral'
   });
@@ -134,7 +133,7 @@ function ChartPatterns() {
 
   const resetForm = () => {
     setEditingPattern(null);
-    setFormData({ name: '', description: '', tags: '', tradeType: 'both', patternBias: 'neutral' });
+    setFormData({ name: '', description: '', tradeType: 'both', patternBias: 'neutral' });
     setPatternImage(null);
     setImagePreview(null);
     setFormError('');
@@ -160,7 +159,6 @@ function ChartPatterns() {
     setFormData({
       name: pattern.name || '',
       description: pattern.description || '',
-      tags: Array.isArray(pattern.tags) ? pattern.tags.join(', ') : '',
       tradeType: pattern.tradeType || inferTradeType(pattern),
       patternBias: pattern.patternBias || inferPatternBias(pattern)
     });
@@ -221,10 +219,7 @@ function ChartPatterns() {
       const payload = {
         name: formData.name,
         description: formData.description,
-        tags: formData.tags
-          .split(',')
-          .map(tag => tag.trim())
-          .filter(Boolean),
+        tags: Array.isArray(editingPattern?.tags) ? editingPattern.tags : [],
         tradeType: formData.tradeType,
         patternBias: formData.patternBias,
         imageUrl,
@@ -545,18 +540,6 @@ function ChartPatterns() {
                   placeholder="Describe the pattern, what to look for, entry/exit points..."
                   className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 resize-none"
                   required
-                />
-              </div>
-
-              {/* Tags */}
-              <div>
-                <label className="block text-gray-400 text-sm mb-2">Tags (comma separated)</label>
-                <input
-                  type="text"
-                  value={formData.tags}
-                  onChange={(e) => setFormData(prev => ({ ...prev, tags: e.target.value }))}
-                  placeholder="e.g., Bullish, Continuation, Reversal"
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
                 />
               </div>
 
