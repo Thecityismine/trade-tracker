@@ -5,7 +5,8 @@ import WeeklyTracker from './pages/WeeklyTracker';
 import MonthlyTracker from './pages/MonthlyTracker';
 import ChartPatterns from './pages/ChartPatterns';
 import TradingMindset from './pages/TradingMindset';
-import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen } from 'lucide-react';
+import TradeJournal from './pages/TradeJournal';
+import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText } from 'lucide-react';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -16,6 +17,7 @@ function App() {
     { id: 'weekly', label: 'Weekly', icon: Calendar },
     { id: 'monthly', label: 'Monthly', icon: CalendarDays },
     { id: 'patterns', label: 'Chart Patterns', icon: Target },
+    { id: 'journal', label: 'Trade Journal', icon: FileText },
     { id: 'mindset', label: 'Mindset', icon: BookOpen },
   ];
 
@@ -31,6 +33,8 @@ function App() {
         return <MonthlyTracker />;
       case 'patterns':
         return <ChartPatterns />;
+      case 'journal':
+        return <TradeJournal />;
       case 'mindset':
         return <TradingMindset />;
       default:
