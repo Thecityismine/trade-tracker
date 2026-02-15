@@ -4,6 +4,22 @@ import { collection, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc, update
 import { db, storage } from '../config/firebase';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 
+const TIMEFRAME_OPTIONS = [
+  { value: '1min', label: '1min' },
+  { value: '3min', label: '3min' },
+  { value: '5min', label: '5min' },
+  { value: '15min', label: '15min' },
+  { value: '30min', label: '30min' },
+  { value: '1hr', label: '1hr' },
+  { value: '2hr', label: '2hr' },
+  { value: '4hr', label: '4hr' },
+  { value: 'D', label: 'D' },
+  { value: '3D', label: '3D' },
+  { value: 'W', label: 'W' },
+  { value: '2W', label: '2W' },
+  { value: 'M', label: 'M' }
+];
+
 const withTimeout = (promise, ms, timeoutMessage) => {
   let timeoutId;
   const timeoutPromise = new Promise((_, reject) => {
@@ -19,10 +35,12 @@ function ChartPatterns() {
   const [expandedImage, setExpandedImage] = useState(null);
   const [editingPattern, setEditingPattern] = useState(null);
   const [tradeFilter, setTradeFilter] = useState('all');
+  const [timeframeFilter, setTimeframeFilter] = useState('all');
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    tradeType: 'both'
+    tradeType: 'both',
+    timeframe: ''
   });
   const [patternImage, setPatternImage] = useState(null);
   const [imagePreview, setImagePreview] = useState(null);
@@ -94,6 +112,99 @@ function ChartPatterns() {
     return 'both';
   };
 
+  const normalizeTimeframe = (rawValue = '') => {
+    const value = String(rawValue).trim().toUpperCase().replace(/\s+/g, '');
+    switch (value) {
+      case '1MIN':
+      case '1M':
+      case '1MN':
+        return '1min';
+      case '3MIN':
+      case '3M':
+      case '3MN':
+        return '3min';
+      case '5MIN':
+      case '5M':
+      case '5MN':
+        return '5min';
+      case '15MIN':
+      case '15M':
+      case '15MN':
+        return '15min';
+      case '30MIN':
+      case '30M':
+      case '30MN':
+        return '30min';
+      case '1H':
+      case '1HR':
+      case '1HOUR':
+        return '1hr';
+      case '2H':
+      case '2HR':
+      case '2HOUR':
+        return '2hr';
+      case '4H':
+      case '4HR':
+      case '4HOUR':
+        return '4hr';
+      case 'D':
+      case '1D':
+      case 'DAY':
+      case 'DAILY':
+        return 'D';
+      case '3D':
+      case '3DAY':
+      case '3DAYS':
+        return '3D';
+      case 'W':
+      case '1W':
+      case 'WEEK':
+      case 'WEEKLY':
+        return 'W';
+      case '2W':
+      case '2WEEK':
+      case '2WEEKS':
+        return '2W';
+      case 'M':
+      case '1MO':
+      case '1MON':
+      case 'MONTH':
+      case 'MONTHLY':
+        return 'M';
+      default:
+        return '';
+    }
+  };
+
+  const inferTimeframe = (pattern) => {
+    const stored = normalizeTimeframe(pattern.timeframe);
+    if (stored) {
+      return stored;
+    }
+
+    const haystack = [
+      pattern.name,
+      pattern.description,
+      ...(Array.isArray(pattern.tags) ? pattern.tags : [])
+    ].join(' ').toUpperCase();
+
+    if (/\b30\s*(MIN|MINS?|MINUTE|MINUTES|M)\b|\b30MN\b|\b30MIN\b/.test(haystack)) return '30min';
+    if (/\b15\s*(MIN|MINS?|MINUTE|MINUTES|M)\b|\b15MN\b|\b15MIN\b/.test(haystack)) return '15min';
+    if (/\b5\s*(MIN|MINS?|MINUTE|MINUTES|M)\b|\b5MN\b|\b5MIN\b/.test(haystack)) return '5min';
+    if (/\b3\s*(MIN|MINS?|MINUTE|MINUTES|M)\b|\b3MN\b|\b3MIN\b/.test(haystack)) return '3min';
+    if (/\b1\s*(MIN|MINS?|MINUTE|MINUTES)\b|\b1MIN\b/.test(haystack)) return '1min';
+    if (/\b4\s*(H|HR|HRS|HOUR|HOURS)\b|\b4HR\b/.test(haystack)) return '4hr';
+    if (/\b2\s*(H|HR|HRS|HOUR|HOURS)\b|\b2HR\b/.test(haystack)) return '2hr';
+    if (/\b1\s*(H|HR|HRS|HOUR|HOURS)\b|\b1HR\b/.test(haystack)) return '1hr';
+    if (/\b3\s*(D|DAY|DAYS)\b|\b3D\b/.test(haystack)) return '3D';
+    if (/\b2\s*(W|WEEK|WEEKS)\b|\b2W\b/.test(haystack)) return '2W';
+    if (/\bDAILY\b|\b1D\b/.test(haystack)) return 'D';
+    if (/\bWEEKLY\b|\b1W\b/.test(haystack)) return 'W';
+    if (/\bMONTHLY\b|\b1MO\b|\b1MON\b/.test(haystack)) return 'M';
+
+    return '';
+  };
+
   const inferPatternBias = (pattern) => {
     if (pattern.patternBias && pattern.patternBias !== 'neutral') {
       return pattern.patternBias;
@@ -116,18 +227,20 @@ function ChartPatterns() {
   const filteredPatterns = useMemo(() => {
     return patterns.filter((pattern) => {
       const patternTradeType = inferTradeType(pattern);
+      const patternTimeframe = inferTimeframe(pattern);
 
       const matchesTrade = tradeFilter === 'all'
         || patternTradeType === 'both'
         || patternTradeType === tradeFilter;
+      const matchesTimeframe = timeframeFilter === 'all' || patternTimeframe === timeframeFilter;
 
-      return matchesTrade;
+      return matchesTrade && matchesTimeframe;
     });
-  }, [patterns, tradeFilter]);
+  }, [patterns, tradeFilter, timeframeFilter]);
 
   const resetForm = () => {
     setEditingPattern(null);
-    setFormData({ name: '', description: '', tradeType: 'both' });
+    setFormData({ name: '', description: '', tradeType: 'both', timeframe: '' });
     setPatternImage(null);
     setImagePreview(null);
     setFormError('');
@@ -153,7 +266,8 @@ function ChartPatterns() {
     setFormData({
       name: pattern.name || '',
       description: pattern.description || '',
-      tradeType: pattern.tradeType || inferTradeType(pattern)
+      tradeType: pattern.tradeType || inferTradeType(pattern),
+      timeframe: normalizeTimeframe(pattern.timeframe) || inferTimeframe(pattern)
     });
     setIsModalOpen(true);
   };
@@ -214,6 +328,7 @@ function ChartPatterns() {
         description: formData.description,
         tags: Array.isArray(editingPattern?.tags) ? editingPattern.tags : [],
         tradeType: formData.tradeType,
+        timeframe: formData.timeframe,
         patternBias: editingPattern?.patternBias || inferPatternBias({
           name: formData.name,
           description: formData.description,
@@ -287,9 +402,8 @@ function ChartPatterns() {
       )}
 
       <div className="bg-dark-card border border-dark-border rounded-lg px-4 py-3">
-        <div>
-          <div>
-            <div className="flex gap-2">
+        <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+          <div className="flex gap-2">
               {[
                 { value: 'all', label: 'All' },
                 { value: 'long', label: 'Long Trades' },
@@ -308,7 +422,18 @@ function ChartPatterns() {
                   {option.label}
                 </button>
               ))}
-            </div>
+          </div>
+          <div className="sm:min-w-[190px]">
+            <select
+              value={timeframeFilter}
+              onChange={(e) => setTimeframeFilter(e.target.value)}
+              className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+            >
+              <option value="all">All Timeframes</option>
+              {TIMEFRAME_OPTIONS.map((option) => (
+                <option key={option.value} value={option.value}>{option.label}</option>
+              ))}
+            </select>
           </div>
         </div>
       </div>
@@ -318,6 +443,7 @@ function ChartPatterns() {
         {filteredPatterns.length > 0 ? (
           filteredPatterns.map((pattern) => {
             const dateAdded = pattern.dateAdded?.toDate?.() || new Date();
+            const displayTimeframe = inferTimeframe(pattern);
             return (
               <div
                 key={pattern.id}
@@ -371,7 +497,14 @@ function ChartPatterns() {
 
                 {/* Content */}
                 <div className="p-4 space-y-3">
-                  <h3 className="text-white font-bold text-lg">{pattern.name}</h3>
+                  <div className="flex items-start justify-between gap-2">
+                    <h3 className="text-white font-bold text-lg">{pattern.name}</h3>
+                    {displayTimeframe && (
+                      <span className="shrink-0 text-xs px-2 py-1 rounded-md bg-blue-900/40 text-blue-300 border border-blue-700/40">
+                        {displayTimeframe}
+                      </span>
+                    )}
+                  </div>
                   <p className="text-gray-400 text-sm whitespace-pre-wrap break-words">{pattern.description}</p>
 
                   <p className="text-gray-500 text-xs">
@@ -427,6 +560,20 @@ function ChartPatterns() {
                     <option value="both">Both / General</option>
                     <option value="long">Long Trades</option>
                     <option value="short">Short Trades</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="block text-gray-400 text-sm mb-2">Timeframe</label>
+                  <select
+                    value={formData.timeframe}
+                    onChange={(e) => setFormData((prev) => ({ ...prev, timeframe: e.target.value }))}
+                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    required
+                  >
+                    <option value="">Select timeframe</option>
+                    {TIMEFRAME_OPTIONS.map((option) => (
+                      <option key={option.value} value={option.value}>{option.label}</option>
+                    ))}
                   </select>
                 </div>
               </div>
