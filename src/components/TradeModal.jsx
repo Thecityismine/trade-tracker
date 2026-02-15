@@ -109,6 +109,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   useEffect(() => {
     const entry = parseFloat(formData.entryPrice);
     const exit = parseFloat(formData.exitPrice);
+    const leverage = parseFloat(formData.leverage) || 1;
 
     if (!Number.isFinite(entry) || !Number.isFinite(exit) || entry <= 0) {
       setPriceMovePercent(0);
@@ -119,8 +120,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       ? ((exit - entry) / entry) * 100
       : ((entry - exit) / entry) * 100;
 
-    setPriceMovePercent(rawPercent);
-  }, [formData.entryPrice, formData.exitPrice, formData.direction]);
+    setPriceMovePercent(rawPercent * leverage);
+  }, [formData.entryPrice, formData.exitPrice, formData.direction, formData.leverage]);
 
   useEffect(() => {
     const gainText = String(formData.gainLoss ?? '').trim();
