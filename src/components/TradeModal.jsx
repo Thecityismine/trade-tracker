@@ -52,6 +52,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   const [loading, setLoading] = useState(false);
   const [calculatedPnl, setCalculatedPnl] = useState(0);
   const [formError, setFormError] = useState('');
+  const [priceMovePercent, setPriceMovePercent] = useState(0);
 
   useEffect(() => {
     loadLastTicker();
@@ -104,6 +105,22 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       setCalculatedPnl(0);
     }
   }, [formData.entryPrice, formData.exitPrice, formData.direction, formData.leverage]);
+
+  useEffect(() => {
+    const entry = parseFloat(formData.entryPrice);
+    const exit = parseFloat(formData.exitPrice);
+
+    if (!Number.isFinite(entry) || !Number.isFinite(exit) || entry <= 0) {
+      setPriceMovePercent(0);
+      return;
+    }
+
+    const rawPercent = formData.direction === 'long'
+      ? ((exit - entry) / entry) * 100
+      : ((entry - exit) / entry) * 100;
+
+    setPriceMovePercent(rawPercent);
+  }, [formData.entryPrice, formData.exitPrice, formData.direction]);
 
   useEffect(() => {
     const gainText = String(formData.gainLoss ?? '').trim();
@@ -318,7 +335,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-3">
+            <div className="grid grid-cols-3 gap-3">
               <div>
                 <label className="block text-gray-400 text-sm mb-2">Entry Price</label>
                 <input
@@ -344,6 +361,17 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   placeholder="0.00"
                   className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
                 />
+              </div>
+
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">% Gain</label>
+                <div
+                  className={`w-full border border-dark-border rounded-lg px-4 py-2 h-[42px] flex items-center font-medium ${
+                    priceMovePercent >= 0 ? 'text-green-400' : 'text-red-400'
+                  }`}
+                >
+                  {Number.isFinite(priceMovePercent) ? `${priceMovePercent >= 0 ? '+' : ''}${priceMovePercent.toFixed(2)}%` : '--'}
+                </div>
               </div>
             </div>
 
