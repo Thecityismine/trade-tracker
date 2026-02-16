@@ -10,11 +10,13 @@
     "seed:jan-2026": "node scripts/seed-january-2026.mjs"
   },
   "dependencies": {
+    "firebase": "^10.7.1",
+    "lucide-react": "^0.300.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "firebase": "^10.7.1",
+    "react-markdown": "^10.1.0",
     "recharts": "^2.10.3",
-    "lucide-react": "^0.300.0"
+    "remark-gfm": "^4.0.1"
   },
   "devDependencies": {
     "@types/react": "^18.2.43",

@@ -6,6 +6,7 @@ import MonthlyTracker from './pages/MonthlyTracker';
 import ChartPatterns from './pages/ChartPatterns';
 import TradingMindset from './pages/TradingMindset';
 import TradeJournal from './pages/TradeJournal';
+import Notebook from './pages/Notebook';
 import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText } from 'lucide-react';
 
 function App() {
@@ -19,6 +20,7 @@ function App() {
     { id: 'patterns', label: 'Chart Patterns', icon: Target },
     { id: 'journal', label: 'Trade Journal', icon: FileText },
     { id: 'mindset', label: 'Mindset', icon: BookOpen },
+    { id: 'notebook', label: 'Notebook', icon: BookOpen },
   ];
 
   const renderPage = () => {
@@ -35,6 +37,8 @@ function App() {
         return <ChartPatterns />;
       case 'journal':
         return <TradeJournal />;
+      case 'notebook':
+        return <Notebook />;
       case 'mindset':
         return <TradingMindset />;
       default:

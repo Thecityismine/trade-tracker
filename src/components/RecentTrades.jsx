@@ -137,7 +137,7 @@ function RecentTrades({ trades }) {
                             }`}
                           />
                           <span className={trade.direction === 'long' ? 'text-green-500' : 'text-red-500'}>
-                            {trade.direction === 'long' ? 'L' : 'S'}
+                            {trade.direction === 'long' ? 'Long' : 'Short'}
                           </span>
                         </span>
                       </td>
@@ -203,7 +203,7 @@ function RecentTrades({ trades }) {
                         }`}
                       />
                       <span className={trade.direction === 'long' ? 'text-green-500' : 'text-red-500'}>
-                        {trade.direction === 'long' ? 'L' : 'S'}
+                        {trade.direction === 'long' ? 'Long' : 'Short'}
                       </span>
                     </div>
                   </div>

@@ -123,15 +123,6 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     setPriceMovePercent(rawPercent * leverage);
   }, [formData.entryPrice, formData.exitPrice, formData.direction, formData.leverage]);
 
-  useEffect(() => {
-    const gainText = String(formData.gainLoss ?? '').trim();
-    const nextResult = gainText.startsWith('-') ? 'loss' : 'win';
-
-    if (formData.result !== nextResult) {
-      setFormData((prev) => ({ ...prev, result: nextResult }));
-    }
-  }, [formData.gainLoss, formData.result]);
-
   const loadLastTicker = async () => {
     try {
       const q = query(collection(db, 'trades'), orderBy('createdAt', 'desc'), limit(1));
