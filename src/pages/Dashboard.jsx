@@ -130,7 +130,9 @@ function Dashboard() {
     }
 
     const balanceAtStart = getBalanceAtDate(periodStart);
-    if (balanceAtStart <= 0) return 0;
+    const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
+    const denominator = balanceAtStart > 0 ? balanceAtStart : totalFunded;
+    if (denominator <= 0) return 0;
 
     const periodPnl = trades
       .filter(t => {
@@ -139,8 +141,25 @@ function Dashboard() {
       })
       .reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
 
-    return (periodPnl / balanceAtStart) * 100;
+    return (periodPnl / denominator) * 100;
   };
+
+  const maxDrawdown = (() => {
+    if (deposits.length === 0 || trades.length === 0) return 0;
+    const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
+    const sorted = [...trades]
+      .filter(t => t.tradeDate)
+      .sort((a, b) => getTradeDate(a) - getTradeDate(b));
+    let peak = totalFunded;
+    let balance = totalFunded;
+    let maxDD = 0;
+    for (const t of sorted) {
+      balance += Number(t.gainLoss) || 0;
+      if (balance > peak) peak = balance;
+      if (peak > 0) maxDD = Math.max(maxDD, ((peak - balance) / peak) * 100);
+    }
+    return maxDD;
+  })();
 
   const percentSummary = {
     day: calculatePeriodPercent('day'),
@@ -152,7 +171,7 @@ function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <MetricCard
           title="Total P&L"
           value={`$${metrics.totalPnl.toFixed(2)}`}
@@ -176,6 +195,12 @@ function Dashboard() {
           value={metrics.profitFactor.toFixed(2)}
           subtitle="Win/Loss ratio"
           isPositive={metrics.profitFactor >= 1}
+        />
+        <MetricCard
+          title="Max Drawdown"
+          value={`-${maxDrawdown.toFixed(2)}%`}
+          subtitle="Peak to trough"
+          isPositive={false}
         />
       </div>
 
@@ -213,7 +238,7 @@ function Dashboard() {
       </div>
 
       {/* Equity Curve */}
-      <EquityCurve trades={trades} />
+      <EquityCurve trades={trades} deposits={deposits} />
 
       {/* Recent Trades */}
       <RecentTrades trades={trades} />

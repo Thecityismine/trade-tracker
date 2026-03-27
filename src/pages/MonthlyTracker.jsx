@@ -3,20 +3,47 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 function MonthlyTracker() {
+  const [trades, setTrades] = useState([]);
+  const [deposits, setDeposits] = useState([]);
   const [monthlyData, setMonthlyData] = useState([]);
 
   useEffect(() => {
     const q = query(collection(db, 'trades'), orderBy('tradeDate', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const tradesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      calculateMonthlyStats(tradesData);
+    return onSnapshot(q, (snapshot) => {
+      setTrades(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
-
-    return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    return onSnapshot(collection(db, 'deposits'), (snap) => {
+      setDeposits(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+  }, []);
+
+  useEffect(() => {
+    calculateMonthlyStats(trades, deposits);
+  }, [trades, deposits]);
+
+  const getBalanceAtDate = (targetDate, tradesData, depositsData) => {
+    const funded = depositsData
+      .filter(d => {
+        const date = d.date?.toDate?.() || new Date(d.date);
+        return date <= targetDate;
+      })
+      .reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
+
+    const pnlBefore = tradesData
+      .filter(t => {
+        const date = t.tradeDate?.toDate?.() || new Date(t.tradeDate);
+        return !Number.isNaN(date.getTime()) && date < targetDate;
+      })
+      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
+
+    return funded + pnlBefore;
+  };
+
+  const getTotalFunded = (depositsData) =>
+    depositsData.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
 
   const downgradeGrade = (grade) => {
     if (grade === 'A') return 'B';
@@ -26,15 +53,13 @@ function MonthlyTracker() {
   };
 
   const getGrade = (monthlyPnlPercent, profitFactor, expectancyPercent, totalPnl) => {
-    // Score blends monthly return %, profit factor, and expectancy %
     let score = 0;
 
-    // Monthly P&L% contribution
-    if (monthlyPnlPercent >= 300) score += 40;
-    else if (monthlyPnlPercent >= 200) score += 35;
-    else if (monthlyPnlPercent >= 150) score += 30;
-    else if (monthlyPnlPercent >= 100) score += 25;
-    else if (monthlyPnlPercent >= 50) score += 15;
+    // Monthly account % gain contribution (realistic account-based thresholds)
+    if (monthlyPnlPercent >= 20) score += 40;
+    else if (monthlyPnlPercent >= 10) score += 35;
+    else if (monthlyPnlPercent >= 5) score += 25;
+    else if (monthlyPnlPercent >= 2) score += 15;
     else if (monthlyPnlPercent >= 0) score += 8;
 
     // Profit factor contribution
@@ -54,16 +79,12 @@ function MonthlyTracker() {
     else if (expectancyPercent > -5) score += 4;
 
     let grade = 'F';
-
     if (score >= 85) grade = 'A';
     else if (score >= 65) grade = 'B';
     else if (score >= 50) grade = 'C';
     else if (score >= 35) grade = 'D';
 
-    // Penalize one grade level when month is net negative in USD
-    if (totalPnl < 0) {
-      grade = downgradeGrade(grade);
-    }
+    if (totalPnl < 0) grade = downgradeGrade(grade);
 
     const colorMap = {
       A: 'bg-green-600',
@@ -76,8 +97,9 @@ function MonthlyTracker() {
     return { grade, color: colorMap[grade] };
   };
 
-  const calculateMonthlyStats = (tradesData) => {
+  const calculateMonthlyStats = (tradesData, depositsData) => {
     const monthMap = new Map();
+    const totalFunded = getTotalFunded(depositsData);
 
     tradesData.forEach(trade => {
       const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
@@ -85,17 +107,21 @@ function MonthlyTracker() {
       const monthYear = `${tradeDate.getFullYear()}-${String(tradeDate.getMonth() + 1).padStart(2, '0')}`;
 
       if (!monthMap.has(monthKey)) {
+        const monthStart = new Date(tradeDate.getFullYear(), tradeDate.getMonth(), 1);
+        const balanceAtStart = getBalanceAtDate(monthStart, tradesData, depositsData);
+        const denominator = balanceAtStart > 0 ? balanceAtStart : totalFunded;
+
         monthMap.set(monthKey, {
           monthLabel: monthKey,
-          monthYear: monthYear,
+          monthYear,
           trades: [],
           wins: 0,
           losses: 0,
           totalWinPercent: 0,
           totalLossPercentAbs: 0,
           totalPnl: 0,
-          totalPnlPercent: 0,
-          totalFees: 0
+          totalFees: 0,
+          denominator
         });
       }
 
@@ -111,7 +137,6 @@ function MonthlyTracker() {
       }
 
       month.totalPnl += trade.gainLoss || 0;
-      month.totalPnlPercent += trade.pnlPercent || 0;
       month.totalFees += trade.fee || 0;
     });
 
@@ -124,8 +149,7 @@ function MonthlyTracker() {
         ? ((winRate / 100) * avgWin) + ((1 - winRate / 100) * avgLoss)
         : 0;
       const profitFactor = month.totalLossPercentAbs > 0 ? month.totalWinPercent / month.totalLossPercentAbs : 0;
-
-      const monthlyPnlPercent = month.totalPnlPercent;
+      const monthlyPnlPercent = month.denominator > 0 ? (month.totalPnl / month.denominator) * 100 : 0;
 
       const gradeInfo = getGrade(monthlyPnlPercent, profitFactor, expectancyPercent, month.totalPnl);
 
@@ -142,7 +166,6 @@ function MonthlyTracker() {
       };
     });
 
-    // Sort by month/year descending
     months.sort((a, b) => b.monthYear.localeCompare(a.monthYear));
     setMonthlyData(months);
   };
@@ -190,14 +213,14 @@ function MonthlyTracker() {
                       {month.grade}
                     </span>
                   </td>
-                  <td className="text-right py-3 px-3 font-bold text-white">
+                  <td className={`text-right py-3 px-3 font-bold ${month.totalPnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                     ${month.totalPnl.toFixed(2)}
                   </td>
                   <td className="text-right py-3 px-3 text-white">
                     ${month.totalFees.toFixed(2)}
                   </td>
                   <td className={`text-right py-3 px-3 font-bold ${month.monthlyPnlPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {month.monthlyPnlPercent.toFixed(2)}%
+                    {month.monthlyPnlPercent >= 0 ? '+' : ''}{month.monthlyPnlPercent.toFixed(2)}%
                   </td>
                   <td className="text-right py-3 px-3 text-white">{month.winRate.toFixed(2)}%</td>
                   <td className="text-right py-3 px-3 text-white">{month.avgWin.toFixed(2)}%</td>
@@ -229,12 +252,12 @@ function MonthlyTracker() {
                   <span className={`${month.color} text-white px-3 py-1 rounded font-bold`}>
                     {month.grade}
                   </span>
-                  <div className="text-xl font-bold text-white">
+                  <div className={`text-xl font-bold ${month.totalPnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
                     ${month.totalPnl.toFixed(2)}
                   </div>
                 </div>
               </div>
-              
+
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <div className="text-gray-400">Fees</div>
@@ -247,14 +270,12 @@ function MonthlyTracker() {
                 <div>
                   <div className="text-gray-400">Monthly P&L%</div>
                   <div className={`font-bold ${month.monthlyPnlPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {month.monthlyPnlPercent.toFixed(2)}%
+                    {month.monthlyPnlPercent >= 0 ? '+' : ''}{month.monthlyPnlPercent.toFixed(2)}%
                   </div>
                 </div>
                 <div>
                   <div className="text-gray-400">Expectancy</div>
-                  <div className="font-medium text-white">
-                    {month.expectancy.toFixed(2)}%
-                  </div>
+                  <div className="font-medium text-white">{month.expectancy.toFixed(2)}%</div>
                 </div>
                 <div>
                   <div className="text-gray-400">Profit Factor</div>

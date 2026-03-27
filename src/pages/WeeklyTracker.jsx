@@ -5,22 +5,26 @@ import { ChevronDown, ChevronUp } from 'lucide-react';
 
 function WeeklyTracker() {
   const [trades, setTrades] = useState([]);
+  const [deposits, setDeposits] = useState([]);
   const [weeklyData, setWeeklyData] = useState([]);
   const [expandedWeek, setExpandedWeek] = useState(null);
 
   useEffect(() => {
     const q = query(collection(db, 'trades'), orderBy('tradeDate', 'desc'));
-    const unsubscribe = onSnapshot(q, (snapshot) => {
-      const tradesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setTrades(tradesData);
-      calculateWeeklyStats(tradesData);
+    return onSnapshot(q, (snapshot) => {
+      setTrades(snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() })));
     });
-
-    return () => unsubscribe();
   }, []);
+
+  useEffect(() => {
+    return onSnapshot(collection(db, 'deposits'), (snap) => {
+      setDeposits(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+  }, []);
+
+  useEffect(() => {
+    calculateWeeklyStats(trades, deposits);
+  }, [trades, deposits]);
 
   const getWeekRange = (date) => {
     const d = new Date(date);
@@ -37,8 +41,27 @@ function WeeklyTracker() {
     };
   };
 
-  const calculateWeeklyStats = (tradesData) => {
+  const getBalanceAtDate = (targetDate, tradesData, depositsData) => {
+    const funded = depositsData
+      .filter(d => {
+        const date = d.date?.toDate?.() || new Date(d.date);
+        return date <= targetDate;
+      })
+      .reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
+
+    const pnlBefore = tradesData
+      .filter(t => {
+        const date = t.tradeDate?.toDate?.() || new Date(t.tradeDate);
+        return !Number.isNaN(date.getTime()) && date < targetDate;
+      })
+      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
+
+    return funded + pnlBefore;
+  };
+
+  const calculateWeeklyStats = (tradesData, depositsData) => {
     const weekMap = new Map();
+    const totalFunded = depositsData.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
 
     tradesData.forEach(trade => {
       const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
@@ -46,6 +69,9 @@ function WeeklyTracker() {
       const weekKey = weekRange.label;
 
       if (!weekMap.has(weekKey)) {
+        const balanceAtWeekStart = getBalanceAtDate(weekRange.start, tradesData, depositsData);
+        const denominator = balanceAtWeekStart > 0 ? balanceAtWeekStart : totalFunded;
+
         weekMap.set(weekKey, {
           weekLabel: weekKey,
           startDate: weekRange.start,
@@ -56,7 +82,8 @@ function WeeklyTracker() {
           totalGain: 0,
           totalLoss: 0,
           fees: 0,
-          pnl: 0
+          pnl: 0,
+          denominator
         });
       }
 
@@ -84,7 +111,7 @@ function WeeklyTracker() {
         ? ((winRate / 100) * avgWin) - ((1 - winRate / 100) * avgLoss)
         : 0;
       const profitFactor = week.totalLoss > 0 ? week.totalGain / week.totalLoss : 0;
-      const pnlPercent = week.pnl > 0 ? (week.pnl / 100) * 100 : week.pnl;
+      const pnlPercent = week.denominator > 0 ? (week.pnl / week.denominator) * 100 : 0;
 
       return {
         ...week,

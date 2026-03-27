@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { collection, onSnapshot, orderBy, query, getDocs } from 'firebase/firestore';
 import {
   Bar,
   BarChart,
@@ -70,6 +70,13 @@ const getWeekLabel = (startDate) => {
 
 function Analytics() {
   const [trades, setTrades] = useState([]);
+  const [deposits, setDeposits] = useState([]);
+
+  useEffect(() => {
+    return onSnapshot(collection(db, 'deposits'), (snap) => {
+      setDeposits(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+  }, []);
 
   useEffect(() => {
     const tradesQuery = query(collection(db, 'trades'), orderBy('tradeDate', 'desc'));
@@ -332,6 +339,21 @@ function Analytics() {
     };
   }, [weeklyPerformance]);
 
+  const maxDrawdown = useMemo(() => {
+    if (deposits.length === 0 || completedTrades.length === 0) return 0;
+    const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
+    const sorted = [...completedTrades].sort((a, b) => a.parsedTradeDate - b.parsedTradeDate);
+    let peak = totalFunded;
+    let balance = totalFunded;
+    let maxDD = 0;
+    for (const t of sorted) {
+      balance += toNumber(t.gainLoss);
+      if (balance > peak) peak = balance;
+      if (peak > 0) maxDD = Math.max(maxDD, ((peak - balance) / peak) * 100);
+    }
+    return maxDD;
+  }, [completedTrades, deposits]);
+
   const totalClosedTrades = completedTrades.length;
   const totalWins = completedTrades.filter((trade) => trade.result === 'win').length;
   const overallWinRate = totalClosedTrades > 0 ? (totalWins / totalClosedTrades) * 100 : 0;
@@ -342,7 +364,7 @@ function Analytics() {
         <h2 className="text-2xl font-bold text-white mb-1">Analytics</h2>
         <p className="text-gray-400">Deeper performance breakdown from your trade history.</p>
 
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-3 mt-6">
+        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-6">
           <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
             <p className="text-xs text-gray-400">Closed Trades</p>
             <p className="text-2xl font-bold text-white mt-1">{totalClosedTrades}</p>
@@ -360,6 +382,10 @@ function Analytics() {
           <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
             <p className="text-xs text-gray-400">Worst Loss Streak</p>
             <p className="text-2xl font-bold text-red-500 mt-1">{streakStats.maxLossStreak}</p>
+          </div>
+          <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
+            <p className="text-xs text-gray-400">Max Drawdown</p>
+            <p className="text-2xl font-bold text-red-500 mt-1">-{maxDrawdown.toFixed(2)}%</p>
           </div>
         </div>
       </div>
@@ -418,30 +444,30 @@ function Analytics() {
 
             <div className="bg-dark-card border border-dark-border rounded-lg p-6">
               <h3 className="text-lg font-bold text-white mb-1">Performance by Time of Day</h3>
-              <p className="text-gray-400 text-sm mb-4">Average P&amp;L% per trade session.</p>
+              <p className="text-gray-400 text-sm mb-4">Total P&amp;L per trading session.</p>
 
               <div className="w-full h-60">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={timeOfDayStats}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                     <XAxis dataKey="name" stroke="#9ca3af" />
-                    <YAxis stroke="#9ca3af" tickFormatter={(value) => `${value.toFixed(0)}%`} />
+                    <YAxis stroke="#9ca3af" tickFormatter={(value) => `$${value.toFixed(0)}`} />
                     <Tooltip
                       contentStyle={TOOLTIP_THEME.contentStyle}
                       labelStyle={TOOLTIP_THEME.labelStyle}
                       itemStyle={TOOLTIP_THEME.itemStyle}
                       cursor={TOOLTIP_THEME.cursor}
-                      formatter={(value, name, props) => {
-                        if (name === 'avgPnlPercent') return [`${Number(value).toFixed(2)}%`, 'Avg P&L%'];
+                      formatter={(value, name) => {
+                        if (name === 'totalPnl') return [`$${Number(value).toFixed(2)}`, 'Total P&L'];
                         if (name === 'trades') return [value, 'Trades'];
-                        return [value, name || props?.name];
+                        return [value, name];
                       }}
                     />
-                    <Bar dataKey="avgPnlPercent" radius={[6, 6, 0, 0]}>
+                    <Bar dataKey="totalPnl" radius={[6, 6, 0, 0]}>
                       {timeOfDayStats.map((entry) => (
                         <Cell
                           key={entry.name}
-                          fill={entry.avgPnlPercent >= 0 ? COLORS.positive : COLORS.negative}
+                          fill={entry.totalPnl >= 0 ? COLORS.positive : COLORS.negative}
                         />
                       ))}
                     </Bar>

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 
-function EquityCurve({ trades }) {
+function EquityCurve({ trades, deposits = [] }) {
   const [timeframe, setTimeframe] = useState('weekly');
 
   // Calculate cumulative P&L for equity curve
@@ -16,7 +16,8 @@ function EquityCurve({ trades }) {
         return dateA - dateB;
       });
 
-    let cumulativePnl = 0;
+    const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
+    let cumulativePnl = totalFunded;
     const data = sortedTrades.map(trade => {
       cumulativePnl += trade.gainLoss || 0;
       const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);

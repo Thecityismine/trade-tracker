@@ -37,6 +37,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     direction: 'long',
     entryPrice: '',
     exitPrice: '',
+    stopLoss: '',
     leverage: '25',
     gainLoss: '',
     fee: '',
@@ -53,6 +54,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   const [calculatedPnl, setCalculatedPnl] = useState(0);
   const [formError, setFormError] = useState('');
   const [priceMovePercent, setPriceMovePercent] = useState(0);
+  const [riskReward, setRiskReward] = useState(null);
 
   useEffect(() => {
     loadLastTicker();
@@ -75,6 +77,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       direction: editTrade.direction || 'long',
       entryPrice: editTrade.entryPrice?.toString() || '',
       exitPrice: editTrade.exitPrice?.toString() || '',
+      stopLoss: editTrade.stopLoss?.toString() || '',
       leverage: editTrade.leverage?.toString() || '25',
       gainLoss: editTrade.gainLoss?.toString() || '',
       fee: editTrade.fee?.toString() || '',
@@ -122,6 +125,30 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
 
     setPriceMovePercent(rawPercent * leverage);
   }, [formData.entryPrice, formData.exitPrice, formData.direction, formData.leverage]);
+
+  useEffect(() => {
+    const entry = parseFloat(formData.entryPrice);
+    const stop = parseFloat(formData.stopLoss);
+    const exit = parseFloat(formData.exitPrice);
+    const leverage = parseFloat(formData.leverage) || 1;
+
+    if (!Number.isFinite(entry) || !Number.isFinite(stop) || entry <= 0 || stop <= 0 || stop === entry) {
+      setRiskReward(null);
+      return;
+    }
+
+    const riskPercent = (Math.abs(entry - stop) / entry) * 100 * leverage;
+    if (riskPercent <= 0) { setRiskReward(null); return; }
+
+    if (Number.isFinite(exit) && exit > 0) {
+      const gainPercent = formData.direction === 'long'
+        ? ((exit - entry) / entry) * 100 * leverage
+        : ((entry - exit) / entry) * 100 * leverage;
+      setRiskReward(gainPercent / riskPercent);
+    } else {
+      setRiskReward(null);
+    }
+  }, [formData.entryPrice, formData.stopLoss, formData.exitPrice, formData.direction, formData.leverage]);
 
   const loadLastTicker = async () => {
     try {
@@ -186,6 +213,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
         direction: formData.direction,
         entryPrice: parseFloat(formData.entryPrice),
         exitPrice: parseFloat(formData.exitPrice) || null,
+        stopLoss: parseFloat(formData.stopLoss) || null,
+        rr: riskReward,
         leverage: parseFloat(formData.leverage),
         gainLoss: parseFloat(formData.gainLoss),
         fee: parseFloat(formData.fee) || 0,
@@ -218,6 +247,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
           direction: formData.direction,
           entryPrice: '',
           exitPrice: '',
+          stopLoss: '',
           leverage: '25',
           gainLoss: '',
           fee: '',
@@ -230,6 +260,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       setChartPreview(null);
       setRemoveExistingChart(false);
       setCalculatedPnl(0);
+      setRiskReward(null);
 
       onSaved?.();
       onClose();
@@ -356,6 +387,21 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               </div>
 
               <div>
+                <label className="block text-gray-400 text-sm mb-2">Stop Loss</label>
+                <input
+                  type="number"
+                  name="stopLoss"
+                  value={formData.stopLoss}
+                  onChange={handleInputChange}
+                  step="0.01"
+                  placeholder="0.00"
+                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                />
+              </div>
+            </div>
+
+            <div className="grid grid-cols-3 gap-3">
+              <div>
                 <label className="block text-gray-400 text-sm mb-2">% Gain</label>
                 <div
                   className={`w-full border border-dark-border rounded-lg px-4 py-2 h-[42px] flex items-center font-medium ${
@@ -365,6 +411,19 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   {Number.isFinite(priceMovePercent) ? `${priceMovePercent >= 0 ? '+' : ''}${priceMovePercent.toFixed(2)}%` : '--'}
                 </div>
               </div>
+
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">R:R Ratio</label>
+                <div
+                  className={`w-full border border-dark-border rounded-lg px-4 py-2 h-[42px] flex items-center font-medium ${
+                    riskReward === null ? 'text-gray-500' : riskReward >= 1 ? 'text-green-400' : 'text-red-400'
+                  }`}
+                >
+                  {riskReward !== null ? `${riskReward.toFixed(2)}R` : '--'}
+                </div>
+              </div>
+
+              <div></div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
