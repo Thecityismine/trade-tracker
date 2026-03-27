@@ -71,6 +71,7 @@ const getWeekLabel = (startDate) => {
 function Analytics() {
   const [trades, setTrades] = useState([]);
   const [deposits, setDeposits] = useState([]);
+  const [journalEntries, setJournalEntries] = useState([]);
 
   useEffect(() => {
     return onSnapshot(collection(db, 'deposits'), (snap) => {
@@ -90,6 +91,12 @@ function Analytics() {
     });
 
     return () => unsubscribe();
+  }, []);
+
+  useEffect(() => {
+    return onSnapshot(collection(db, 'tradeJournalEntries'), (snap) => {
+      setJournalEntries(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
   }, []);
 
   const completedTrades = useMemo(() => {
@@ -457,6 +464,59 @@ function Analytics() {
     return scored.reduce((sum, t) => sum + t.executionScore, 0) / scored.length;
   }, [completedTrades]);
 
+  const mistakeEngine = useMemo(() => {
+    const tagged = journalEntries.filter(e => e.result === 'loss' && e.mistakeTag?.trim());
+    const map = {};
+    tagged.forEach(e => {
+      const tag = e.mistakeTag.trim();
+      if (!map[tag]) map[tag] = { tag, count: 0, rulesBreaks: [] };
+      map[tag].count++;
+      if (e.ruleBroken?.trim()) map[tag].rulesBreaks.push(e.ruleBroken.trim());
+    });
+    return Object.values(map).sort((a, b) => b.count - a.count);
+  }, [journalEntries]);
+
+  const mindsetTrend = useMemo(() => {
+    if (journalEntries.length === 0) return [];
+    const weekMap = new Map();
+    journalEntries.forEach(e => {
+      if (!e.mindsetRating) return;
+      const rawDate = e.tradeDate || e.createdAt;
+      if (!rawDate) return;
+      const date = rawDate?.toDate?.() || new Date(rawDate);
+      if (Number.isNaN(date.getTime())) return;
+      const weekStart = getWeekStart(date);
+      const key = weekStart.toISOString().split('T')[0];
+      if (!weekMap.has(key)) weekMap.set(key, {
+        key,
+        label: weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
+        mindsetSum: 0,
+        count: 0
+      });
+      const w = weekMap.get(key);
+      w.mindsetSum += Number(e.mindsetRating);
+      w.count++;
+    });
+    return Array.from(weekMap.values())
+      .map(w => {
+        const avgMindset = +(w.mindsetSum / w.count).toFixed(2);
+        const matchingWeek = weeklyPerformance.find(wp => wp.key === w.key);
+        return { ...w, avgMindset, totalPnl: matchingWeek?.totalPnl ?? null };
+      })
+      .filter(w => w.count > 0)
+      .sort((a, b) => a.key.localeCompare(b.key));
+  }, [journalEntries, weeklyPerformance]);
+
+  const mindsetInsight = useMemo(() => {
+    if (mindsetTrend.length < 2) return null;
+    const lowBadWeeks = mindsetTrend.filter(w => w.avgMindset < 3 && w.totalPnl !== null && w.totalPnl < 0);
+    const highGoodWeeks = mindsetTrend.filter(w => w.avgMindset >= 4 && w.totalPnl !== null && w.totalPnl > 0);
+    if (lowBadWeeks.length > 0) {
+      return `${lowBadWeeks.length} low-mindset week${lowBadWeeks.length !== 1 ? 's' : ''} coincided with negative P&L${highGoodWeeks.length > 0 ? ` while ${highGoodWeeks.length} high-mindset week${highGoodWeeks.length !== 1 ? 's' : ''} were profitable` : ''} — mindset is correlating with results.`;
+    }
+    return null;
+  }, [mindsetTrend]);
+
   const totalClosedTrades = completedTrades.length;
   const totalWins = completedTrades.filter((trade) => trade.result === 'win').length;
   const overallWinRate = totalClosedTrades > 0 ? (totalWins / totalClosedTrades) * 100 : 0;
@@ -811,6 +871,62 @@ function Analytics() {
             </div>
           </div>
         </>
+      )}
+
+      {mistakeEngine.length > 0 && (
+        <div className="bg-dark-card border border-dark-border rounded-lg p-6">
+          <h3 className="text-lg font-bold text-white mb-1">Mistake Engine</h3>
+          <p className="text-gray-400 text-sm mb-4">Your most frequent loss patterns from the journal, ranked by occurrences.</p>
+          <div className="space-y-2">
+            {mistakeEngine.map((m, i) => (
+              <div key={m.tag} className="flex items-center gap-3 bg-dark-bg border border-dark-border rounded-lg p-3">
+                <span className="text-xl font-bold text-gray-600 w-7 flex-shrink-0">#{i + 1}</span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-red-300 font-semibold text-sm">{m.tag}</p>
+                  {m.rulesBreaks.length > 0 && (
+                    <p className="text-xs text-gray-500 truncate mt-0.5">&ldquo;{m.rulesBreaks[0]}&rdquo;</p>
+                  )}
+                </div>
+                <div className="text-right flex-shrink-0">
+                  <p className="text-white font-bold text-lg">{m.count}</p>
+                  <p className="text-xs text-gray-500">occurrence{m.count !== 1 ? 's' : ''}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
+
+      {mindsetTrend.length >= 2 && (
+        <div className="bg-dark-card border border-dark-border rounded-lg p-6">
+          <h3 className="text-lg font-bold text-white mb-1">Mindset Trend</h3>
+          <p className="text-gray-400 text-sm mb-4">Weekly average mindset rating from journal entries (1 = distracted · 5 = focused).</p>
+          <div className="w-full h-52">
+            <ResponsiveContainer width="100%" height="100%">
+              <ComposedChart data={mindsetTrend}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
+                <XAxis dataKey="label" stroke="#9ca3af" />
+                <YAxis domain={[1, 5]} stroke="#a78bfa" tickFormatter={v => `${v}/5`} width={45} />
+                <Tooltip
+                  contentStyle={TOOLTIP_THEME.contentStyle}
+                  labelStyle={TOOLTIP_THEME.labelStyle}
+                  itemStyle={TOOLTIP_THEME.itemStyle}
+                  cursor={TOOLTIP_THEME.cursor}
+                  formatter={(value, name) => {
+                    if (name === 'avgMindset') return [`${value}/5`, 'Avg Mindset'];
+                    return [value, name];
+                  }}
+                />
+                <Line type="monotone" dataKey="avgMindset" stroke="#a78bfa" strokeWidth={2} dot={{ r: 4 }} />
+              </ComposedChart>
+            </ResponsiveContainer>
+          </div>
+          {mindsetInsight && (
+            <p className="text-xs text-yellow-400 mt-3 bg-yellow-900/20 border border-yellow-800/30 rounded-lg px-3 py-2">
+              {mindsetInsight}
+            </p>
+          )}
+        </div>
       )}
     </div>
   );

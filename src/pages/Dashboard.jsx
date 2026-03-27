@@ -181,6 +181,63 @@ function Dashboard() {
     year: calculatePeriodPercent('year')
   };
 
+  const aiCoachSummary = (() => {
+    if (trades.length === 0) return null;
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayTrades = trades.filter(t => {
+      const d = getTradeDate(t);
+      return !Number.isNaN(d.getTime()) && d >= todayStart;
+    });
+    if (todayTrades.length > 0) {
+      const wins = todayTrades.filter(t => t.result === 'win').length;
+      const losses = todayTrades.filter(t => t.result === 'loss').length;
+      const pnl = todayTrades.reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
+      const wr = Math.round(wins / todayTrades.length * 100);
+      let note = '';
+      if (wins > 0 && losses === 0) note = ' Clean session — excellent discipline.';
+      else if (losses > wins) note = ' More losses than wins — review your setups and reset for tomorrow.';
+      else if (wins > losses) note = ' Solid day. Consider locking in the gains.';
+      else note = ' Mixed results. Analyze each trade before tomorrow.';
+      return `Today: ${todayTrades.length} trade${todayTrades.length !== 1 ? 's' : ''} · ${wins}W / ${losses}L · ${pnl >= 0 ? '+' : '-'}$${Math.abs(pnl).toFixed(2)} · ${wr}% WR.${note}`;
+    }
+    const weekStart = new Date(now);
+    const dow = now.getDay();
+    weekStart.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+    weekStart.setHours(0, 0, 0, 0);
+    const weekTrades = trades.filter(t => {
+      const d = getTradeDate(t);
+      return !Number.isNaN(d.getTime()) && d >= weekStart;
+    });
+    if (weekTrades.length === 0) return 'No trades this week yet. Stay patient and wait for your setup.';
+    const wWins = weekTrades.filter(t => t.result === 'win').length;
+    const wPnl = weekTrades.reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
+    return `No trades today. This week: ${weekTrades.length} trade${weekTrades.length !== 1 ? 's' : ''} · ${wWins}W / ${weekTrades.length - wWins}L · ${wPnl >= 0 ? '+' : '-'}$${Math.abs(wPnl).toFixed(2)}.`;
+  })();
+
+  const performanceIdentity = (() => {
+    const completed = trades.filter(t => t.result === 'win' || t.result === 'loss');
+    if (completed.length < 5) return null;
+    const wins = completed.filter(t => t.result === 'win');
+    const winRate = (wins.length / completed.length) * 100;
+    const longs = completed.filter(t => t.direction !== 'short');
+    const shorts = completed.filter(t => t.direction === 'short');
+    const dirLabel = longs.length >= shorts.length ? 'long-biased' : 'short-biased';
+    const style = winRate >= 65 ? 'Disciplined' : winRate >= 50 ? 'Developing' : 'High-risk';
+    const patternMap = {};
+    completed.forEach(t => {
+      if (!t.chartPattern?.trim()) return;
+      const key = t.chartPattern.trim().toLowerCase();
+      if (!patternMap[key]) patternMap[key] = { name: t.chartPattern.trim(), pnl: 0, count: 0 };
+      patternMap[key].pnl += Number(t.gainLoss) || 0;
+      patternMap[key].count++;
+    });
+    const patterns = Object.values(patternMap).filter(p => p.count >= 2).sort((a, b) => b.pnl - a.pnl);
+    const bestPattern = patterns[0];
+    const patternText = bestPattern ? `, strongest with ${bestPattern.name}` : '';
+    return `${style}, ${dirLabel} trader — ${winRate.toFixed(0)}% win rate over ${completed.length} trades${patternText}.`;
+  })();
+
   return (
     <div className="space-y-6">
       {/* Metric Cards */}
@@ -267,6 +324,24 @@ function Dashboard() {
 
       {/* Equity Curve */}
       <EquityCurve trades={trades} deposits={deposits} />
+
+      {/* AI Coach + Performance Identity */}
+      {(aiCoachSummary || performanceIdentity) && (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {aiCoachSummary && (
+            <div className="bg-blue-900/20 border border-blue-800/30 rounded-lg p-4">
+              <p className="text-blue-400 text-xs font-semibold uppercase tracking-wider mb-2">Daily Coach</p>
+              <p className="text-blue-100 text-sm leading-relaxed">{aiCoachSummary}</p>
+            </div>
+          )}
+          {performanceIdentity && (
+            <div className="bg-purple-900/20 border border-purple-800/30 rounded-lg p-4">
+              <p className="text-purple-400 text-xs font-semibold uppercase tracking-wider mb-2">Performance Identity</p>
+              <p className="text-purple-100 text-sm leading-relaxed">{performanceIdentity}</p>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Pinned Playbooks */}
       {pinnedNotes.length > 0 && (
