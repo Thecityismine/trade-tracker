@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import CountUp from 'react-countup';
-import { Plus } from 'lucide-react';
+import { Plus, Pin } from 'lucide-react';
 import MetricCard from '../components/MetricCard';
 import EquityCurve from '../components/EquityCurve';
 import RecentTrades from '../components/RecentTrades';
@@ -20,11 +20,23 @@ function Dashboard() {
     profitFactor: 0
   });
   const [deposits, setDeposits] = useState([]);
+  const [pinnedNotes, setPinnedNotes] = useState([]);
 
   // Fetch deposits from Firebase
   useEffect(() => {
     return onSnapshot(collection(db, 'deposits'), (snap) => {
       setDeposits(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+  }, []);
+
+  // Fetch pinned notebook notes
+  useEffect(() => {
+    return onSnapshot(collection(db, 'notebookEntries'), (snap) => {
+      const pinned = snap.docs
+        .map(d => ({ id: d.id, ...d.data() }))
+        .filter(n => n.pinned)
+        .slice(0, 3);
+      setPinnedNotes(pinned);
     });
   }, []);
 
@@ -255,6 +267,27 @@ function Dashboard() {
 
       {/* Equity Curve */}
       <EquityCurve trades={trades} deposits={deposits} />
+
+      {/* Pinned Playbooks */}
+      {pinnedNotes.length > 0 && (
+        <div className="bg-dark-card border border-dark-border rounded-lg p-4 md:p-6">
+          <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
+            <Pin size={16} className="text-yellow-400" />
+            Pinned Playbooks
+          </h2>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+            {pinnedNotes.map(note => (
+              <div key={note.id} className="bg-dark-bg border border-dark-border rounded-lg p-3 hover:border-gray-600 transition-colors">
+                <p className="text-white text-sm font-medium mb-1 truncate">{note.title}</p>
+                <p className="text-gray-400 text-xs line-clamp-3 whitespace-pre-wrap">
+                  {String(note.content || '').replace(/[#*`_~\[\]]/g, '').trim().slice(0, 120)}
+                  {(note.content || '').length > 120 ? '...' : ''}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
 
       {/* Recent Trades */}
       <RecentTrades trades={trades} />

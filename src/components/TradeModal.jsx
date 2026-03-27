@@ -44,6 +44,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     result: 'win',
     comment: '',
     chartPattern: '',
+    executionScore: 5,
     tradeDate: formatDateForInput(new Date())
   });
 
@@ -85,6 +86,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       result: normalizedResult,
       comment: editTrade.comment || '',
       chartPattern: editTrade.chartPattern || '',
+      executionScore: editTrade.executionScore || 5,
       tradeDate: formattedDate
     });
     setChartImage(null);
@@ -224,6 +226,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
         result: formData.result,
         comment: formData.comment,
         chartPattern: formData.chartPattern || null,
+        executionScore: Number(formData.executionScore),
         chartImageUrl,
         chartImageSource,
         tradeDate: mergeDateWithExistingTime(
@@ -257,6 +260,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
           result: 'win',
           comment: '',
           chartPattern: '',
+          executionScore: 5,
           tradeDate: formatDateForInput(new Date())
         });
       }
@@ -510,6 +514,22 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                     </button>
                   </div>
                 )}
+              </div>
+            </div>
+
+            <div>
+              <label className="block text-gray-400 text-sm mb-2">Execution Score: {formData.executionScore}/10</label>
+              <input
+                type="range"
+                name="executionScore"
+                min="1"
+                max="10"
+                value={formData.executionScore}
+                onChange={handleInputChange}
+                className="w-full"
+              />
+              <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <span>Poor</span><span>Average</span><span>Perfect</span>
               </div>
             </div>
 

@@ -43,6 +43,8 @@ const resultStyles = {
   breakeven: 'bg-gray-700/40 text-gray-200 border-gray-600/50'
 };
 
+const MISTAKE_TAGS = ['FOMO', 'Oversize', 'Early Exit', 'Revenge', 'No Setup', 'Chased Entry', 'Moved Stop', 'Other'];
+
 const defaultFormData = {
   title: '',
   ticker: 'BTC',
@@ -55,6 +57,9 @@ const defaultFormData = {
   nextAction: '',
   executionScore: 5,
   confidenceScore: 5,
+  mindsetRating: 3,
+  mistakeTag: '',
+  ruleBroken: '',
   tags: ''
 };
 
@@ -177,6 +182,9 @@ function TradeJournal() {
       nextAction: entry.nextAction || '',
       executionScore: entry.executionScore || 5,
       confidenceScore: entry.confidenceScore || 5,
+      mindsetRating: entry.mindsetRating || 3,
+      mistakeTag: entry.mistakeTag || '',
+      ruleBroken: entry.ruleBroken || '',
       tags: Array.isArray(entry.tags) ? entry.tags.join(', ') : ''
     });
     setIsModalOpen(true);
@@ -242,6 +250,9 @@ function TradeJournal() {
         nextAction: formData.nextAction,
         executionScore: Number(formData.executionScore),
         confidenceScore: Number(formData.confidenceScore),
+        mindsetRating: Number(formData.mindsetRating),
+        mistakeTag: formData.result === 'loss' ? formData.mistakeTag : '',
+        ruleBroken: formData.result === 'loss' ? formData.ruleBroken.trim() : '',
         tags: formData.tags
           .split(',')
           .map((tag) => tag.trim())
@@ -465,14 +476,23 @@ function TradeJournal() {
                   </p>
                 )}
 
-                <div className="grid grid-cols-2 gap-2 text-xs">
+                <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="bg-dark-card border border-dark-border rounded px-2 py-1 text-gray-300">
-                    Execution: <span className="text-white">{entry.executionScore || 0}/10</span>
+                    Exec: <span className="text-white">{entry.executionScore || 0}/10</span>
                   </div>
                   <div className="bg-dark-card border border-dark-border rounded px-2 py-1 text-gray-300">
-                    Confidence: <span className="text-white">{entry.confidenceScore || 0}/10</span>
+                    Conf: <span className="text-white">{entry.confidenceScore || 0}/10</span>
+                  </div>
+                  <div className="bg-dark-card border border-dark-border rounded px-2 py-1 text-gray-300">
+                    Mind: <span className="text-white">{entry.mindsetRating || '–'}/5</span>
                   </div>
                 </div>
+                {entry.mistakeTag && (
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="bg-red-900/30 text-red-300 border border-red-700/40 px-2 py-1 rounded">{entry.mistakeTag}</span>
+                    {entry.ruleBroken && <span className="text-gray-500 truncate">{entry.ruleBroken}</span>}
+                  </div>
+                )}
 
                 {entry.tags && entry.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2">
@@ -624,6 +644,49 @@ function TradeJournal() {
                   />
                 </div>
               </div>
+
+              <div>
+                <label className="block text-gray-400 text-sm mb-2">Mindset Rating: {formData.mindsetRating}/5</label>
+                <input
+                  type="range"
+                  min="1"
+                  max="5"
+                  value={formData.mindsetRating}
+                  onChange={(e) => handleInputChange('mindsetRating', Number(e.target.value))}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                  <span>Distracted</span><span>Focused</span>
+                </div>
+              </div>
+
+              {formData.result === 'loss' && (
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-red-900/10 border border-red-800/30 rounded-lg p-3">
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-2">Mistake Tag</label>
+                    <select
+                      value={formData.mistakeTag}
+                      onChange={(e) => handleInputChange('mistakeTag', e.target.value)}
+                      className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                    >
+                      <option value="">— Select —</option>
+                      {MISTAKE_TAGS.map(tag => (
+                        <option key={tag} value={tag}>{tag}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-gray-400 text-sm mb-2">Rule Broken</label>
+                    <input
+                      type="text"
+                      value={formData.ruleBroken}
+                      onChange={(e) => handleInputChange('ruleBroken', e.target.value)}
+                      placeholder="e.g. Never trade without confirmation"
+                      className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                    />
+                  </div>
+                </div>
+              )}
 
               <div>
                 <label className="block text-gray-400 text-sm mb-2">Screenshot (optional)</label>

@@ -451,6 +451,12 @@ function Analytics() {
     return insights;
   }, [completedTrades]);
 
+  const avgExecutionScore = useMemo(() => {
+    const scored = completedTrades.filter(t => t.executionScore > 0);
+    if (scored.length === 0) return null;
+    return scored.reduce((sum, t) => sum + t.executionScore, 0) / scored.length;
+  }, [completedTrades]);
+
   const totalClosedTrades = completedTrades.length;
   const totalWins = completedTrades.filter((trade) => trade.result === 'win').length;
   const overallWinRate = totalClosedTrades > 0 ? (totalWins / totalClosedTrades) * 100 : 0;
@@ -489,6 +495,14 @@ function Analytics() {
             <p className="text-2xl font-bold text-white mt-1">{tradeFrequency.toFixed(2)}</p>
             <p className="text-xs text-gray-500 mt-1">Last 30 days</p>
           </div>
+          {avgExecutionScore !== null && (
+            <div className="col-span-2 sm:col-span-1 bg-dark-bg border border-dark-border rounded-lg p-4">
+              <p className="text-xs text-gray-400">Avg Execution</p>
+              <p className={`text-2xl font-bold mt-1 ${avgExecutionScore >= 7 ? 'text-green-400' : avgExecutionScore >= 5 ? 'text-yellow-400' : 'text-red-400'}`}>
+                {avgExecutionScore.toFixed(1)}/10
+              </p>
+            </div>
+          )}
         </div>
       </div>
 
