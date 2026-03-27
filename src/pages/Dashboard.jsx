@@ -5,7 +5,7 @@ import MetricCard from '../components/MetricCard';
 import EquityCurve from '../components/EquityCurve';
 import RecentTrades from '../components/RecentTrades';
 import TradeModal from '../components/TradeModal';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 function Dashboard() {
@@ -21,6 +21,14 @@ function Dashboard() {
   });
   const [deposits, setDeposits] = useState([]);
   const [pinnedNotes, setPinnedNotes] = useState([]);
+  const [appSettings, setAppSettings] = useState({});
+
+  // Fetch settings from Firebase
+  useEffect(() => {
+    return onSnapshot(doc(db, 'settings', 'user'), (snap) => {
+      if (snap.exists()) setAppSettings(snap.data());
+    });
+  }, []);
 
   // Fetch deposits from Firebase
   useEffect(() => {
@@ -215,6 +223,53 @@ function Dashboard() {
     return `No trades today. This week: ${weekTrades.length} trade${weekTrades.length !== 1 ? 's' : ''} · ${wWins}W / ${weekTrades.length - wWins}L · ${wPnl >= 0 ? '+' : '-'}$${Math.abs(wPnl).toFixed(2)}.`;
   })();
 
+  const weekBanner = (() => {
+    if (trades.length === 0) return null;
+    const now = new Date();
+    const weekStart = new Date(now);
+    const dow = now.getDay();
+    weekStart.setDate(now.getDate() - (dow === 0 ? 6 : dow - 1));
+    weekStart.setHours(0, 0, 0, 0);
+    const weekTrades = trades.filter(t => {
+      const d = getTradeDate(t);
+      return !Number.isNaN(d.getTime()) && d >= weekStart && (t.result === 'win' || t.result === 'loss');
+    });
+    if (weekTrades.length === 0) return null;
+    const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayPnl = {};
+    weekTrades.forEach(t => {
+      const day = getTradeDate(t).getDay();
+      dayPnl[day] = (dayPnl[day] || 0) + (Number(t.gainLoss) || 0);
+    });
+    const dayEntries = Object.entries(dayPnl);
+    const bestEntry = dayEntries.reduce((a, b) => Number(b[1]) > Number(a[1]) ? b : a, dayEntries[0]);
+    const bestDay = bestEntry && Number(bestEntry[1]) > 0 ? DAY_NAMES[+bestEntry[0]] : null;
+    const sortedAll = [...trades]
+      .filter(t => t.result === 'win' || t.result === 'loss')
+      .sort((a, b) => getTradeDate(a) - getTradeDate(b));
+    let streak = 0;
+    let streakType = null;
+    sortedAll.forEach(t => {
+      if (t.result === streakType) streak++;
+      else { streak = 1; streakType = t.result; }
+    });
+    const parts = [`This week: ${percentSummary.week >= 0 ? '+' : ''}${percentSummary.week.toFixed(1)}%`];
+    if (bestDay) parts.push(`Best day: ${bestDay}`);
+    if (streak >= 2 && streakType) parts.push(`Streak: ${streak} ${streakType}${streak !== 1 ? 's' : ''}`);
+    return parts.join(' · ');
+  })();
+
+  const dashGoal = (() => {
+    const goalAmt = parseFloat(appSettings.goalAmount) || 0;
+    if (goalAmt <= 0) return null;
+    const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
+    if (totalFunded <= 0) return null;
+    const allTimePnl = trades.reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
+    const balance = totalFunded + allTimePnl;
+    const progress = Math.min(100, (balance / goalAmt) * 100);
+    return { goalAmt, balance, progress, remaining: Math.max(0, goalAmt - balance) };
+  })();
+
   const performanceIdentity = (() => {
     const completed = trades.filter(t => t.result === 'win' || t.result === 'loss');
     if (completed.length < 5) return null;
@@ -240,6 +295,12 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
+      {weekBanner && (
+        <div className="bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-gray-300">
+          {weekBanner}
+        </div>
+      )}
+
       {/* Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <MetricCard
@@ -322,6 +383,28 @@ function Dashboard() {
         />
       </div>
 
+      {dashGoal && (
+        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
+          <div className="flex items-baseline justify-between mb-2">
+            <p className="text-gray-400 text-sm">Account Goal</p>
+            <p className="text-gray-400 text-sm">${dashGoal.balance.toFixed(2)} / ${dashGoal.goalAmt.toFixed(2)}</p>
+          </div>
+          <div className="w-full bg-dark-bg rounded-full h-2.5 overflow-hidden">
+            <div
+              className={`h-2.5 rounded-full transition-all duration-700 ${dashGoal.progress >= 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+              style={{ width: `${dashGoal.progress}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>{dashGoal.progress.toFixed(1)}% complete</span>
+            {dashGoal.progress >= 100
+              ? <span className="text-green-400">Goal reached!</span>
+              : <span>${dashGoal.remaining.toFixed(2)} to go</span>
+            }
+          </div>
+        </div>
+      )}
+
       {/* Equity Curve */}
       <EquityCurve trades={trades} deposits={deposits} />
 
@@ -365,7 +448,7 @@ function Dashboard() {
       )}
 
       {/* Recent Trades */}
-      <RecentTrades trades={trades} />
+      <RecentTrades trades={trades} maxRiskPercent={parseFloat(appSettings.maxRiskPercent) || 0} />
 
       {/* Floating Action Button */}
       <button

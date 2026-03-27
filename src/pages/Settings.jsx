@@ -1,7 +1,8 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, Timestamp } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, Timestamp, setDoc } from 'firebase/firestore';
+import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { db } from '../config/firebase';
-import { Trash2 } from 'lucide-react';
+import { Trash2, Target, AlertTriangle } from 'lucide-react';
 
 function Settings() {
   const [deposits, setDeposits] = useState([]);
@@ -13,6 +14,11 @@ function Settings() {
     note: ''
   });
   const [saving, setSaving] = useState(false);
+  const [goalAmount, setGoalAmount] = useState('');
+  const [goalDate, setGoalDate] = useState('');
+  const [maxRisk, setMaxRisk] = useState('');
+  const [savingSettings, setSavingSettings] = useState(false);
+  const [settingsSaved, setSettingsSaved] = useState(false);
 
   useEffect(() => {
     const q = query(collection(db, 'deposits'), orderBy('date', 'desc'));
@@ -24,6 +30,17 @@ function Settings() {
   useEffect(() => {
     return onSnapshot(collection(db, 'trades'), (snap) => {
       setTrades(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+  }, []);
+
+  useEffect(() => {
+    return onSnapshot(doc(db, 'settings', 'user'), (snap) => {
+      if (snap.exists()) {
+        const data = snap.data();
+        setGoalAmount(data.goalAmount?.toString() || '');
+        setGoalDate(data.goalDate || '');
+        setMaxRisk(data.maxRiskPercent?.toString() || '');
+      }
     });
   }, []);
 
@@ -51,6 +68,50 @@ function Settings() {
     await deleteDoc(doc(db, 'deposits', id));
   };
 
+  const handleSaveSettings = async () => {
+    setSavingSettings(true);
+    await setDoc(doc(db, 'settings', 'user'), {
+      goalAmount: parseFloat(goalAmount) || null,
+      goalDate: goalDate || null,
+      maxRiskPercent: parseFloat(maxRisk) || null
+    }, { merge: true });
+    setSavingSettings(false);
+    setSettingsSaved(true);
+    setTimeout(() => setSettingsSaved(false), 2000);
+  };
+
+  const equityChartData = (() => {
+    const events = [];
+    deposits.forEach(d => {
+      const date = d.date?.toDate?.() || new Date(d.date);
+      if (!Number.isNaN(date.getTime())) events.push({ date, delta: d.type === 'deposit' ? d.amount : -d.amount });
+    });
+    trades.forEach(t => {
+      const date = t.tradeDate?.toDate?.() || new Date(t.tradeDate);
+      if (!Number.isNaN(date.getTime()) && t.gainLoss != null) events.push({ date, delta: Number(t.gainLoss) || 0 });
+    });
+    events.sort((a, b) => a.date - b.date);
+    let balance = 0;
+    const points = [];
+    events.forEach(e => {
+      balance += e.delta;
+      const label = e.date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
+      if (points.length > 0 && points[points.length - 1].label === label) {
+        points[points.length - 1].balance = +balance.toFixed(2);
+      } else {
+        points.push({ label, balance: +balance.toFixed(2) });
+      }
+    });
+    return points;
+  })();
+
+  const goalAmt = parseFloat(goalAmount) || 0;
+  const goalProgress = goalAmt > 0 ? Math.min(100, (currentBalance / goalAmt) * 100) : 0;
+  const goalRemaining = Math.max(0, goalAmt - currentBalance);
+  const riskFlagCount = parseFloat(maxRisk) > 0
+    ? trades.filter(t => t.result === 'loss' && Math.abs(t.pnlPercent || 0) > parseFloat(maxRisk)).length
+    : 0;
+
   return (
     <div className="max-w-2xl space-y-6">
       <h2 className="text-xl font-bold text-white">Settings</h2>
@@ -74,6 +135,49 @@ function Settings() {
           </div>
         </div>
       </div>
+
+      {goalAmt > 0 && (
+        <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
+          <h3 className="text-white font-semibold mb-1 flex items-center gap-2">
+            <Target size={16} className="text-blue-400" />
+            Goal Progress
+          </h3>
+          <div className="flex items-baseline gap-2 mb-3">
+            <span className="text-2xl font-bold text-white">${currentBalance.toFixed(2)}</span>
+            <span className="text-gray-400 text-sm">/ ${goalAmt.toFixed(2)}</span>
+            {goalDate && (
+              <span className="text-gray-500 text-xs ml-auto">
+                Target: {new Date(goalDate + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+              </span>
+            )}
+          </div>
+          <div className="w-full bg-dark-bg rounded-full h-3 overflow-hidden">
+            <div
+              className={`h-3 rounded-full transition-all duration-700 ${goalProgress >= 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+              style={{ width: `${goalProgress}%` }}
+            />
+          </div>
+          <div className="flex justify-between text-xs text-gray-500 mt-1">
+            <span>{goalProgress.toFixed(1)}% complete</span>
+            {goalProgress >= 100
+              ? <span className="text-green-400 font-medium">Goal reached!</span>
+              : <span>${goalRemaining.toFixed(2)} remaining</span>
+            }
+          </div>
+        </div>
+      )}
+
+      {riskFlagCount > 0 && (
+        <div className="bg-orange-900/20 border border-orange-800/30 rounded-xl p-4 flex items-start gap-3">
+          <AlertTriangle size={16} className="text-orange-400 mt-0.5 flex-shrink-0" />
+          <div>
+            <p className="text-orange-300 font-semibold text-sm">Risk Limit Exceeded</p>
+            <p className="text-orange-200/70 text-xs mt-0.5">
+              {riskFlagCount} loss trade{riskFlagCount !== 1 ? 's' : ''} exceeded your {parseFloat(maxRisk)}% max risk limit. Review flagged trades in Recent Trades.
+            </p>
+          </div>
+        </div>
+      )}
 
       {/* Add Deposit / Withdrawal */}
       <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
@@ -189,6 +293,88 @@ function Settings() {
                 </div>
               </div>
             ))}
+          </div>
+        </div>
+      )}
+
+      {/* Goals & Risk Settings */}
+      <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
+        <h3 className="text-white font-semibold mb-4">Goals &amp; Risk Settings</h3>
+        <div className="space-y-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-gray-400 text-xs block mb-1">Account Goal ($)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.01"
+                value={goalAmount}
+                onChange={e => setGoalAmount(e.target.value)}
+                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                placeholder="e.g. 10000"
+              />
+            </div>
+            <div>
+              <label className="text-gray-400 text-xs block mb-1">Goal Target Date</label>
+              <input
+                type="date"
+                value={goalDate}
+                onChange={e => setGoalDate(e.target.value)}
+                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              />
+            </div>
+          </div>
+          <div>
+            <label className="text-gray-400 text-xs block mb-1">Max Risk Per Trade (%)</label>
+            <input
+              type="number"
+              min="0"
+              max="100"
+              step="0.1"
+              value={maxRisk}
+              onChange={e => setMaxRisk(e.target.value)}
+              className="w-full sm:w-40 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              placeholder="e.g. 2"
+            />
+            <p className="text-gray-500 text-xs mt-1">Loss trades exceeding this % will be flagged in the trade list.</p>
+          </div>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={handleSaveSettings}
+              disabled={savingSettings}
+              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-5 py-2 rounded-lg font-medium transition-colors"
+            >
+              {savingSettings ? 'Saving...' : 'Save Settings'}
+            </button>
+            {settingsSaved && <span className="text-green-400 text-sm">Saved!</span>}
+          </div>
+        </div>
+      </div>
+
+      {/* Account Growth Chart */}
+      {equityChartData.length >= 2 && (
+        <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
+          <h3 className="text-white font-semibold mb-4">Account Growth</h3>
+          <div className="w-full h-44">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={equityChartData}>
+                <defs>
+                  <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
+                <XAxis dataKey="label" stroke="#9ca3af" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+                <YAxis stroke="#9ca3af" tickFormatter={v => `$${v.toFixed(0)}`} width={55} tick={{ fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: '8px' }}
+                  labelStyle={{ color: '#f9fafb', fontWeight: 600 }}
+                  formatter={v => [`$${Number(v).toFixed(2)}`, 'Balance']}
+                />
+                <Area type="monotone" dataKey="balance" stroke="#3b82f6" strokeWidth={2} fill="url(#balanceGradient)" dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
           </div>
         </div>
       )}

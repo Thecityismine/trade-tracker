@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { Search, ImageIcon } from 'lucide-react';
 import TradeDetailsModal from './TradeDetailsModal';
 
-function RecentTrades({ trades }) {
+function RecentTrades({ trades, maxRiskPercent = 0 }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPeriod, setFilterPeriod] = useState('week');
   const [selectedTrade, setSelectedTrade] = useState(null);
@@ -145,6 +145,9 @@ function RecentTrades({ trades }) {
                         trade.pnlPercent >= 0 ? 'text-green-500' : 'text-red-500'
                       }`}>
                         {trade.pnlPercent?.toFixed(2)}%
+                        {maxRiskPercent > 0 && trade.result === 'loss' && Math.abs(trade.pnlPercent || 0) > maxRiskPercent && (
+                          <span className="ml-1 text-orange-400 text-xs" title="Exceeded risk limit">⚠</span>
+                        )}
                       </td>
                       <td className={`py-3 px-2 text-right font-medium ${
                         trade.gainLoss >= 0 ? 'text-green-500' : 'text-red-500'
@@ -208,10 +211,15 @@ function RecentTrades({ trades }) {
                     </div>
                   </div>
                   <div className="flex justify-between items-center">
-                    <div className={`text-lg font-bold ${
-                      trade.pnlPercent >= 0 ? 'text-green-500' : 'text-red-500'
-                    }`}>
-                      {trade.pnlPercent?.toFixed(2)}%
+                    <div className="flex items-center gap-1">
+                      <div className={`text-lg font-bold ${
+                        trade.pnlPercent >= 0 ? 'text-green-500' : 'text-red-500'
+                      }`}>
+                        {trade.pnlPercent?.toFixed(2)}%
+                      </div>
+                      {maxRiskPercent > 0 && trade.result === 'loss' && Math.abs(trade.pnlPercent || 0) > maxRiskPercent && (
+                        <span className="text-orange-400 text-xs" title="Exceeded risk limit">⚠</span>
+                      )}
                     </div>
                     <div className={`text-lg font-bold ${
                       trade.gainLoss >= 0 ? 'text-green-500' : 'text-red-500'
