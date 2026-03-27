@@ -27,7 +27,8 @@ function EquityCurve({ trades, deposits = [] }) {
         fullDate: tradeDate,
         pnl: cumulativePnl,
         pnlPercent: trade.pnlPercent || 0,
-        ticker: trade.ticker || 'BTC'
+        ticker: trade.ticker || 'BTC',
+        direction: trade.direction || 'long'
       };
     });
 
@@ -68,7 +69,9 @@ function EquityCurve({ trades, deposits = [] }) {
           <p className={`text-sm ${payload[0].value >= 0 ? 'text-green-500' : 'text-red-500'}`}>
             P&L: ${payload[0].value.toFixed(2)}
           </p>
-          <p className="text-gray-400 text-xs">{payload[0].payload.ticker}</p>
+          <p className="text-gray-400 text-xs">
+            {payload[0].payload.ticker} · {payload[0].payload.direction === 'long' ? 'Long' : 'Short'}
+          </p>
         </div>
       );
     }

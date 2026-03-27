@@ -196,12 +196,14 @@ function Dashboard() {
           subtitle="Win/Loss ratio"
           isPositive={metrics.profitFactor >= 1}
         />
-        <MetricCard
-          title="Max Drawdown"
-          value={`-${maxDrawdown.toFixed(2)}%`}
-          subtitle="Peak to trough"
-          isPositive={false}
-        />
+        <div className="col-span-2 lg:col-span-1">
+          <MetricCard
+            title="Max Drawdown"
+            value={`-${maxDrawdown.toFixed(2)}%`}
+            subtitle="Peak to trough"
+            isPositive={false}
+          />
+        </div>
       </div>
 
       {/* Percentage Gain Cards */}

@@ -383,7 +383,7 @@ function Analytics() {
             <p className="text-xs text-gray-400">Worst Loss Streak</p>
             <p className="text-2xl font-bold text-red-500 mt-1">{streakStats.maxLossStreak}</p>
           </div>
-          <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
+          <div className="col-span-2 lg:col-span-1 bg-dark-bg border border-dark-border rounded-lg p-4">
             <p className="text-xs text-gray-400">Max Drawdown</p>
             <p className="text-2xl font-bold text-red-500 mt-1">-{maxDrawdown.toFixed(2)}%</p>
           </div>
@@ -499,7 +499,7 @@ function Analytics() {
                   <BarChart data={avgWinLossStats.chartData}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                     <XAxis dataKey="name" stroke="#9ca3af" />
-                    <YAxis stroke="#9ca3af" tickFormatter={(value) => `$${Math.abs(value).toFixed(0)}`} />
+                    <YAxis stroke="#9ca3af" tickFormatter={(value) => `$${Math.abs(value).toFixed(0)}`} domain={['auto', 'auto']} />
                     <Tooltip
                       contentStyle={TOOLTIP_THEME.contentStyle}
                       labelStyle={TOOLTIP_THEME.labelStyle}

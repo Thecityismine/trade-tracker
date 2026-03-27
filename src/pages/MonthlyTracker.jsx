@@ -101,6 +101,11 @@ function MonthlyTracker() {
     const monthMap = new Map();
     const totalFunded = getTotalFunded(depositsData);
 
+    const firstDepositDate = depositsData
+      .filter(d => d.type === 'deposit')
+      .map(d => d.date?.toDate?.() || new Date(d.date))
+      .reduce((earliest, d) => (d < earliest ? d : earliest), new Date(9999, 0));
+
     tradesData.forEach(trade => {
       const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
       const monthKey = `${tradeDate.toLocaleDateString('en-US', { month: 'long' })} ${tradeDate.getFullYear()}`;
@@ -114,6 +119,7 @@ function MonthlyTracker() {
         monthMap.set(monthKey, {
           monthLabel: monthKey,
           monthYear,
+          monthStart,
           trades: [],
           wins: 0,
           losses: 0,
@@ -149,9 +155,12 @@ function MonthlyTracker() {
         ? ((winRate / 100) * avgWin) + ((1 - winRate / 100) * avgLoss)
         : 0;
       const profitFactor = month.totalLossPercentAbs > 0 ? month.totalWinPercent / month.totalLossPercentAbs : 0;
-      const monthlyPnlPercent = month.denominator > 0 ? (month.totalPnl / month.denominator) * 100 : 0;
+      const hasFunding = firstDepositDate.getFullYear() < 9999 && month.monthStart >= firstDepositDate;
+      const monthlyPnlPercent = (hasFunding && totalTrades > 0 && month.denominator > 0)
+        ? (month.totalPnl / month.denominator) * 100
+        : null;
 
-      const gradeInfo = getGrade(monthlyPnlPercent, profitFactor, expectancyPercent, month.totalPnl);
+      const gradeInfo = getGrade(monthlyPnlPercent ?? 0, profitFactor, expectancyPercent, month.totalPnl);
 
       return {
         ...month,
@@ -219,8 +228,8 @@ function MonthlyTracker() {
                   <td className="text-right py-3 px-3 text-white">
                     ${month.totalFees.toFixed(2)}
                   </td>
-                  <td className={`text-right py-3 px-3 font-bold ${month.monthlyPnlPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {month.monthlyPnlPercent >= 0 ? '+' : ''}{month.monthlyPnlPercent.toFixed(2)}%
+                  <td className={`text-right py-3 px-3 font-bold ${month.monthlyPnlPercent === null ? 'text-gray-500' : month.monthlyPnlPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {month.monthlyPnlPercent === null ? '--' : `${month.monthlyPnlPercent >= 0 ? '+' : ''}${month.monthlyPnlPercent.toFixed(2)}%`}
                   </td>
                   <td className="text-right py-3 px-3 text-white">{month.winRate.toFixed(2)}%</td>
                   <td className="text-right py-3 px-3 text-white">{month.avgWin.toFixed(2)}%</td>
@@ -269,8 +278,8 @@ function MonthlyTracker() {
                 </div>
                 <div>
                   <div className="text-gray-400">Monthly P&L%</div>
-                  <div className={`font-bold ${month.monthlyPnlPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {month.monthlyPnlPercent >= 0 ? '+' : ''}{month.monthlyPnlPercent.toFixed(2)}%
+                  <div className={`font-bold ${month.monthlyPnlPercent === null ? 'text-gray-500' : month.monthlyPnlPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {month.monthlyPnlPercent === null ? '--' : `${month.monthlyPnlPercent >= 0 ? '+' : ''}${month.monthlyPnlPercent.toFixed(2)}%`}
                   </div>
                 </div>
                 <div>

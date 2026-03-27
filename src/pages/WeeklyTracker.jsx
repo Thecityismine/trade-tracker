@@ -63,6 +63,11 @@ function WeeklyTracker() {
     const weekMap = new Map();
     const totalFunded = depositsData.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
 
+    const firstDepositDate = depositsData
+      .filter(d => d.type === 'deposit')
+      .map(d => d.date?.toDate?.() || new Date(d.date))
+      .reduce((earliest, d) => (d < earliest ? d : earliest), new Date(9999, 0));
+
     tradesData.forEach(trade => {
       const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
       const weekRange = getWeekRange(tradeDate);
@@ -111,7 +116,10 @@ function WeeklyTracker() {
         ? ((winRate / 100) * avgWin) - ((1 - winRate / 100) * avgLoss)
         : 0;
       const profitFactor = week.totalLoss > 0 ? week.totalGain / week.totalLoss : 0;
-      const pnlPercent = week.denominator > 0 ? (week.pnl / week.denominator) * 100 : 0;
+      const hasFunding = firstDepositDate.getFullYear() < 9999 && week.startDate >= firstDepositDate;
+      const pnlPercent = (hasFunding && totalTrades > 0 && week.denominator > 0)
+        ? (week.pnl / week.denominator) * 100
+        : null;
 
       return {
         ...week,
@@ -120,7 +128,7 @@ function WeeklyTracker() {
         avgLoss,
         expectancy: avgLoss > 0 ? (expectancy / avgLoss) * 100 : 0,
         profitFactor,
-        pnlPercent: totalTrades > 0 ? pnlPercent : 0
+        pnlPercent
       };
     });
 
@@ -171,8 +179,8 @@ function WeeklyTracker() {
                       ${week.pnl.toFixed(2)}
                     </td>
                     <td className="text-right py-3 px-3 text-white">${week.fees.toFixed(2)}</td>
-                    <td className={`text-right py-3 px-3 font-bold ${week.pnlPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                      {week.pnlPercent.toFixed(2)}%
+                    <td className={`text-right py-3 px-3 font-bold ${week.pnlPercent === null ? 'text-gray-500' : week.pnlPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                      {week.pnlPercent === null ? '--' : `${week.pnlPercent.toFixed(2)}%`}
                     </td>
                     <td className="text-right py-3 px-3 text-white">{week.winRate.toFixed(2)}%</td>
                     <td className="text-right py-3 px-3 text-white">{week.avgWin.toFixed(2)}%</td>
@@ -248,8 +256,8 @@ function WeeklyTracker() {
                 </div>
                 <div>
                   <div className="text-gray-400">P&L%</div>
-                  <div className={`font-bold ${week.pnlPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
-                    {week.pnlPercent.toFixed(2)}%
+                  <div className={`font-bold ${week.pnlPercent === null ? 'text-gray-500' : week.pnlPercent >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                    {week.pnlPercent === null ? '--' : `${week.pnlPercent.toFixed(2)}%`}
                   </div>
                 </div>
                 <div>
