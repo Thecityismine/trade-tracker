@@ -295,95 +295,72 @@ function Dashboard() {
 
   return (
     <div className="space-y-6">
-      {weekBanner && (
-        <div className="bg-dark-card border border-dark-border rounded-lg px-4 py-2.5 text-sm text-gray-300">
-          {weekBanner}
+      {/* Hero Card — P&L + all key stats in one */}
+      <div className="bg-gradient-to-br from-[#0e1628] to-[#161622] border border-blue-900/40 rounded-2xl p-5">
+        {/* P&L header */}
+        <div className="flex items-center justify-between mb-1">
+          <p className="text-gray-500 text-xs uppercase tracking-widest">Monthly P&amp;L</p>
+          <p className="text-gray-500 text-xs">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
         </div>
-      )}
-
-      {/* Metric Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <div className="col-span-2 lg:col-span-1">
-          <MetricCard
-            title="Total P&L"
-            value={
-              <CountUp
-                end={metrics.totalPnl}
-                decimals={2}
-                duration={1}
-                preserveValue
-                formattingFn={(val) => `${val < 0 ? '-' : ''}$${Math.abs(val).toFixed(2)}`}
-              />
-            }
-            subtitle={new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}
-            isPositive={metrics.totalPnl >= 0}
-            primary
-            hero
+        <p className={`text-5xl font-bold tabular-nums leading-none mb-1 ${metrics.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          <CountUp
+            end={metrics.totalPnl}
+            decimals={2}
+            duration={1}
+            preserveValue
+            formattingFn={(val) => `${val < 0 ? '-' : ''}$${Math.abs(val).toFixed(2)}`}
           />
-        </div>
-        <MetricCard
-          title="Win Rate"
-          value={<CountUp end={metrics.winRate} suffix="%" decimals={2} duration={1} preserveValue />}
-          subtitle={`${metrics.wins}W - ${metrics.losses}L`}
-          isPositive={metrics.winRate >= 50}
-        />
-        <MetricCard
-          title="Expectancy"
-          value={<CountUp end={metrics.expectancy} suffix="%" decimals={2} duration={1} preserveValue />}
-          subtitle="Per trade"
-          isPositive={metrics.expectancy >= 0}
-        />
-        <MetricCard
-          title="Profit Factor"
-          value={<CountUp end={metrics.profitFactor} decimals={2} duration={1} preserveValue />}
-          subtitle="Win/Loss ratio"
-          isPositive={metrics.profitFactor >= 1}
-        />
-        <div className="col-span-2 lg:col-span-1">
-          <MetricCard
-            title="Max Drawdown"
-            value={<CountUp end={maxDrawdown} prefix="-" suffix="%" decimals={2} duration={1} preserveValue />}
-            subtitle="Peak to trough"
-            isPositive={false}
-          />
-        </div>
-      </div>
+        </p>
+        <p className="text-gray-500 text-sm mb-5">{metrics.wins}W · {metrics.losses}L</p>
 
-      {/* Percentage Gain Cards */}
-      {deposits.length === 0 && (
-        <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg px-4 py-2 text-yellow-400 text-sm">
-          Add your initial deposit in <strong>Settings</strong> to see accurate % gain figures.
+        {/* Secondary stats row */}
+        <div className="grid grid-cols-4 gap-3 mb-5 pb-4 border-b border-white/5">
+          <div>
+            <p className="text-gray-500 text-xs mb-1">Win Rate</p>
+            <p className={`text-base font-bold tabular-nums ${metrics.winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+              <CountUp end={metrics.winRate} suffix="%" decimals={1} duration={1} preserveValue />
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs mb-1">P. Factor</p>
+            <p className={`text-base font-bold tabular-nums ${metrics.profitFactor >= 1 ? 'text-green-400' : 'text-red-400'}`}>
+              <CountUp end={metrics.profitFactor} decimals={2} duration={1} preserveValue />
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs mb-1">Expect.</p>
+            <p className={`text-base font-bold tabular-nums ${metrics.expectancy >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              <CountUp end={metrics.expectancy} suffix="%" decimals={1} duration={1} preserveValue />
+            </p>
+          </div>
+          <div>
+            <p className="text-gray-500 text-xs mb-1">Max DD</p>
+            <p className="text-base font-bold text-red-400 tabular-nums">
+              <CountUp end={maxDrawdown} prefix="-" suffix="%" decimals={1} duration={1} preserveValue />
+            </p>
+          </div>
         </div>
-      )}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <MetricCard
-          title="Day % Gain"
-          value={`${percentSummary.day >= 0 ? '+' : ''}${percentSummary.day.toFixed(2)}%`}
-          subtitle="Today"
-          isPositive={percentSummary.day >= 0}
-          primary
-        />
-        <MetricCard
-          title="Week % Gain"
-          value={`${percentSummary.week >= 0 ? '+' : ''}${percentSummary.week.toFixed(2)}%`}
-          subtitle="Last 7 days"
-          isPositive={percentSummary.week >= 0}
-          primary
-        />
-        <MetricCard
-          title="Month % Gain"
-          value={`${percentSummary.month >= 0 ? '+' : ''}${percentSummary.month.toFixed(2)}%`}
-          subtitle={new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
-          isPositive={percentSummary.month >= 0}
-          primary
-        />
-        <MetricCard
-          title="Year % Gain"
-          value={`${percentSummary.year >= 0 ? '+' : ''}${percentSummary.year.toFixed(2)}%`}
-          subtitle={new Date().getFullYear().toString()}
-          isPositive={percentSummary.year >= 0}
-          primary
-        />
+
+        {/* Period % gains */}
+        <div className="grid grid-cols-4 gap-3">
+          {[
+            { label: 'Day', value: percentSummary.day },
+            { label: 'Week', value: percentSummary.week },
+            { label: 'Month', value: percentSummary.month },
+            { label: 'Year', value: percentSummary.year },
+          ].map(({ label, value }) => (
+            <div key={label}>
+              <p className="text-gray-500 text-xs mb-1">{label}</p>
+              <p className={`text-base font-bold tabular-nums ${value >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {value >= 0 ? '+' : ''}{value.toFixed(1)}%
+              </p>
+            </div>
+          ))}
+        </div>
+
+        {deposits.length === 0 && (
+          <p className="text-yellow-500/70 text-xs mt-4">Add a deposit in <strong>Settings</strong> to see accurate % gains.</p>
+        )}
       </div>
 
       {dashGoal && (
