@@ -7,7 +7,8 @@ import ChartPatterns from './pages/ChartPatterns';
 import TradingMindset from './pages/TradingMindset';
 import TradeJournal from './pages/TradeJournal';
 import Notebook from './pages/Notebook';
-import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText } from 'lucide-react';
+import Settings from './pages/Settings';
+import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText, Settings as SettingsIcon } from 'lucide-react';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -21,6 +22,7 @@ function App() {
     { id: 'journal', label: 'Trade Journal', icon: FileText },
     { id: 'mindset', label: 'Mindset', icon: BookOpen },
     { id: 'notebook', label: 'Notebook', icon: BookOpen },
+    { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 
   const renderPage = () => {
@@ -41,6 +43,8 @@ function App() {
         return <Notebook />;
       case 'mindset':
         return <TradingMindset />;
+      case 'settings':
+        return <Settings />;
       default:
         return <Dashboard />;
     }

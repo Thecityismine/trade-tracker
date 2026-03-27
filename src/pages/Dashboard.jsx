@@ -4,7 +4,7 @@ import MetricCard from '../components/MetricCard';
 import EquityCurve from '../components/EquityCurve';
 import RecentTrades from '../components/RecentTrades';
 import TradeModal from '../components/TradeModal';
-import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot, doc, getDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 function Dashboard() {
@@ -18,6 +18,18 @@ function Dashboard() {
     expectancy: 0,
     profitFactor: 0
   });
+  const [startingBalance, setStartingBalance] = useState(null);
+
+  // Fetch starting balance from settings
+  useEffect(() => {
+    const fetchSettings = async () => {
+      const docSnap = await getDoc(doc(db, 'settings', 'userSettings'));
+      if (docSnap.exists()) {
+        setStartingBalance(docSnap.data().startingBalance || null);
+      }
+    };
+    fetchSettings();
+  }, []);
 
   // Fetch trades from Firebase
   useEffect(() => {
@@ -108,7 +120,9 @@ function Dashboard() {
       }
     });
 
-    return periodTrades.reduce((sum, trade) => sum + (Number(trade.pnlPercent) || 0), 0);
+    const periodPnl = periodTrades.reduce((sum, trade) => sum + (Number(trade.gainLoss) || 0), 0);
+    if (!startingBalance) return 0;
+    return (periodPnl / startingBalance) * 100;
   };
 
   const percentSummary = {
@@ -149,6 +163,11 @@ function Dashboard() {
       </div>
 
       {/* Percentage Gain Cards */}
+      {!startingBalance && (
+        <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg px-4 py-2 text-yellow-400 text-sm">
+          Set your account balance in <strong>Settings</strong> to see accurate % gain figures.
+        </div>
+      )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <MetricCard
           title="Day % Gain"
