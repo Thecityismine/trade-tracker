@@ -4,7 +4,7 @@ import TradeDetailsModal from './TradeDetailsModal';
 
 function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
   const [searchTerm, setSearchTerm] = useState('');
-  const [filterPeriod, setFilterPeriod] = useState('week');
+  const [filterPeriod, setFilterPeriod] = useState('today');
   const [selectedTrade, setSelectedTrade] = useState(null);
 
   const getTradeDate = (trade) => trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);

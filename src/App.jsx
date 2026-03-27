@@ -28,7 +28,7 @@ function App() {
   const renderPage = () => {
     switch (activeTab) {
       case 'dashboard':
-        return <Dashboard />;
+        return <Dashboard onNavigate={setActiveTab} />;
       case 'analytics':
         return <Analytics />;
       case 'weekly':

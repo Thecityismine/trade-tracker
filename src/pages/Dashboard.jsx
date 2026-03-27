@@ -8,7 +8,7 @@ import TradeModal from '../components/TradeModal';
 import { collection, query, orderBy, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
-function Dashboard() {
+function Dashboard({ onNavigate }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [trades, setTrades] = useState([]);
   const [metrics, setMetrics] = useState({
@@ -415,7 +415,11 @@ function Dashboard() {
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             {pinnedNotes.map(note => (
-              <div key={note.id} className="bg-dark-bg border border-dark-border rounded-lg p-3 hover:border-gray-600 transition-colors">
+              <div
+                key={note.id}
+                onClick={() => onNavigate?.('notebook')}
+                className="bg-dark-bg border border-dark-border rounded-lg p-3 hover:border-gray-600 transition-colors cursor-pointer"
+              >
                 <p className="text-white text-sm font-medium mb-1 truncate">{note.title}</p>
                 <p className="text-gray-400 text-xs line-clamp-3 whitespace-pre-wrap">
                   {String(note.content || '').replace(/[#*`_~\[\]]/g, '').trim().slice(0, 120)}
