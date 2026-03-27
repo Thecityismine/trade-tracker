@@ -302,7 +302,7 @@ function Dashboard() {
           <p className="text-gray-500 text-xs uppercase tracking-widest">Monthly P&amp;L</p>
           <p className="text-gray-500 text-xs">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
         </div>
-        <p className={`text-5xl font-bold tabular-nums leading-none mb-1 ${metrics.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+        <p className={`text-4xl font-bold tabular-nums leading-none mb-1 ${metrics.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
           <CountUp
             end={metrics.totalPnl}
             decimals={2}
