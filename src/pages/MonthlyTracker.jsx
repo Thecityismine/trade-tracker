@@ -52,6 +52,27 @@ function MonthlyTracker() {
     return grade;
   };
 
+  const getGradeExplanation = (grade, monthlyPnlPercent, profitFactor, expectancyPercent) => {
+    const parts = [];
+    if (monthlyPnlPercent !== null) {
+      if (monthlyPnlPercent >= 20) parts.push(`+${monthlyPnlPercent.toFixed(1)}% gain (excellent)`);
+      else if (monthlyPnlPercent >= 10) parts.push(`+${monthlyPnlPercent.toFixed(1)}% gain (strong)`);
+      else if (monthlyPnlPercent >= 5) parts.push(`+${monthlyPnlPercent.toFixed(1)}% gain (good)`);
+      else if (monthlyPnlPercent >= 0) parts.push(`+${monthlyPnlPercent.toFixed(1)}% gain (modest)`);
+      else parts.push(`${monthlyPnlPercent.toFixed(1)}% (losing month)`);
+    }
+    if (profitFactor >= 2.5) parts.push(`PF ${profitFactor.toFixed(1)} (excellent)`);
+    else if (profitFactor >= 2) parts.push(`PF ${profitFactor.toFixed(1)} (strong)`);
+    else if (profitFactor >= 1.5) parts.push(`PF ${profitFactor.toFixed(1)} (good)`);
+    else if (profitFactor >= 1) parts.push(`PF ${profitFactor.toFixed(1)} (marginal)`);
+    else if (profitFactor > 0) parts.push(`PF ${profitFactor.toFixed(1)} (poor)`);
+    if (expectancyPercent >= 8) parts.push(`E ${expectancyPercent.toFixed(1)}% (high)`);
+    else if (expectancyPercent >= 3) parts.push(`E ${expectancyPercent.toFixed(1)}% (positive)`);
+    else if (expectancyPercent >= 0) parts.push(`E ${expectancyPercent.toFixed(1)}% (low)`);
+    else parts.push(`E ${expectancyPercent.toFixed(1)}% (negative)`);
+    return `Grade ${grade}: ${parts.join(' · ')}`;
+  };
+
   const getGrade = (monthlyPnlPercent, profitFactor, expectancyPercent, totalPnl) => {
     let score = 0;
 
@@ -161,6 +182,7 @@ function MonthlyTracker() {
         : null;
 
       const gradeInfo = getGrade(monthlyPnlPercent ?? 0, profitFactor, expectancyPercent, month.totalPnl);
+      const gradeExplanation = getGradeExplanation(gradeInfo.grade, monthlyPnlPercent, profitFactor, expectancyPercent);
 
       return {
         ...month,
@@ -171,6 +193,7 @@ function MonthlyTracker() {
         expectancy: expectancyPercent,
         profitFactor,
         monthlyPnlPercent,
+        gradeExplanation,
         ...gradeInfo
       };
     });
@@ -218,7 +241,10 @@ function MonthlyTracker() {
                   <td className="text-center py-3 px-2 text-white font-medium">{month.wins}</td>
                   <td className="text-center py-3 px-2 text-white font-medium">{month.losses}</td>
                   <td className="text-center py-3 px-2">
-                    <span className={`${month.color} text-white px-3 py-1 rounded font-bold`}>
+                    <span
+                      className={`${month.color} text-white px-3 py-1 rounded font-bold cursor-help`}
+                      title={month.gradeExplanation}
+                    >
                       {month.grade}
                     </span>
                   </td>
@@ -299,6 +325,9 @@ function MonthlyTracker() {
                   <div className="text-white font-medium">{month.avgLoss.toFixed(2)}%</div>
                 </div>
               </div>
+              <p className="text-xs text-gray-500 mt-3 pt-3 border-t border-dark-border">
+                {month.gradeExplanation}
+              </p>
             </div>
           ))}
 

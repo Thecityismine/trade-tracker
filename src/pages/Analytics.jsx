@@ -354,6 +354,103 @@ function Analytics() {
     return maxDD;
   }, [completedTrades, deposits]);
 
+  const tradeFrequency = useMemo(() => {
+    const cutoff = new Date();
+    cutoff.setDate(cutoff.getDate() - 30);
+    const recent = completedTrades.filter(t => t.parsedTradeDate >= cutoff);
+    return recent.length > 0 ? +(recent.length / 30).toFixed(2) : 0;
+  }, [completedTrades]);
+
+  const directionInsight = useMemo(() => {
+    const withTrades = directionStats.filter(d => d.tradesCount > 0);
+    if (withTrades.length < 2) return null;
+    const best = withTrades.reduce((a, b) => a.winRate >= b.winRate ? a : b);
+    return `Your ${best.direction} trades have the highest win rate at ${best.winRate.toFixed(1)}%.`;
+  }, [directionStats]);
+
+  const timeInsight = useMemo(() => {
+    const active = timeOfDayStats.filter(s => s.trades > 0);
+    if (active.length === 0) return null;
+    const best = active.reduce((a, b) => a.totalPnl >= b.totalPnl ? a : b);
+    if (best.totalPnl <= 0) return `No profitable session yet — keep building your history.`;
+    return `You perform best in the ${best.name.toLowerCase()} (+$${best.totalPnl.toFixed(2)} total P&L).`;
+  }, [timeOfDayStats]);
+
+  const avgWinLossInsight = useMemo(() => {
+    const { avgWinUsd, avgLossUsdAbs } = avgWinLossStats;
+    if (avgWinUsd === 0 && avgLossUsdAbs === 0) return null;
+    if (avgLossUsdAbs === 0) return 'No losses recorded — solid consistency.';
+    const ratio = avgWinUsd / avgLossUsdAbs;
+    if (ratio >= 1.5) return `Strong R:R — your average win ($${avgWinUsd.toFixed(2)}) is ${ratio.toFixed(1)}x your average loss.`;
+    if (ratio >= 1) return `Your wins ($${avgWinUsd.toFixed(2)}) edge out losses ($${avgLossUsdAbs.toFixed(2)}) — maintain or improve R:R.`;
+    return `Your average loss ($${avgLossUsdAbs.toFixed(2)}) exceeds wins ($${avgWinUsd.toFixed(2)}) — focus on improving R:R.`;
+  }, [avgWinLossStats]);
+
+  const monthlyInsight = useMemo(() => {
+    if (monthlyComparison.length === 0) return null;
+    const best = [...monthlyComparison].reduce((a, b) => a.totalPnl >= b.totalPnl ? a : b);
+    const totalPnl = monthlyComparison.reduce((sum, m) => sum + m.totalPnl, 0);
+    const trend = totalPnl >= 0 ? 'Overall trend is positive.' : 'Focus on consistency to improve the trend.';
+    return `Best month: ${best.label} (+$${best.totalPnl.toFixed(2)}). ${trend}`;
+  }, [monthlyComparison]);
+
+  const patternPerformance = useMemo(() => {
+    const patternMap = new Map();
+    completedTrades.forEach(trade => {
+      if (!trade.chartPattern?.trim()) return;
+      const key = trade.chartPattern.trim().toLowerCase();
+      if (!patternMap.has(key)) {
+        patternMap.set(key, { name: trade.chartPattern.trim(), wins: 0, losses: 0, totalPnl: 0 });
+      }
+      const p = patternMap.get(key);
+      if (trade.result === 'win') p.wins++;
+      else p.losses++;
+      p.totalPnl += toNumber(trade.gainLoss);
+    });
+    return Array.from(patternMap.values())
+      .map(p => ({ ...p, trades: p.wins + p.losses, winRate: (p.wins + p.losses) > 0 ? (p.wins / (p.wins + p.losses)) * 100 : 0 }))
+      .sort((a, b) => b.totalPnl - a.totalPnl);
+  }, [completedTrades]);
+
+  const behavioralPatterns = useMemo(() => {
+    const insights = [];
+    if (completedTrades.length < 5) return insights;
+
+    const DAY_NAMES = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const dayMap = {};
+    completedTrades.forEach(t => {
+      const d = t.parsedTradeDate.getDay();
+      if (!dayMap[d]) dayMap[d] = { wins: 0, losses: 0, pnl: 0 };
+      if (t.result === 'win') dayMap[d].wins++;
+      else dayMap[d].losses++;
+      dayMap[d].pnl += toNumber(t.gainLoss);
+    });
+    const days = Object.entries(dayMap)
+      .map(([d, s]) => ({ day: +d, name: DAY_NAMES[+d], ...s, trades: s.wins + s.losses }))
+      .filter(d => d.trades >= 2);
+
+    if (days.length >= 2) {
+      const best = days.reduce((a, b) => a.pnl >= b.pnl ? a : b);
+      const worst = days.reduce((a, b) => a.pnl <= b.pnl ? a : b);
+      if (best.pnl > 0) insights.push({ type: 'positive', text: `${best.name} is your best trading day (+$${best.pnl.toFixed(2)} total, ${best.wins}W / ${best.losses}L).` });
+      if (worst.pnl < 0 && worst.day !== best.day) insights.push({ type: 'warning', text: `${worst.name} is your worst day ($${worst.pnl.toFixed(2)} total) — consider smaller size on ${worst.name}.` });
+    }
+
+    const sorted = [...completedTrades].sort((a, b) => a.parsedTradeDate - b.parsedTradeDate);
+    let streak = 0;
+    let checksAfter3 = 0;
+    let lossesAfter3 = 0;
+    sorted.forEach(t => {
+      if (streak >= 3) { checksAfter3++; if (t.result === 'loss') lossesAfter3++; }
+      streak = t.result === 'win' ? streak + 1 : 0;
+    });
+    if (checksAfter3 >= 3 && lossesAfter3 / checksAfter3 >= 0.6) {
+      insights.push({ type: 'warning', text: `You tend to lose after 3+ consecutive wins (${Math.round(lossesAfter3 / checksAfter3 * 100)}% of the time) — watch for overconfidence.` });
+    }
+
+    return insights;
+  }, [completedTrades]);
+
   const totalClosedTrades = completedTrades.length;
   const totalWins = completedTrades.filter((trade) => trade.result === 'win').length;
   const overallWinRate = totalClosedTrades > 0 ? (totalWins / totalClosedTrades) * 100 : 0;
@@ -364,28 +461,33 @@ function Analytics() {
         <h2 className="text-2xl font-bold text-white mb-1">Analytics</h2>
         <p className="text-gray-400">Deeper performance breakdown from your trade history.</p>
 
-        <div className="grid grid-cols-2 lg:grid-cols-5 gap-3 mt-6">
+        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6">
           <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
             <p className="text-xs text-gray-400">Closed Trades</p>
             <p className="text-2xl font-bold text-white mt-1">{totalClosedTrades}</p>
           </div>
           <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
             <p className="text-xs text-gray-400">Overall Win Rate</p>
-            <p className={`text-2xl font-bold mt-1 ${overallWinRate >= 50 ? 'text-green-500' : 'text-red-500'}`}>
+            <p className={`text-2xl font-bold mt-1 ${overallWinRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
               {overallWinRate.toFixed(2)}%
             </p>
           </div>
           <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
             <p className="text-xs text-gray-400">Best Win Streak</p>
-            <p className="text-2xl font-bold text-green-500 mt-1">{streakStats.maxWinStreak}</p>
+            <p className="text-2xl font-bold text-green-400 mt-1">{streakStats.maxWinStreak}</p>
           </div>
           <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
             <p className="text-xs text-gray-400">Worst Loss Streak</p>
-            <p className="text-2xl font-bold text-red-500 mt-1">{streakStats.maxLossStreak}</p>
+            <p className="text-2xl font-bold text-red-400 mt-1">{streakStats.maxLossStreak}</p>
           </div>
-          <div className="col-span-2 lg:col-span-1 bg-dark-bg border border-dark-border rounded-lg p-4">
+          <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
             <p className="text-xs text-gray-400">Max Drawdown</p>
-            <p className="text-2xl font-bold text-red-500 mt-1">-{maxDrawdown.toFixed(2)}%</p>
+            <p className="text-2xl font-bold text-red-400 mt-1">-{maxDrawdown.toFixed(2)}%</p>
+          </div>
+          <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
+            <p className="text-xs text-gray-400">Trades / Day</p>
+            <p className="text-2xl font-bold text-white mt-1">{tradeFrequency.toFixed(2)}</p>
+            <p className="text-xs text-gray-500 mt-1">Last 30 days</p>
           </div>
         </div>
       </div>
@@ -440,6 +542,11 @@ function Analytics() {
                   </div>
                 ))}
               </div>
+              {directionInsight && (
+                <p className="text-xs text-blue-400 mt-3 bg-blue-900/20 border border-blue-800/30 rounded-lg px-3 py-2">
+                  {directionInsight}
+                </p>
+              )}
             </div>
 
             <div className="bg-dark-card border border-dark-border rounded-lg p-6">
@@ -486,6 +593,11 @@ function Analytics() {
                   </div>
                 ))}
               </div>
+              {timeInsight && (
+                <p className="text-xs text-blue-400 mt-3 bg-blue-900/20 border border-blue-800/30 rounded-lg px-3 py-2">
+                  {timeInsight}
+                </p>
+              )}
             </div>
           </div>
 
@@ -528,6 +640,11 @@ function Analytics() {
                   <p className="text-xs text-gray-500">-{avgWinLossStats.avgLossPercentAbs.toFixed(2)}%</p>
                 </div>
               </div>
+              {avgWinLossInsight && (
+                <p className="text-xs text-blue-400 mt-3 bg-blue-900/20 border border-blue-800/30 rounded-lg px-3 py-2">
+                  {avgWinLossInsight}
+                </p>
+              )}
             </div>
 
             <div className="bg-dark-card border border-dark-border rounded-lg p-6">
@@ -555,6 +672,62 @@ function Analytics() {
               </div>
             </div>
           </div>
+
+          {patternPerformance.length > 0 && (
+            <div className="bg-dark-card border border-dark-border rounded-lg p-6">
+              <h3 className="text-lg font-bold text-white mb-1">Pattern Performance</h3>
+              <p className="text-gray-400 text-sm mb-4">Win rate and P&amp;L grouped by chart pattern used.</p>
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="text-gray-400 border-b border-dark-border">
+                      <th className="text-left py-2 pr-4 font-medium">Pattern</th>
+                      <th className="text-center py-2 px-2 font-medium">Trades</th>
+                      <th className="text-center py-2 px-2 font-medium">W / L</th>
+                      <th className="text-right py-2 px-2 font-medium">Win Rate</th>
+                      <th className="text-right py-2 pl-2 font-medium">Total P&amp;L</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {patternPerformance.map(p => (
+                      <tr key={p.name} className="border-t border-dark-border hover:bg-dark-bg transition-colors">
+                        <td className="py-2 pr-4 text-white font-medium">{p.name}</td>
+                        <td className="text-center py-2 px-2 text-gray-300">{p.trades}</td>
+                        <td className="text-center py-2 px-2 text-gray-300">{p.wins}W / {p.losses}L</td>
+                        <td className={`text-right py-2 px-2 font-medium ${p.winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+                          {p.winRate.toFixed(1)}%
+                        </td>
+                        <td className={`text-right py-2 pl-2 font-bold ${p.totalPnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                          {p.totalPnl >= 0 ? '+' : ''}${p.totalPnl.toFixed(2)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          )}
+
+          {behavioralPatterns.length > 0 && (
+            <div className="bg-dark-card border border-dark-border rounded-lg p-6">
+              <h3 className="text-lg font-bold text-white mb-1">Behavioral Patterns</h3>
+              <p className="text-gray-400 text-sm mb-4">Detected tendencies from your trading history.</p>
+              <div className="space-y-2">
+                {behavioralPatterns.map((insight, i) => (
+                  <div
+                    key={i}
+                    className={`text-sm rounded-lg px-4 py-3 border ${
+                      insight.type === 'positive'
+                        ? 'bg-green-900/20 border-green-800/30 text-green-300'
+                        : 'bg-yellow-900/20 border-yellow-800/30 text-yellow-300'
+                    }`}
+                  >
+                    {insight.text}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
             <div className="xl:col-span-2 bg-dark-card border border-dark-border rounded-lg p-6">
@@ -591,6 +764,11 @@ function Analytics() {
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
+              {monthlyInsight && (
+                <p className="text-xs text-blue-400 mt-4 bg-blue-900/20 border border-blue-800/30 rounded-lg px-3 py-2">
+                  {monthlyInsight}
+                </p>
+              )}
             </div>
 
             <div className="bg-dark-card border border-dark-border rounded-lg p-6">

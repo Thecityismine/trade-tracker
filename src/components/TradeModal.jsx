@@ -43,6 +43,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     fee: '',
     result: 'win',
     comment: '',
+    chartPattern: '',
     tradeDate: formatDateForInput(new Date())
   });
 
@@ -83,6 +84,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       fee: editTrade.fee?.toString() || '',
       result: normalizedResult,
       comment: editTrade.comment || '',
+      chartPattern: editTrade.chartPattern || '',
       tradeDate: formattedDate
     });
     setChartImage(null);
@@ -221,6 +223,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
         pnlPercent: calculatedPnl,
         result: formData.result,
         comment: formData.comment,
+        chartPattern: formData.chartPattern || null,
         chartImageUrl,
         chartImageSource,
         tradeDate: mergeDateWithExistingTime(
@@ -253,6 +256,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
           fee: '',
           result: 'win',
           comment: '',
+          chartPattern: '',
           tradeDate: formatDateForInput(new Date())
         });
       }
@@ -507,6 +511,18 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   </div>
                 )}
               </div>
+            </div>
+
+            <div>
+              <label className="block text-gray-400 text-sm mb-2">Pattern Used <span className="text-gray-600">(optional)</span></label>
+              <input
+                type="text"
+                name="chartPattern"
+                value={formData.chartPattern}
+                onChange={handleInputChange}
+                placeholder="e.g. Bull Flag, Head & Shoulders"
+                className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+              />
             </div>
 
             <div>
