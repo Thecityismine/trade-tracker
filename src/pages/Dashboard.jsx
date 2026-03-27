@@ -303,21 +303,24 @@ function Dashboard() {
 
       {/* Metric Cards */}
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
-        <MetricCard
-          title="Total P&L"
-          value={
-            <CountUp
-              end={metrics.totalPnl}
-              decimals={2}
-              duration={1}
-              preserveValue
-              formattingFn={(val) => `${val < 0 ? '-' : ''}$${Math.abs(val).toFixed(2)}`}
-            />
-          }
-          subtitle={new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}
-          isPositive={metrics.totalPnl >= 0}
-          primary
-        />
+        <div className="col-span-2 lg:col-span-1">
+          <MetricCard
+            title="Total P&L"
+            value={
+              <CountUp
+                end={metrics.totalPnl}
+                decimals={2}
+                duration={1}
+                preserveValue
+                formattingFn={(val) => `${val < 0 ? '-' : ''}$${Math.abs(val).toFixed(2)}`}
+              />
+            }
+            subtitle={new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}
+            isPositive={metrics.totalPnl >= 0}
+            primary
+            hero
+          />
+        </div>
         <MetricCard
           title="Win Rate"
           value={<CountUp end={metrics.winRate} suffix="%" decimals={2} duration={1} preserveValue />}
@@ -448,12 +451,16 @@ function Dashboard() {
       )}
 
       {/* Recent Trades */}
-      <RecentTrades trades={trades} maxRiskPercent={parseFloat(appSettings.maxRiskPercent) || 0} />
+      <RecentTrades
+        trades={trades}
+        maxRiskPercent={parseFloat(appSettings.maxRiskPercent) || 0}
+        onAddTrade={() => setIsModalOpen(true)}
+      />
 
       {/* Floating Action Button */}
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 text-white p-4 rounded-full shadow-lg transition-all hover:scale-110 z-50"
+        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white p-4 rounded-full shadow-lg transition-all hover:scale-110 z-50"
         aria-label="Add new trade"
       >
         <Plus size={24} />

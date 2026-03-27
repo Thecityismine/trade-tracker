@@ -64,21 +64,23 @@ function App() {
       {/* Navigation Tabs */}
       <nav className="bg-[#0a0a0a]/95 backdrop-blur-sm border-b border-dark-border sticky top-16 z-40 overflow-x-auto">
         <div className="max-w-7xl mx-auto px-4">
-          <div className="flex space-x-1 min-w-max">
+          <div className="flex min-w-max">
             {tabs.map((tab) => {
               const Icon = tab.icon;
+              const isActive = activeTab === tab.id;
               return (
                 <button
                   key={tab.id}
                   onClick={() => setActiveTab(tab.id)}
-                  className={`flex items-center space-x-2 px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? 'text-white border-b-2 border-blue-500'
-                      : 'text-gray-400 hover:text-gray-300'
+                  className={`relative flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 px-3 sm:px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap min-w-[44px] sm:min-w-0 ${
+                    isActive ? 'text-white' : 'text-gray-400 hover:text-gray-300'
                   }`}
                 >
                   <Icon size={18} />
-                  <span>{tab.label}</span>
+                  <span className="hidden sm:inline text-xs sm:text-sm">{tab.label}</span>
+                  {isActive && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
+                  )}
                 </button>
               );
             })}
@@ -87,7 +89,7 @@ function App() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 py-6">
+      <main key={activeTab} className="page-fade-in max-w-7xl mx-auto px-4 py-6">
         {renderPage()}
       </main>
     </div>

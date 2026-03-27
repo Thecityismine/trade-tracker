@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { Search, ImageIcon } from 'lucide-react';
+import { Search, ImageIcon, BarChart2, Plus } from 'lucide-react';
 import TradeDetailsModal from './TradeDetailsModal';
 
-function RecentTrades({ trades, maxRiskPercent = 0 }) {
+function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
   const [searchTerm, setSearchTerm] = useState('');
   const [filterPeriod, setFilterPeriod] = useState('week');
   const [selectedTrade, setSelectedTrade] = useState(null);
@@ -172,8 +172,21 @@ function RecentTrades({ trades, maxRiskPercent = 0 }) {
                 })
               ) : (
                 <tr>
-                  <td colSpan="8" className="py-8 text-center text-gray-500">
-                    No trades found
+                  <td colSpan="8">
+                    <div className="py-12 flex flex-col items-center gap-3">
+                      <BarChart2 size={40} strokeWidth={1.2} className="text-gray-700" />
+                      <p className="text-gray-400 font-medium">No trades this period</p>
+                      <p className="text-gray-600 text-sm">Try a different filter, or log your first trade.</p>
+                      {onAddTrade && (
+                        <button
+                          onClick={onAddTrade}
+                          className="mt-1 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm px-4 py-2 rounded-lg transition-all"
+                        >
+                          <Plus size={15} />
+                          Add Trade
+                        </button>
+                      )}
+                    </div>
                   </td>
                 </tr>
               )}
@@ -234,8 +247,19 @@ function RecentTrades({ trades, maxRiskPercent = 0 }) {
               );
             })
           ) : (
-            <div className="py-8 text-center text-gray-500">
-              No trades found
+            <div className="py-12 flex flex-col items-center gap-3">
+              <BarChart2 size={40} strokeWidth={1.2} className="text-gray-700" />
+              <p className="text-gray-400 font-medium">No trades this period</p>
+              <p className="text-gray-600 text-sm">Try a different filter, or log your first trade.</p>
+              {onAddTrade && (
+                <button
+                  onClick={onAddTrade}
+                  className="mt-1 flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white text-sm px-4 py-2 rounded-lg transition-all"
+                >
+                  <Plus size={15} />
+                  Add Trade
+                </button>
+              )}
             </div>
           )}
         </div>
