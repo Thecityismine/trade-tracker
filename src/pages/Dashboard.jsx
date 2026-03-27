@@ -4,7 +4,7 @@ import MetricCard from '../components/MetricCard';
 import EquityCurve from '../components/EquityCurve';
 import RecentTrades from '../components/RecentTrades';
 import TradeModal from '../components/TradeModal';
-import { collection, query, orderBy, onSnapshot, doc, getDoc } from 'firebase/firestore';
+import { collection, query, orderBy, onSnapshot } from 'firebase/firestore';
 import { db } from '../config/firebase';
 
 function Dashboard() {
@@ -18,17 +18,13 @@ function Dashboard() {
     expectancy: 0,
     profitFactor: 0
   });
-  const [startingBalance, setStartingBalance] = useState(null);
+  const [deposits, setDeposits] = useState([]);
 
-  // Fetch starting balance from settings
+  // Fetch deposits from Firebase
   useEffect(() => {
-    const fetchSettings = async () => {
-      const docSnap = await getDoc(doc(db, 'settings', 'userSettings'));
-      if (docSnap.exists()) {
-        setStartingBalance(docSnap.data().startingBalance || null);
-      }
-    };
-    fetchSettings();
+    return onSnapshot(collection(db, 'deposits'), (snap) => {
+      setDeposits(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
   }, []);
 
   // Fetch trades from Firebase
@@ -93,36 +89,57 @@ function Dashboard() {
 
   const getTradeDate = (trade) => trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
 
+  const getBalanceAtDate = (targetDate) => {
+    const funded = deposits
+      .filter(d => {
+        const date = d.date?.toDate?.() || new Date(d.date);
+        return date <= targetDate;
+      })
+      .reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
+
+    const pnlBefore = trades
+      .filter(t => {
+        const d = getTradeDate(t);
+        return !Number.isNaN(d.getTime()) && d < targetDate;
+      })
+      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
+
+    return funded + pnlBefore;
+  };
+
   const calculatePeriodPercent = (period) => {
     const now = new Date();
+    let periodStart;
 
-    const periodTrades = trades.filter((trade) => {
-      const tradeDate = getTradeDate(trade);
-      if (Number.isNaN(tradeDate.getTime())) {
-        return false;
-      }
+    switch (period) {
+      case 'day':
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        break;
+      case 'week':
+        periodStart = new Date(now);
+        periodStart.setDate(periodStart.getDate() - 7);
+        break;
+      case 'month':
+        periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
+        break;
+      case 'year':
+        periodStart = new Date(now.getFullYear(), 0, 1);
+        break;
+      default:
+        return 0;
+    }
 
-      switch (period) {
-        case 'day':
-          return tradeDate.toDateString() === now.toDateString();
-        case 'week': {
-          const weekAgo = new Date(now);
-          weekAgo.setDate(weekAgo.getDate() - 7);
-          return tradeDate >= weekAgo && tradeDate <= now;
-        }
-        case 'month':
-          return tradeDate.getMonth() === now.getMonth() &&
-            tradeDate.getFullYear() === now.getFullYear();
-        case 'year':
-          return tradeDate.getFullYear() === now.getFullYear();
-        default:
-          return false;
-      }
-    });
+    const balanceAtStart = getBalanceAtDate(periodStart);
+    if (balanceAtStart <= 0) return 0;
 
-    const periodPnl = periodTrades.reduce((sum, trade) => sum + (Number(trade.gainLoss) || 0), 0);
-    if (!startingBalance) return 0;
-    return (periodPnl / startingBalance) * 100;
+    const periodPnl = trades
+      .filter(t => {
+        const d = getTradeDate(t);
+        return !Number.isNaN(d.getTime()) && d >= periodStart && d <= now;
+      })
+      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
+
+    return (periodPnl / balanceAtStart) * 100;
   };
 
   const percentSummary = {
@@ -163,9 +180,9 @@ function Dashboard() {
       </div>
 
       {/* Percentage Gain Cards */}
-      {!startingBalance && (
+      {deposits.length === 0 && (
         <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg px-4 py-2 text-yellow-400 text-sm">
-          Set your account balance in <strong>Settings</strong> to see accurate % gain figures.
+          Add your initial deposit in <strong>Settings</strong> to see accurate % gain figures.
         </div>
       )}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
