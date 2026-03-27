@@ -1,4 +1,5 @@
 import { useState, useEffect } from 'react';
+import CountUp from 'react-countup';
 import { Plus } from 'lucide-react';
 import MetricCard from '../components/MetricCard';
 import EquityCurve from '../components/EquityCurve';
@@ -174,32 +175,41 @@ function Dashboard() {
       <div className="grid grid-cols-2 lg:grid-cols-5 gap-4">
         <MetricCard
           title="Total P&L"
-          value={`$${metrics.totalPnl.toFixed(2)}`}
+          value={
+            <CountUp
+              end={metrics.totalPnl}
+              decimals={2}
+              duration={1}
+              preserveValue
+              formattingFn={(val) => `${val < 0 ? '-' : ''}$${Math.abs(val).toFixed(2)}`}
+            />
+          }
           subtitle={new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}
           isPositive={metrics.totalPnl >= 0}
+          primary
         />
         <MetricCard
           title="Win Rate"
-          value={`${metrics.winRate.toFixed(2)}%`}
+          value={<CountUp end={metrics.winRate} suffix="%" decimals={2} duration={1} preserveValue />}
           subtitle={`${metrics.wins}W - ${metrics.losses}L`}
           isPositive={metrics.winRate >= 50}
         />
         <MetricCard
           title="Expectancy"
-          value={`${metrics.expectancy.toFixed(2)}%`}
+          value={<CountUp end={metrics.expectancy} suffix="%" decimals={2} duration={1} preserveValue />}
           subtitle="Per trade"
           isPositive={metrics.expectancy >= 0}
         />
         <MetricCard
           title="Profit Factor"
-          value={metrics.profitFactor.toFixed(2)}
+          value={<CountUp end={metrics.profitFactor} decimals={2} duration={1} preserveValue />}
           subtitle="Win/Loss ratio"
           isPositive={metrics.profitFactor >= 1}
         />
         <div className="col-span-2 lg:col-span-1">
           <MetricCard
             title="Max Drawdown"
-            value={`-${maxDrawdown.toFixed(2)}%`}
+            value={<CountUp end={maxDrawdown} prefix="-" suffix="%" decimals={2} duration={1} preserveValue />}
             subtitle="Peak to trough"
             isPositive={false}
           />
@@ -218,24 +228,28 @@ function Dashboard() {
           value={`${percentSummary.day >= 0 ? '+' : ''}${percentSummary.day.toFixed(2)}%`}
           subtitle="Today"
           isPositive={percentSummary.day >= 0}
+          primary
         />
         <MetricCard
           title="Week % Gain"
           value={`${percentSummary.week >= 0 ? '+' : ''}${percentSummary.week.toFixed(2)}%`}
           subtitle="Last 7 days"
           isPositive={percentSummary.week >= 0}
+          primary
         />
         <MetricCard
           title="Month % Gain"
           value={`${percentSummary.month >= 0 ? '+' : ''}${percentSummary.month.toFixed(2)}%`}
           subtitle={new Date().toLocaleString('default', { month: 'long', year: 'numeric' })}
           isPositive={percentSummary.month >= 0}
+          primary
         />
         <MetricCard
           title="Year % Gain"
           value={`${percentSummary.year >= 0 ? '+' : ''}${percentSummary.year.toFixed(2)}%`}
           subtitle={new Date().getFullYear().toString()}
           isPositive={percentSummary.year >= 0}
+          primary
         />
       </div>
 
