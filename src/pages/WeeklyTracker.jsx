@@ -84,8 +84,8 @@ function WeeklyTracker() {
           trades: [],
           wins: 0,
           losses: 0,
-          totalGain: 0,
-          totalLoss: 0,
+          totalWinPercent: 0,
+          totalLossPercentAbs: 0,
           fees: 0,
           pnl: 0,
           denominator
@@ -97,10 +97,10 @@ function WeeklyTracker() {
 
       if (trade.result === 'win') {
         week.wins++;
-        week.totalGain += trade.gainLoss || 0;
+        week.totalWinPercent += Math.max(0, trade.pnlPercent || 0);
       } else if (trade.result === 'loss') {
         week.losses++;
-        week.totalLoss += Math.abs(trade.gainLoss || 0);
+        week.totalLossPercentAbs += Math.abs(Math.min(0, trade.pnlPercent || 0));
       }
 
       week.fees += trade.fee || 0;
@@ -110,12 +110,12 @@ function WeeklyTracker() {
     const weeks = Array.from(weekMap.values()).map(week => {
       const totalTrades = week.wins + week.losses;
       const winRate = totalTrades > 0 ? (week.wins / totalTrades) * 100 : 0;
-      const avgWin = week.wins > 0 ? week.totalGain / week.wins : 0;
-      const avgLoss = week.losses > 0 ? week.totalLoss / week.losses : 0;
-      const expectancy = totalTrades > 0 
-        ? ((winRate / 100) * avgWin) - ((1 - winRate / 100) * avgLoss)
+      const avgWin = week.wins > 0 ? week.totalWinPercent / week.wins : 0;
+      const avgLoss = week.losses > 0 ? -(week.totalLossPercentAbs / week.losses) : 0;
+      const expectancy = totalTrades > 0
+        ? ((winRate / 100) * avgWin) + ((1 - winRate / 100) * avgLoss)
         : 0;
-      const profitFactor = week.totalLoss > 0 ? week.totalGain / week.totalLoss : 0;
+      const profitFactor = week.totalLossPercentAbs > 0 ? week.totalWinPercent / week.totalLossPercentAbs : 0;
       const hasFunding = firstDepositDate.getFullYear() < 9999 && week.startDate >= firstDepositDate;
       const pnlPercent = (hasFunding && totalTrades > 0 && week.denominator > 0)
         ? (week.pnl / week.denominator) * 100
@@ -126,7 +126,7 @@ function WeeklyTracker() {
         winRate,
         avgWin,
         avgLoss,
-        expectancy: avgLoss > 0 ? (expectancy / avgLoss) * 100 : 0,
+        expectancy,
         profitFactor,
         pnlPercent
       };
@@ -184,7 +184,7 @@ function WeeklyTracker() {
                     </td>
                     <td className="text-right py-3 px-3 text-white">{week.winRate.toFixed(2)}%</td>
                     <td className="text-right py-3 px-3 text-white">{week.avgWin.toFixed(2)}%</td>
-                    <td className="text-right py-3 px-3 text-white">-{week.avgLoss.toFixed(2)}%</td>
+                    <td className="text-right py-3 px-3 text-white">{week.avgLoss.toFixed(2)}%</td>
                     <td className="text-right py-3 px-3 text-white">
                       {week.expectancy.toFixed(2)}%
                     </td>
