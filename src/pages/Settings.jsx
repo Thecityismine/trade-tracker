@@ -19,6 +19,7 @@ function Settings() {
   const [maxRisk, setMaxRisk] = useState('');
   const [maxTradesPerDay, setMaxTradesPerDay] = useState('');
   const [maxDailyLoss, setMaxDailyLoss] = useState('');
+  const [dailyPnlGoal, setDailyPnlGoal] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
 
@@ -44,6 +45,7 @@ function Settings() {
         setMaxRisk(data.maxRiskPercent?.toString() || '');
         setMaxTradesPerDay(data.maxTradesPerDay?.toString() || '');
         setMaxDailyLoss(data.maxDailyLossPercent?.toString() || '');
+        setDailyPnlGoal(data.dailyPnlGoalPercent?.toString() || '');
       }
     });
   }, []);
@@ -79,7 +81,8 @@ function Settings() {
       goalDate: goalDate || null,
       maxRiskPercent: parseFloat(maxRisk) || null,
       maxTradesPerDay: parseInt(maxTradesPerDay) || null,
-      maxDailyLossPercent: parseFloat(maxDailyLoss) || null
+      maxDailyLossPercent: parseFloat(maxDailyLoss) || null,
+      dailyPnlGoalPercent: parseFloat(dailyPnlGoal) || null
     }, { merge: true });
     setSavingSettings(false);
     setSettingsSaved(true);
@@ -449,6 +452,20 @@ function Settings() {
               />
               <p className="text-gray-500 text-xs mt-1">Stop trading when daily loss hits this %.</p>
             </div>
+          </div>
+
+          <div>
+            <label className="text-gray-400 text-xs block mb-1">Daily P&amp;L Goal (%)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={dailyPnlGoal}
+              onChange={e => setDailyPnlGoal(e.target.value)}
+              className="w-full sm:w-40 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              placeholder="e.g. 25"
+            />
+            <p className="text-gray-500 text-xs mt-1">Target % gain on your account per trading day. Dashboard tracks your progress toward this each day.</p>
           </div>
 
           <button

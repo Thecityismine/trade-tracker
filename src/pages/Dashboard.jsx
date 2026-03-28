@@ -307,6 +307,16 @@ function Dashboard({ onNavigate }) {
     return focuses;
   })();
 
+  const dailyGoalProgress = (() => {
+    const goal = parseFloat(appSettings.dailyPnlGoalPercent);
+    if (!goal || goal <= 0) return null;
+    const dayPct = percentSummary.day;
+    const progress = Math.min(100, Math.max(0, (dayPct / goal) * 100));
+    const remaining = Math.max(0, goal - dayPct);
+    const hit = dayPct >= goal;
+    return { goal, dayPct, progress, remaining, hit };
+  })();
+
   const performanceIdentity = (() => {
     const completed = trades.filter(t => t.result === 'win' || t.result === 'loss');
     if (completed.length < 5) return null;
@@ -441,6 +451,31 @@ function Dashboard({ onNavigate }) {
             </div>
           ))}
         </div>
+
+        {dailyGoalProgress && (
+          <div className="mt-5 pt-4 border-t border-white/5">
+            <div className="flex items-center justify-between mb-1.5">
+              <p className="text-gray-500 text-xs uppercase tracking-widest">Daily Goal</p>
+              <p className={`text-xs font-bold tabular-nums ${dailyGoalProgress.hit ? 'text-green-400' : 'text-gray-400'}`}>
+                {dailyGoalProgress.dayPct >= 0 ? '+' : ''}{dailyGoalProgress.dayPct.toFixed(1)}% / +{dailyGoalProgress.goal}%
+              </p>
+            </div>
+            <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
+              <div
+                className={`h-2 rounded-full transition-all duration-700 ${dailyGoalProgress.hit ? 'bg-green-500' : 'bg-blue-500'}`}
+                style={{
+                  width: `${dailyGoalProgress.progress}%`,
+                  boxShadow: dailyGoalProgress.hit ? '0 0 6px rgba(34,197,94,0.7)' : '0 0 6px rgba(59,130,246,0.6)'
+                }}
+              />
+            </div>
+            <p className={`text-xs mt-1 ${dailyGoalProgress.hit ? 'text-green-400' : 'text-gray-500'}`}>
+              {dailyGoalProgress.hit
+                ? '✓ Daily goal reached — protect your gains.'
+                : `${dailyGoalProgress.remaining.toFixed(1)}% remaining to hit today's target`}
+            </p>
+          </div>
+        )}
 
         {deposits.length === 0 && (
           <p className="text-yellow-500/70 text-xs mt-4">Add a deposit in <strong>Settings</strong> to see accurate % gains.</p>
