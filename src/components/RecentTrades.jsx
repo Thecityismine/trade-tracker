@@ -62,53 +62,27 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
           <h2 className="text-xl font-bold text-white">Recent Trades</h2>
 
-          <div className="flex gap-2 flex-wrap">
-            {/* Period filter */}
-            <div className="flex bg-dark-bg border border-dark-border rounded-lg overflow-hidden">
-              {[
-                { value: 'today', label: 'Today' },
-                { value: 'week', label: 'Week' },
-                { value: 'month', label: 'Month' },
-                { value: 'all', label: 'All' },
-              ].map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => setFilterPeriod(value)}
-                  className={`px-3 py-1.5 text-sm transition-colors ${
-                    filterPeriod === value
-                      ? 'bg-blue-600 text-white'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+          <div className="flex gap-2">
+            <select
+              value={filterPeriod}
+              onChange={(e) => setFilterPeriod(e.target.value)}
+              className="px-3 py-1.5 bg-dark-bg border border-dark-border rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 cursor-pointer"
+            >
+              <option value="today">Today</option>
+              <option value="week">This Week</option>
+              <option value="month">This Month</option>
+              <option value="all">All Time</option>
+            </select>
 
-            {/* Result filter */}
-            <div className="flex bg-dark-bg border border-dark-border rounded-lg overflow-hidden">
-              {[
-                { value: 'all', label: 'All' },
-                { value: 'win', label: 'Wins' },
-                { value: 'loss', label: 'Losses' },
-              ].map(({ value, label }) => (
-                <button
-                  key={value}
-                  onClick={() => setFilterResult(value)}
-                  className={`px-3 py-1.5 text-sm transition-colors ${
-                    filterResult === value
-                      ? value === 'win'
-                        ? 'bg-green-600 text-white'
-                        : value === 'loss'
-                        ? 'bg-red-600 text-white'
-                        : 'bg-blue-600 text-white'
-                      : 'text-gray-400 hover:text-white'
-                  }`}
-                >
-                  {label}
-                </button>
-              ))}
-            </div>
+            <select
+              value={filterResult}
+              onChange={(e) => setFilterResult(e.target.value)}
+              className="px-3 py-1.5 bg-dark-bg border border-dark-border rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 cursor-pointer"
+            >
+              <option value="all">All Results</option>
+              <option value="win">Wins</option>
+              <option value="loss">Losses</option>
+            </select>
           </div>
         </div>
 
