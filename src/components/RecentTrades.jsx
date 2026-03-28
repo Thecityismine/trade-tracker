@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { Search, ImageIcon, BarChart2, Plus } from 'lucide-react';
+import { ImageIcon, BarChart2, Plus } from 'lucide-react';
 import TradeDetailsModal from './TradeDetailsModal';
 
 function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
-  const [searchTerm, setSearchTerm] = useState('');
   const [filterPeriod, setFilterPeriod] = useState('today');
+  const [filterResult, setFilterResult] = useState('all');
   const [selectedTrade, setSelectedTrade] = useState(null);
 
   const getTradeDate = (trade) => trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
@@ -20,11 +20,8 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
   };
 
   const filteredTrades = trades.filter((trade) => {
-    const matchesSearch =
-      (trade.ticker?.toLowerCase() || '').includes(searchTerm.toLowerCase()) ||
-      (trade.comment?.toLowerCase() || '').includes(searchTerm.toLowerCase());
-
-    if (!matchesSearch) return false;
+    if (filterResult === 'win' && trade.result !== 'win') return false;
+    if (filterResult === 'loss' && trade.result !== 'loss') return false;
 
     const now = new Date();
     const tradeDate = getTradeDate(trade);
@@ -62,31 +59,56 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
   return (
     <>
       <div className="bg-dark-card border border-dark-border rounded-lg p-4 md:p-6">
-        <div className="flex flex-col md:flex-row md:items-center justify-between mb-4 space-y-3 md:space-y-0">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
           <h2 className="text-xl font-bold text-white">Recent Trades</h2>
 
-          <div className="flex flex-col sm:flex-row gap-2">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" size={18} />
-              <input
-                type="text"
-                placeholder="Search trades..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10 pr-4 py-2 bg-dark-bg border border-dark-border rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 w-full sm:w-auto"
-              />
+          <div className="flex gap-2 flex-wrap">
+            {/* Period filter */}
+            <div className="flex bg-dark-bg border border-dark-border rounded-lg overflow-hidden">
+              {[
+                { value: 'today', label: 'Today' },
+                { value: 'week', label: 'Week' },
+                { value: 'month', label: 'Month' },
+                { value: 'all', label: 'All' },
+              ].map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setFilterPeriod(value)}
+                  className={`px-3 py-1.5 text-sm transition-colors ${
+                    filterPeriod === value
+                      ? 'bg-blue-600 text-white'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
             </div>
 
-            <select
-              value={filterPeriod}
-              onChange={(e) => setFilterPeriod(e.target.value)}
-              className="px-4 py-2 bg-dark-bg border border-dark-border rounded-lg text-white text-sm focus:outline-none focus:border-blue-500 appearance-none cursor-pointer"
-            >
-              <option value="today">Today</option>
-              <option value="all">All Time</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-            </select>
+            {/* Result filter */}
+            <div className="flex bg-dark-bg border border-dark-border rounded-lg overflow-hidden">
+              {[
+                { value: 'all', label: 'All' },
+                { value: 'win', label: 'Wins' },
+                { value: 'loss', label: 'Losses' },
+              ].map(({ value, label }) => (
+                <button
+                  key={value}
+                  onClick={() => setFilterResult(value)}
+                  className={`px-3 py-1.5 text-sm transition-colors ${
+                    filterResult === value
+                      ? value === 'win'
+                        ? 'bg-green-600 text-white'
+                        : value === 'loss'
+                        ? 'bg-red-600 text-white'
+                        : 'bg-blue-600 text-white'
+                      : 'text-gray-400 hover:text-white'
+                  }`}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
           </div>
         </div>
 
