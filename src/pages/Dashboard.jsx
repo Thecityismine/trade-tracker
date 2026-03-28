@@ -274,11 +274,19 @@ function Dashboard({ onNavigate }) {
     const completed = trades.filter(t => t.result === 'win' || t.result === 'loss');
     if (completed.length < 5) return null;
     const wins = completed.filter(t => t.result === 'win');
+    const losses = completed.filter(t => t.result === 'loss');
     const winRate = (wins.length / completed.length) * 100;
     const longs = completed.filter(t => t.direction !== 'short');
     const shorts = completed.filter(t => t.direction === 'short');
-    const dirLabel = longs.length >= shorts.length ? 'long-biased' : 'short-biased';
-    const style = winRate >= 65 ? 'Disciplined' : winRate >= 50 ? 'Developing' : 'High-risk';
+    const dirBias = longs.length >= shorts.length ? 'long-biased' : 'short-biased';
+    const execLabel = winRate >= 65 ? 'disciplined execution' : winRate >= 50 ? 'inconsistent execution' : 'poor execution';
+    const longPnl = longs.reduce((s, t) => s + (Number(t.gainLoss) || 0), 0);
+    const shortPnl = shorts.reduce((s, t) => s + (Number(t.gainLoss) || 0), 0);
+    const edgeSide = longs.length > 0 && shorts.length > 0 ? (shortPnl > longPnl ? 'Short' : 'Long') : null;
+    const weakSide = edgeSide === 'Short' ? 'Long' : 'Short';
+    const edgeDiff = Math.abs(shortPnl - longPnl);
+    const totalWinDollar = wins.reduce((s, t) => s + (Number(t.gainLoss) || 0), 0);
+    const totalLossDollar = losses.reduce((s, t) => s + Math.abs(Number(t.gainLoss) || 0), 0);
     const patternMap = {};
     completed.forEach(t => {
       if (!t.chartPattern?.trim()) return;
@@ -289,20 +297,27 @@ function Dashboard({ onNavigate }) {
     });
     const patterns = Object.values(patternMap).filter(p => p.count >= 2).sort((a, b) => b.pnl - a.pnl);
     const bestPattern = patterns[0];
-    const patternText = bestPattern ? `, strongest with ${bestPattern.name}` : '';
-    return `${style}, ${dirLabel} trader — ${winRate.toFixed(0)}% win rate over ${completed.length} trades${patternText}.`;
+    const lines = [`You are a ${dirBias} trader with ${execLabel}.`];
+    if (edgeSide && edgeDiff > 0.01) lines.push(`Edge identified: ${edgeSide} setups outperform ${weakSide} by $${edgeDiff.toFixed(2)}.`);
+    if (totalLossDollar > totalWinDollar) lines.push(`Main issue: Losses ($${totalLossDollar.toFixed(2)}) exceed wins ($${totalWinDollar.toFixed(2)}) — tighten your risk management.`);
+    else if (winRate < 50) lines.push(`Win rate at ${winRate.toFixed(0)}% — focus on entry quality over trade frequency.`);
+    if (bestPattern) lines.push(`Strongest setup: ${bestPattern.name} across ${bestPattern.count} trades (${bestPattern.pnl >= 0 ? '+' : ''}$${bestPattern.pnl.toFixed(2)}).`);
+    return lines;
   })();
 
   return (
     <div className="space-y-6">
       {/* Hero Card — P&L + all key stats in one */}
-      <div className="bg-gradient-to-br from-[#0e1628] to-[#161622] border border-blue-900/40 rounded-2xl p-5">
+      <div className="bg-gradient-to-br from-[#0e1628] to-[#161622] border border-blue-900/40 rounded-2xl p-6 shadow-[0_0_50px_rgba(59,130,246,0.1)]">
         {/* P&L header */}
         <div className="flex items-center justify-between mb-1">
           <p className="text-gray-500 text-xs uppercase tracking-widest">Monthly P&amp;L</p>
           <p className="text-gray-500 text-xs">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
         </div>
-        <p className={`text-4xl font-bold tabular-nums leading-none mb-1 ${metrics.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+        <p
+          className={`text-4xl font-bold tabular-nums leading-none mb-1 ${metrics.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}
+          style={{ filter: `drop-shadow(0 0 12px ${metrics.totalPnl >= 0 ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)'})` }}
+        >
           <CountUp
             end={metrics.totalPnl}
             decimals={2}
@@ -390,9 +405,9 @@ function Dashboard({ onNavigate }) {
 
       {/* AI Coach + Performance Identity */}
       {(aiCoachSummary || performanceIdentity) && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="space-y-3">
           {aiCoachSummary && (
-            <div className="bg-blue-900/20 border border-blue-800/30 rounded-lg p-4">
+            <div className="bg-blue-900/20 border border-blue-800/40 rounded-lg p-5">
               <p className="text-blue-400 text-xs font-semibold uppercase tracking-wider mb-2">Daily Coach</p>
               <p className="text-blue-100 text-sm leading-relaxed">{aiCoachSummary}</p>
             </div>
@@ -400,7 +415,11 @@ function Dashboard({ onNavigate }) {
           {performanceIdentity && (
             <div className="bg-purple-900/20 border border-purple-800/30 rounded-lg p-4">
               <p className="text-purple-400 text-xs font-semibold uppercase tracking-wider mb-2">Performance Identity</p>
-              <p className="text-purple-100 text-sm leading-relaxed">{performanceIdentity}</p>
+              <div className="space-y-1">
+                {performanceIdentity.map((line, i) => (
+                  <p key={i} className="text-purple-100 text-sm leading-relaxed">{line}</p>
+                ))}
+              </div>
             </div>
           )}
         </div>
@@ -441,7 +460,7 @@ function Dashboard({ onNavigate }) {
       {/* Floating Action Button */}
       <button
         onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white p-4 rounded-full shadow-lg transition-all hover:scale-110 z-50"
+        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white p-3 rounded-full shadow-lg transition-all hover:scale-110 opacity-60 hover:opacity-100 z-50"
         aria-label="Add new trade"
       >
         <Plus size={24} />

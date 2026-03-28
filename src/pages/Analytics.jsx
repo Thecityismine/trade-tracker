@@ -580,6 +580,16 @@ function Analytics() {
               <div className="w-full h-60">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={directionStats}>
+                    <defs>
+                      <linearGradient id="dirGreen" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0.4}/>
+                      </linearGradient>
+                      <linearGradient id="dirRed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.4}/>
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                     <XAxis dataKey="direction" stroke="#9ca3af" />
                     <YAxis stroke="#9ca3af" tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
@@ -597,7 +607,7 @@ function Analytics() {
                       {directionStats.map((entry) => (
                         <Cell
                           key={entry.direction}
-                          fill={entry.winRate >= 50 ? COLORS.positive : COLORS.negative}
+                          fill={entry.winRate >= 50 ? 'url(#dirGreen)' : 'url(#dirRed)'}
                         />
                       ))}
                     </Bar>
@@ -630,6 +640,16 @@ function Analytics() {
               <div className="w-full h-60">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={timeOfDayStats}>
+                    <defs>
+                      <linearGradient id="todGreen" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0.4}/>
+                      </linearGradient>
+                      <linearGradient id="todRed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.4}/>
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                     <XAxis dataKey="name" stroke="#9ca3af" />
                     <YAxis stroke="#9ca3af" tickFormatter={(value) => `$${value.toFixed(0)}`} />
@@ -648,7 +668,7 @@ function Analytics() {
                       {timeOfDayStats.map((entry) => (
                         <Cell
                           key={entry.name}
-                          fill={entry.totalPnl >= 0 ? COLORS.positive : COLORS.negative}
+                          fill={entry.totalPnl >= 0 ? 'url(#todGreen)' : 'url(#todRed)'}
                         />
                       ))}
                     </Bar>
@@ -683,6 +703,16 @@ function Analytics() {
               <div className="w-full h-60">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={avgWinLossStats.chartData}>
+                    <defs>
+                      <linearGradient id="avgGreen" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0.4}/>
+                      </linearGradient>
+                      <linearGradient id="avgRed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.4}/>
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                     <XAxis dataKey="name" stroke="#9ca3af" />
                     <YAxis stroke="#9ca3af" tickFormatter={(value) => `$${Math.abs(value).toFixed(0)}`} domain={['auto', 'auto']} />
@@ -695,7 +725,7 @@ function Analytics() {
                     />
                     <Bar dataKey="value" radius={[6, 6, 0, 0]}>
                       {avgWinLossStats.chartData.map((entry) => (
-                        <Cell key={entry.name} fill={entry.fill} />
+                        <Cell key={entry.name} fill={entry.value >= 0 ? 'url(#avgGreen)' : 'url(#avgRed)'} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -786,14 +816,14 @@ function Analytics() {
             <div className="bg-dark-card border border-dark-border rounded-lg p-6">
               <h3 className="text-lg font-bold text-white mb-1">Behavioral Patterns</h3>
               <p className="text-gray-400 text-sm mb-4">Detected tendencies from your trading history.</p>
-              <div className="space-y-2">
+              <div className="space-y-1.5">
                 {behavioralPatterns.map((insight, i) => (
                   <div
                     key={i}
-                    className={`text-sm rounded-lg px-4 py-3 border ${
+                    className={`text-sm rounded-lg px-3 py-2 border ${
                       insight.type === 'positive'
                         ? 'bg-green-900/20 border-green-800/30 text-green-300'
-                        : 'bg-yellow-900/20 border-yellow-800/30 text-yellow-300'
+                        : 'bg-red-900/20 border-orange-900/30 text-orange-300'
                     }`}
                   >
                     {insight.text}
@@ -811,6 +841,16 @@ function Analytics() {
               <div className="w-full h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={monthlyComparison}>
+                    <defs>
+                      <linearGradient id="mthGreen" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0.4}/>
+                      </linearGradient>
+                      <linearGradient id="mthRed" x1="0" y1="0" x2="0" y2="1">
+                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.4}/>
+                      </linearGradient>
+                    </defs>
                     <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
                     <XAxis dataKey="label" stroke="#9ca3af" />
                     <YAxis yAxisId="left" stroke="#9ca3af" tickFormatter={(value) => `$${value.toFixed(0)}`} />
@@ -830,7 +870,7 @@ function Analytics() {
                       {monthlyComparison.map((entry) => (
                         <Cell
                           key={entry.key}
-                          fill={entry.totalPnl >= 0 ? COLORS.positive : COLORS.negative}
+                          fill={entry.totalPnl >= 0 ? 'url(#mthGreen)' : 'url(#mthRed)'}
                         />
                       ))}
                     </Bar>
@@ -855,14 +895,20 @@ function Analytics() {
                     <p className="text-xs text-gray-400">Best Week</p>
                     <p className="text-white font-medium mt-1">{bestWorstWeeks.bestWeek.label}</p>
                     <p className="text-green-500 text-xl font-bold mt-1">${bestWorstWeeks.bestWeek.totalPnl.toFixed(2)}</p>
-                    <p className="text-xs text-gray-500 mt-1">{bestWorstWeeks.bestWeek.trades} trades</p>
+                    <p className="text-xs text-gray-500 mt-1">{bestWorstWeeks.bestWeek.trades} trades · {bestWorstWeeks.bestWeek.wins}W / {bestWorstWeeks.bestWeek.losses}L</p>
+                    <p className="text-xs text-green-400/70 mt-2 italic">
+                      {bestWorstWeeks.bestWeek.trades >= 8 ? 'High-volume week — consistency drove results.' : `${bestWorstWeeks.bestWeek.trades} selective trades → quality over quantity.`}
+                    </p>
                   </div>
 
                   <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
                     <p className="text-xs text-gray-400">Worst Week</p>
                     <p className="text-white font-medium mt-1">{bestWorstWeeks.worstWeek.label}</p>
                     <p className="text-red-500 text-xl font-bold mt-1">${bestWorstWeeks.worstWeek.totalPnl.toFixed(2)}</p>
-                    <p className="text-xs text-gray-500 mt-1">{bestWorstWeeks.worstWeek.trades} trades</p>
+                    <p className="text-xs text-gray-500 mt-1">{bestWorstWeeks.worstWeek.trades} trades · {bestWorstWeeks.worstWeek.wins}W / {bestWorstWeeks.worstWeek.losses}L</p>
+                    <p className="text-xs text-red-400/70 mt-2 italic">
+                      {bestWorstWeeks.worstWeek.trades <= 3 ? 'Low trade count — likely forced or low-quality entries.' : 'High-frequency losing week — reduce size and slow down.'}
+                    </p>
                   </div>
                 </div>
               ) : (
