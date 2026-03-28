@@ -17,6 +17,8 @@ function Settings() {
   const [goalAmount, setGoalAmount] = useState('');
   const [goalDate, setGoalDate] = useState('');
   const [maxRisk, setMaxRisk] = useState('');
+  const [maxTradesPerDay, setMaxTradesPerDay] = useState('');
+  const [maxDailyLoss, setMaxDailyLoss] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
 
@@ -40,6 +42,8 @@ function Settings() {
         setGoalAmount(data.goalAmount?.toString() || '');
         setGoalDate(data.goalDate || '');
         setMaxRisk(data.maxRiskPercent?.toString() || '');
+        setMaxTradesPerDay(data.maxTradesPerDay?.toString() || '');
+        setMaxDailyLoss(data.maxDailyLossPercent?.toString() || '');
       }
     });
   }, []);
@@ -73,7 +77,9 @@ function Settings() {
     await setDoc(doc(db, 'settings', 'user'), {
       goalAmount: parseFloat(goalAmount) || null,
       goalDate: goalDate || null,
-      maxRiskPercent: parseFloat(maxRisk) || null
+      maxRiskPercent: parseFloat(maxRisk) || null,
+      maxTradesPerDay: parseInt(maxTradesPerDay) || null,
+      maxDailyLossPercent: parseFloat(maxDailyLoss) || null
     }, { merge: true });
     setSavingSettings(false);
     setSettingsSaved(true);
@@ -108,9 +114,37 @@ function Settings() {
   const goalAmt = parseFloat(goalAmount) || 0;
   const goalProgress = goalAmt > 0 ? Math.min(100, (currentBalance / goalAmt) * 100) : 0;
   const goalRemaining = Math.max(0, goalAmt - currentBalance);
-  const riskFlagCount = parseFloat(maxRisk) > 0
-    ? trades.filter(t => t.result === 'loss' && Math.abs(t.pnlPercent || 0) > parseFloat(maxRisk)).length
-    : 0;
+
+  const goalPace = (() => {
+    if (!goalAmt || !goalDate || currentBalance >= goalAmt) return null;
+    const today = new Date();
+    const target = new Date(goalDate + 'T00:00');
+    const daysLeft = Math.ceil((target - today) / (1000 * 60 * 60 * 24));
+    if (daysLeft <= 0) return null;
+    const requiredPerDay = goalRemaining / daysLeft;
+    const firstDep = deposits
+      .filter(d => d.type === 'deposit')
+      .map(d => d.date?.toDate?.() || new Date(d.date))
+      .reduce((earliest, d) => d < earliest ? d : earliest, new Date());
+    const daysSinceStart = Math.max(1, Math.ceil((today - firstDep) / (1000 * 60 * 60 * 24)));
+    const actualPerDay = totalPnl / daysSinceStart;
+    return { daysLeft, requiredPerDay, actualPerDay, behind: actualPerDay < requiredPerDay };
+  })();
+
+  const riskEducation = (() => {
+    const r = parseFloat(maxRisk);
+    if (!r || r <= 0) return null;
+    return { r, lossesToBlow: Math.floor(100 / r), isHigh: r > 3 };
+  })();
+
+  const riskStatus = (() => {
+    const r = parseFloat(maxRisk);
+    if (!r || r <= 0) return null;
+    const violations = trades.filter(t => t.result === 'loss' && Math.abs(t.pnlPercent || 0) > r).length;
+    if (violations === 0) return { level: 'green', label: '🟢 Within Rules', violations, bg: 'bg-green-900/20 border-green-800/30', text: 'text-green-400' };
+    if (violations <= 3) return { level: 'yellow', label: '🟡 Warning', violations, bg: 'bg-yellow-900/20 border-yellow-800/30', text: 'text-yellow-400' };
+    return { level: 'red', label: '🔴 System Violation', violations, bg: 'bg-red-900/20 border-red-800/30', text: 'text-red-400' };
+  })();
 
   return (
     <div className="max-w-2xl space-y-6">
@@ -154,7 +188,10 @@ function Settings() {
           <div className="w-full bg-dark-bg rounded-full h-3 overflow-hidden">
             <div
               className={`h-3 rounded-full transition-all duration-700 ${goalProgress >= 100 ? 'bg-green-500' : 'bg-blue-500'}`}
-              style={{ width: `${goalProgress}%` }}
+              style={{
+                width: `${goalProgress}%`,
+                boxShadow: goalProgress >= 100 ? '0 0 8px rgba(34,197,94,0.6)' : '0 0 8px rgba(59,130,246,0.6)'
+              }}
             />
           </div>
           <div className="flex justify-between text-xs text-gray-500 mt-1">
@@ -164,18 +201,48 @@ function Settings() {
               : <span>${goalRemaining.toFixed(2)} remaining</span>
             }
           </div>
+          {goalPace && (
+            <div className="mt-4 pt-3 border-t border-dark-border grid grid-cols-3 gap-3 text-center">
+              <div>
+                <p className="text-gray-500 text-xs">Required pace</p>
+                <p className="text-white font-bold text-sm">${goalPace.requiredPerDay.toFixed(2)}/day</p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Your pace</p>
+                <p className={`font-bold text-sm ${goalPace.actualPerDay >= goalPace.requiredPerDay ? 'text-green-400' : 'text-red-400'}`}>
+                  ${goalPace.actualPerDay.toFixed(2)}/day
+                </p>
+              </div>
+              <div>
+                <p className="text-gray-500 text-xs">Status</p>
+                <p className={`font-bold text-xs ${goalPace.behind ? 'text-red-400' : 'text-green-400'}`}>
+                  {goalPace.behind ? 'Behind schedule' : 'On track'}
+                </p>
+              </div>
+            </div>
+          )}
         </div>
       )}
 
-      {riskFlagCount > 0 && (
-        <div className="bg-orange-900/20 border border-orange-800/30 rounded-xl p-4 flex items-start gap-3">
-          <AlertTriangle size={16} className="text-orange-400 mt-0.5 flex-shrink-0" />
-          <div>
-            <p className="text-orange-300 font-semibold text-sm">Risk Limit Exceeded</p>
-            <p className="text-orange-200/70 text-xs mt-0.5">
-              {riskFlagCount} loss trade{riskFlagCount !== 1 ? 's' : ''} exceeded your {parseFloat(maxRisk)}% max risk limit. Review flagged trades in Recent Trades.
-            </p>
+      {riskStatus && (
+        <div className={`${riskStatus.bg} border rounded-xl p-4`}>
+          <div className="flex items-center justify-between mb-1">
+            <p className={`font-bold text-sm ${riskStatus.text}`}>{riskStatus.label}</p>
+            <span className="text-gray-500 text-xs">{riskStatus.violations} violation{riskStatus.violations !== 1 ? 's' : ''}</span>
           </div>
+          {riskStatus.level === 'green' && (
+            <p className="text-green-300/70 text-xs">All trades are within your {parseFloat(maxRisk)}% risk rule. Keep it up.</p>
+          )}
+          {riskStatus.level === 'yellow' && (
+            <p className="text-yellow-300/70 text-xs">{riskStatus.violations} trades breached your limit. Reduce position size before this becomes a pattern.</p>
+          )}
+          {riskStatus.level === 'red' && (
+            <div className="space-y-1">
+              <p className="text-red-300 text-xs font-semibold">You are violating your own system.</p>
+              <p className="text-red-300/70 text-xs">Reduce position size immediately. {riskStatus.violations} losses exceeded {parseFloat(maxRisk)}% risk.</p>
+              <p className="text-red-300/70 text-xs">Trading should be limited until behavior improves.</p>
+            </div>
+          )}
         </div>
       )}
 
@@ -333,21 +400,66 @@ function Settings() {
               step="0.1"
               value={maxRisk}
               onChange={e => setMaxRisk(e.target.value)}
-              className="w-full sm:w-40 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              className={`w-full sm:w-40 bg-dark-bg border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 ${riskEducation?.isHigh ? 'border-red-700' : 'border-dark-border'}`}
               placeholder="e.g. 2"
             />
-            <p className="text-gray-500 text-xs mt-1">Loss trades exceeding this % will be flagged in the trade list.</p>
+            <p className="text-gray-500 text-xs mt-1">Recommended: 1–3% per trade for sustainable trading.</p>
+            {riskEducation && (
+              <div className={`mt-2 rounded-lg px-3 py-2 text-xs space-y-0.5 ${riskEducation.isHigh ? 'bg-red-900/20 border border-red-800/30' : 'bg-green-900/20 border border-green-800/30'}`}>
+                {riskEducation.isHigh ? (
+                  <>
+                    <p className="text-red-300 font-semibold">⚠ {riskEducation.r}% is not risk management — it's gambling.</p>
+                    <p className="text-red-300/70">At {riskEducation.r}%, you need only {riskEducation.lossesToBlow} consecutive losses to blow up.</p>
+                    <p className="text-green-400/80">At 2%, you can survive 50+ losses in a row.</p>
+                  </>
+                ) : (
+                  <>
+                    <p className="text-green-300 font-semibold">✓ {riskEducation.r}% is within professional range.</p>
+                    <p className="text-green-300/70">You can survive {riskEducation.lossesToBlow}+ consecutive losses before blowing up.</p>
+                  </>
+                )}
+              </div>
+            )}
           </div>
-          <div className="flex items-center gap-3">
-            <button
-              onClick={handleSaveSettings}
-              disabled={savingSettings}
-              className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-5 py-2 rounded-lg font-medium transition-colors"
-            >
-              {savingSettings ? 'Saving...' : 'Save Settings'}
-            </button>
-            {settingsSaved && <span className="text-green-400 text-sm">Saved!</span>}
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+            <div>
+              <label className="text-gray-400 text-xs block mb-1">Max Trades Per Day</label>
+              <input
+                type="number"
+                min="1"
+                step="1"
+                value={maxTradesPerDay}
+                onChange={e => setMaxTradesPerDay(e.target.value)}
+                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                placeholder="e.g. 3"
+              />
+              <p className="text-gray-500 text-xs mt-1">Soft limit — dashboard will flag when exceeded.</p>
+            </div>
+            <div>
+              <label className="text-gray-400 text-xs block mb-1">Max Daily Loss (%)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={maxDailyLoss}
+                onChange={e => setMaxDailyLoss(e.target.value)}
+                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                placeholder="e.g. 5"
+              />
+              <p className="text-gray-500 text-xs mt-1">Stop trading when daily loss hits this %.</p>
+            </div>
           </div>
+
+          <button
+            onClick={handleSaveSettings}
+            disabled={savingSettings}
+            className={`w-full py-2.5 rounded-lg font-medium transition-all text-white ${
+              settingsSaved ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'
+            } disabled:opacity-40`}
+          >
+            {savingSettings ? 'Saving...' : settingsSaved ? '✓ Saved' : 'Save Settings'}
+          </button>
         </div>
       </div>
 

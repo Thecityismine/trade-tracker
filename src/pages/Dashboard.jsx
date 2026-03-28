@@ -270,6 +270,43 @@ function Dashboard({ onNavigate }) {
     return { goalAmt, balance, progress, remaining: Math.max(0, goalAmt - balance) };
   })();
 
+  const riskStatus = (() => {
+    const r = parseFloat(appSettings.maxRiskPercent);
+    if (!r || r <= 0 || trades.length === 0) return null;
+    const violations = trades.filter(t => t.result === 'loss' && Math.abs(t.pnlPercent || 0) > r).length;
+    if (violations === 0) return { level: 'green', label: '🟢 Within Rules', violations };
+    if (violations <= 3) return { level: 'yellow', label: '🟡 Warning', violations };
+    return { level: 'red', label: '🔴 System Violation', violations };
+  })();
+
+  const todaysFocus = (() => {
+    if (trades.length === 0) return null;
+    const r = parseFloat(appSettings.maxRiskPercent);
+    const maxTrades = parseInt(appSettings.maxTradesPerDay);
+    const maxDailyLoss = parseFloat(appSettings.maxDailyLossPercent);
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const todayTrades = trades.filter(t => {
+      const d = getTradeDate(t);
+      return !Number.isNaN(d.getTime()) && d >= todayStart;
+    });
+    const todayLossDollars = todayTrades.filter(t => t.result === 'loss').reduce((s, t) => s + Math.abs(Number(t.gainLoss) || 0), 0);
+    const totalFunded = deposits.reduce((s, d) => s + (d.type === 'deposit' ? d.amount : -d.amount), 0);
+    const todayLossPct = totalFunded > 0 ? (todayLossDollars / totalFunded) * 100 : 0;
+    const focuses = [];
+    if (r > 0) focuses.push(`Max ${r}% risk per trade — no exceptions.`);
+    if (maxTrades > 0) {
+      const remaining = maxTrades - todayTrades.length;
+      if (remaining <= 0) focuses.push(`Daily trade limit reached (${maxTrades}). Stop trading today.`);
+      else focuses.push(`${remaining} trade${remaining !== 1 ? 's' : ''} remaining today (limit: ${maxTrades}).`);
+    }
+    if (maxDailyLoss > 0 && todayLossPct >= maxDailyLoss * 0.8) {
+      focuses.push(`Daily loss at ${todayLossPct.toFixed(1)}% — approaching your ${maxDailyLoss}% limit. Slow down.`);
+    }
+    if (focuses.length === 0) focuses.push('No trades yet today. Wait for your setup — patience is an edge.');
+    return focuses;
+  })();
+
   const performanceIdentity = (() => {
     const completed = trades.filter(t => t.result === 'win' || t.result === 'loss');
     if (completed.length < 5) return null;
@@ -307,6 +344,38 @@ function Dashboard({ onNavigate }) {
 
   return (
     <div className="space-y-6">
+      {/* Risk Status Badge */}
+      {riskStatus && (
+        <div className={`rounded-xl px-4 py-3 flex items-center justify-between border ${
+          riskStatus.level === 'green' ? 'bg-green-900/20 border-green-800/30' :
+          riskStatus.level === 'yellow' ? 'bg-yellow-900/20 border-yellow-800/30' :
+          'bg-red-900/20 border-red-800/30'
+        }`}>
+          <span className={`font-bold text-sm ${
+            riskStatus.level === 'green' ? 'text-green-400' :
+            riskStatus.level === 'yellow' ? 'text-yellow-400' : 'text-red-400'
+          }`}>{riskStatus.label}</span>
+          {riskStatus.level === 'red' && (
+            <span className="text-red-300/80 text-xs">Reduce size immediately</span>
+          )}
+          {riskStatus.level === 'yellow' && (
+            <span className="text-yellow-300/80 text-xs">{riskStatus.violations} breach{riskStatus.violations !== 1 ? 'es' : ''}</span>
+          )}
+        </div>
+      )}
+
+      {/* Today's Focus */}
+      {todaysFocus && (
+        <div className="bg-dark-card border border-dark-border rounded-xl px-4 py-3">
+          <p className="text-gray-500 text-xs uppercase tracking-widest mb-2">Today's Focus</p>
+          <div className="space-y-1">
+            {todaysFocus.map((item, i) => (
+              <p key={i} className="text-white text-sm">→ {item}</p>
+            ))}
+          </div>
+        </div>
+      )}
+
       {/* Hero Card — P&L + all key stats in one */}
       <div className="bg-gradient-to-br from-[#0e1628] to-[#161622] border border-blue-900/40 rounded-2xl p-6 shadow-[0_0_50px_rgba(59,130,246,0.1)]">
         {/* P&L header */}
