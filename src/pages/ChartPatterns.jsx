@@ -807,7 +807,7 @@ function ChartPatterns() {
       {/* Image Viewer */}
       {expandedImage && (
         <div
-          className="fixed inset-0 z-[80] bg-black/92 p-4 flex items-center justify-center"
+          className="fixed inset-0 z-[80] bg-black p-4 flex items-center justify-center"
           onClick={() => setExpandedImage(null)}
         >
           <button
