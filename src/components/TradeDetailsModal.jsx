@@ -172,8 +172,9 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
   return (
     <>
       {!isEditing && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 flex items-center justify-center z-[60] p-4 overflow-y-auto">
-          <div className="bg-dark-card border border-dark-border rounded-xl w-full max-w-2xl my-8">
+        <div className="fixed inset-0 bg-black bg-opacity-80 z-[60] overflow-y-auto">
+          <div className="flex min-h-full items-start justify-center p-4 py-8">
+          <div className="bg-dark-card border border-dark-border rounded-xl w-full max-w-2xl">
 
             {/* Header */}
             <div className="flex items-start justify-between p-5 border-b border-dark-border">
@@ -418,6 +419,7 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
               </div>
 
             </div>
+          </div>
           </div>
         </div>
       )}
