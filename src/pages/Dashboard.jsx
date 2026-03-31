@@ -82,9 +82,9 @@ function Dashboard({ onNavigate }) {
     const wins = monthTrades.filter(t => t.result === 'win');
     const losses = monthTrades.filter(t => t.result === 'loss');
     
-    const totalPnl = monthTrades.reduce((sum, t) => sum + (t.gainLoss || 0) - (t.fee || 0), 0);
-    const totalWins = wins.reduce((sum, t) => sum + (t.gainLoss || 0) - (t.fee || 0), 0);
-    const totalLosses = Math.abs(losses.reduce((sum, t) => sum + (t.gainLoss || 0) - (t.fee || 0), 0));
+    const totalPnl = monthTrades.reduce((sum, t) => sum + (t.gainLoss || 0), 0);
+    const totalWins = wins.reduce((sum, t) => sum + (t.gainLoss || 0), 0);
+    const totalLosses = Math.abs(losses.reduce((sum, t) => sum + (t.gainLoss || 0), 0));
     
     const winRate = monthTrades.length > 0 
       ? (wins.length / monthTrades.length) * 100 
@@ -123,7 +123,7 @@ function Dashboard({ onNavigate }) {
         const d = getTradeDate(t);
         return !Number.isNaN(d.getTime()) && d < targetDate;
       })
-      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0) - (Number(t.fee) || 0), 0);
+      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
 
     return funded + pnlBefore;
   };
@@ -160,7 +160,7 @@ function Dashboard({ onNavigate }) {
         const d = getTradeDate(t);
         return !Number.isNaN(d.getTime()) && d >= periodStart && d <= now;
       })
-      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0) - (Number(t.fee) || 0), 0);
+      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
 
     return (periodPnl / denominator) * 100;
   };
@@ -175,7 +175,7 @@ function Dashboard({ onNavigate }) {
     let balance = totalFunded;
     let maxDD = 0;
     for (const t of sorted) {
-      balance += (Number(t.gainLoss) || 0) - (Number(t.fee) || 0);
+      balance += Number(t.gainLoss) || 0;
       if (balance > peak) peak = balance;
       if (peak > 0) maxDD = Math.max(maxDD, ((peak - balance) / peak) * 100);
     }
@@ -200,7 +200,7 @@ function Dashboard({ onNavigate }) {
     if (todayTrades.length > 0) {
       const wins = todayTrades.filter(t => t.result === 'win').length;
       const losses = todayTrades.filter(t => t.result === 'loss').length;
-      const pnl = todayTrades.reduce((sum, t) => sum + (Number(t.gainLoss) || 0) - (Number(t.fee) || 0), 0);
+      const pnl = todayTrades.reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
       const wr = Math.round(wins / todayTrades.length * 100);
       let note = '';
       if (wins > 0 && losses === 0) note = ' Clean session — excellent discipline.';
@@ -219,7 +219,7 @@ function Dashboard({ onNavigate }) {
     });
     if (weekTrades.length === 0) return 'No trades this week yet. Stay patient and wait for your setup.';
     const wWins = weekTrades.filter(t => t.result === 'win').length;
-    const wPnl = weekTrades.reduce((sum, t) => sum + (Number(t.gainLoss) || 0) - (Number(t.fee) || 0), 0);
+    const wPnl = weekTrades.reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
     return `No trades today. This week: ${weekTrades.length} trade${weekTrades.length !== 1 ? 's' : ''} · ${wWins}W / ${weekTrades.length - wWins}L · ${wPnl >= 0 ? '+' : '-'}$${Math.abs(wPnl).toFixed(2)}.`;
   })();
 
@@ -239,7 +239,7 @@ function Dashboard({ onNavigate }) {
     const dayPnl = {};
     weekTrades.forEach(t => {
       const day = getTradeDate(t).getDay();
-      dayPnl[day] = (dayPnl[day] || 0) + (Number(t.gainLoss) || 0) - (Number(t.fee) || 0);
+      dayPnl[day] = (dayPnl[day] || 0) + (Number(t.gainLoss) || 0);
     });
     const dayEntries = Object.entries(dayPnl);
     const bestEntry = dayEntries.reduce((a, b) => Number(b[1]) > Number(a[1]) ? b : a, dayEntries[0]);
@@ -264,7 +264,7 @@ function Dashboard({ onNavigate }) {
     if (goalAmt <= 0) return null;
     const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
     if (totalFunded <= 0) return null;
-    const allTimePnl = trades.reduce((sum, t) => sum + (Number(t.gainLoss) || 0) - (Number(t.fee) || 0), 0);
+    const allTimePnl = trades.reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
     const balance = totalFunded + allTimePnl;
     const progress = Math.min(100, (balance / goalAmt) * 100);
     return { goalAmt, balance, progress, remaining: Math.max(0, goalAmt - balance) };
@@ -290,7 +290,7 @@ function Dashboard({ onNavigate }) {
       const d = getTradeDate(t);
       return !Number.isNaN(d.getTime()) && d >= todayStart;
     });
-    const todayLossDollars = todayTrades.filter(t => t.result === 'loss').reduce((s, t) => s + Math.abs((Number(t.gainLoss) || 0) - (Number(t.fee) || 0)), 0);
+    const todayLossDollars = todayTrades.filter(t => t.result === 'loss').reduce((s, t) => s + Math.abs(Number(t.gainLoss) || 0), 0);
     const totalFunded = deposits.reduce((s, d) => s + (d.type === 'deposit' ? d.amount : -d.amount), 0);
     const todayLossPct = totalFunded > 0 ? (todayLossDollars / totalFunded) * 100 : 0;
     const focuses = [];
@@ -327,19 +327,19 @@ function Dashboard({ onNavigate }) {
     const shorts = completed.filter(t => t.direction === 'short');
     const dirBias = longs.length >= shorts.length ? 'long-biased' : 'short-biased';
     const execLabel = winRate >= 65 ? 'disciplined execution' : winRate >= 50 ? 'inconsistent execution' : 'poor execution';
-    const longPnl = longs.reduce((s, t) => s + (Number(t.gainLoss) || 0) - (Number(t.fee) || 0), 0);
-    const shortPnl = shorts.reduce((s, t) => s + (Number(t.gainLoss) || 0) - (Number(t.fee) || 0), 0);
+    const longPnl = longs.reduce((s, t) => s + (Number(t.gainLoss) || 0), 0);
+    const shortPnl = shorts.reduce((s, t) => s + (Number(t.gainLoss) || 0), 0);
     const edgeSide = longs.length > 0 && shorts.length > 0 ? (shortPnl > longPnl ? 'Short' : 'Long') : null;
     const weakSide = edgeSide === 'Short' ? 'Long' : 'Short';
     const edgeDiff = Math.abs(shortPnl - longPnl);
-    const totalWinDollar = wins.reduce((s, t) => s + (Number(t.gainLoss) || 0) - (Number(t.fee) || 0), 0);
-    const totalLossDollar = losses.reduce((s, t) => s + Math.abs((Number(t.gainLoss) || 0) - (Number(t.fee) || 0)), 0);
+    const totalWinDollar = wins.reduce((s, t) => s + (Number(t.gainLoss) || 0), 0);
+    const totalLossDollar = losses.reduce((s, t) => s + Math.abs(Number(t.gainLoss) || 0), 0);
     const patternMap = {};
     completed.forEach(t => {
       if (!t.chartPattern?.trim()) return;
       const key = t.chartPattern.trim().toLowerCase();
       if (!patternMap[key]) patternMap[key] = { name: t.chartPattern.trim(), pnl: 0, count: 0 };
-      patternMap[key].pnl += (Number(t.gainLoss) || 0) - (Number(t.fee) || 0);
+      patternMap[key].pnl += Number(t.gainLoss) || 0;
       patternMap[key].count++;
     });
     const patterns = Object.values(patternMap).filter(p => p.count >= 2).sort((a, b) => b.pnl - a.pnl);

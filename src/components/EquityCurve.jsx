@@ -19,7 +19,7 @@ function EquityCurve({ trades, deposits = [] }) {
     const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
     let cumulativePnl = totalFunded;
     const data = sortedTrades.map(trade => {
-      cumulativePnl += (trade.gainLoss || 0) - (trade.fee || 0);
+      cumulativePnl += trade.gainLoss || 0;
       const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
       
       return {

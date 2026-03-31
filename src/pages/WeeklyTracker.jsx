@@ -75,7 +75,7 @@ function groupByDay(trades) {
     const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
     if (!map[key]) map[key] = { label: key, date: d, trades: [], pnl: 0 };
     map[key].trades.push(trade);
-    map[key].pnl += (trade.gainLoss || 0) - (trade.fee || 0);
+    map[key].pnl += trade.gainLoss || 0;
   });
   return Object.values(map).sort((a, b) => b.date - a.date);
 }
@@ -136,7 +136,7 @@ function WeeklyTracker() {
         const date = t.tradeDate?.toDate?.() || new Date(t.tradeDate);
         return !Number.isNaN(date.getTime()) && date < targetDate;
       })
-      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0) - (Number(t.fee) || 0), 0);
+      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
     return funded + pnlBefore;
   };
 
@@ -181,7 +181,7 @@ function WeeklyTracker() {
         week.totalLossPercentAbs += Math.abs(Math.min(0, trade.pnlPercent || 0));
       }
       week.fees += trade.fee || 0;
-      week.pnl += (trade.gainLoss || 0) - (trade.fee || 0);
+      week.pnl += trade.gainLoss || 0;
     });
 
     const weeks = Array.from(weekMap.values()).map((week) => {
