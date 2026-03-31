@@ -53,7 +53,7 @@ function Settings() {
   const totalFunded = deposits.reduce(
     (sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0
   );
-  const totalPnl = trades.reduce((sum, t) => sum + (t.gainLoss || 0), 0);
+  const totalPnl = trades.reduce((sum, t) => sum + (t.gainLoss || 0) - (t.fee || 0), 0);
   const currentBalance = totalFunded + totalPnl;
 
   const handleAdd = async () => {
@@ -97,7 +97,7 @@ function Settings() {
     });
     trades.forEach(t => {
       const date = t.tradeDate?.toDate?.() || new Date(t.tradeDate);
-      if (!Number.isNaN(date.getTime()) && t.gainLoss != null) events.push({ date, delta: Number(t.gainLoss) || 0 });
+      if (!Number.isNaN(date.getTime()) && t.gainLoss != null) events.push({ date, delta: (Number(t.gainLoss) || 0) - (Number(t.fee) || 0) });
     });
     events.sort((a, b) => a.date - b.date);
     let balance = 0;

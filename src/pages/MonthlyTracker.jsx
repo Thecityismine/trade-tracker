@@ -131,7 +131,7 @@ function MonthlyTracker() {
         const date = t.tradeDate?.toDate?.() || new Date(t.tradeDate);
         return !Number.isNaN(date.getTime()) && date < targetDate;
       })
-      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
+      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0) - (Number(t.fee) || 0), 0);
     return funded + pnlBefore;
   };
 
@@ -233,7 +233,7 @@ function MonthlyTracker() {
         month.losses++;
         month.totalLossPercentAbs += Math.abs(Math.min(0, trade.pnlPercent || 0));
       }
-      month.totalPnl += trade.gainLoss || 0;
+      month.totalPnl += (trade.gainLoss || 0) - (trade.fee || 0);
       month.totalFees += trade.fee || 0;
     });
 
