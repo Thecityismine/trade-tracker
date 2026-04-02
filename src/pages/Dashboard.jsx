@@ -110,24 +110,6 @@ function Dashboard({ onNavigate }) {
 
   const getTradeDate = (trade) => trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
 
-  const getBalanceAtDate = (targetDate) => {
-    const funded = deposits
-      .filter(d => {
-        const date = d.date?.toDate?.() || new Date(d.date);
-        return date <= targetDate;
-      })
-      .reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
-
-    const pnlBefore = trades
-      .filter(t => {
-        const d = getTradeDate(t);
-        return !Number.isNaN(d.getTime()) && d < targetDate;
-      })
-      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
-
-    return funded + pnlBefore;
-  };
-
   const calculatePeriodPercent = (period) => {
     const now = new Date();
     let periodStart;
@@ -152,19 +134,12 @@ function Dashboard({ onNavigate }) {
         return 0;
     }
 
-    const balanceAtStart = getBalanceAtDate(periodStart);
-    const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
-    const denominator = balanceAtStart > 0 ? balanceAtStart : totalFunded;
-    if (denominator <= 0) return 0;
-
-    const periodPnl = trades
+    return trades
       .filter(t => {
         const d = getTradeDate(t);
         return !Number.isNaN(d.getTime()) && d >= periodStart && d <= now;
       })
-      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
-
-    return (periodPnl / denominator) * 100;
+      .reduce((sum, t) => sum + (Number(t.pnlPercent) || 0), 0);
   };
 
   const maxDrawdown = (() => {
