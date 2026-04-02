@@ -136,10 +136,12 @@ function Dashboard({ onNavigate }) {
       case 'day':
         periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
         break;
-      case 'week':
-        periodStart = new Date(now);
-        periodStart.setDate(periodStart.getDate() - 7);
+      case 'week': {
+        const dow = now.getDay();
+        periodStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+        periodStart.setDate(periodStart.getDate() - (dow === 0 ? 6 : dow - 1));
         break;
+      }
       case 'month':
         periodStart = new Date(now.getFullYear(), now.getMonth(), 1);
         break;
