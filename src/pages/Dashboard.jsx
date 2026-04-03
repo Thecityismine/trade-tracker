@@ -250,7 +250,12 @@ function Dashboard({ onNavigate }) {
   const riskStatus = (() => {
     const r = parseFloat(appSettings.maxRiskPercent);
     if (!r || r <= 0 || trades.length === 0) return null;
-    const violations = trades.filter(t => t.result === 'loss' && Math.abs(t.pnlPercent || 0) > r).length;
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
+    const violations = trades.filter(t => {
+      const d = getTradeDate(t);
+      return t.result === 'loss' && Math.abs(t.pnlPercent || 0) > r && d >= thirtyDaysAgo;
+    }).length;
     if (violations === 0) return { level: 'green', label: '🟢 Within Rules', violations };
     if (violations <= 3) return { level: 'yellow', label: '🟡 Warning', violations };
     return { level: 'red', label: '🔴 System Violation', violations };
