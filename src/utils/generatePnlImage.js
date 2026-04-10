@@ -36,20 +36,15 @@ export async function generatePnlImage(trade) {
   ctx.fillStyle = '#060f1c';
   ctx.fillRect(0, 0, W, H);
 
-  // Load and draw the background image (positioned right-side, like Hyperliquid)
+  // Load and draw the background image — portrait image anchored to the right
   try {
-    const bg = await loadImage('/PNL Tracker.png');
-    // Scale to fill height, anchor to right
+    const bg = await loadImage('/PNL%20Tracker.png');
+    // Scale so height fills the canvas, anchor right edge flush with canvas right
     const scale = H / bg.height;
     const bw = bg.width * scale;
-    const bh = H;
-    // Draw on the right half, slightly overflowing
-    ctx.save();
-    ctx.globalAlpha = 0.9;
-    ctx.drawImage(bg, W - bw, 0, bw, bh);
-    ctx.restore();
+    ctx.drawImage(bg, W - bw, 0, bw, H);
   } catch {
-    // Fallback: draw concentric circles on right half
+    // Fallback: concentric circles
     ctx.save();
     ctx.strokeStyle = 'rgba(34, 197, 94, 0.07)';
     ctx.lineWidth = 1.5;
@@ -63,11 +58,12 @@ export async function generatePnlImage(trade) {
     ctx.restore();
   }
 
-  // Left-side dark gradient so text is always readable
-  const leftGrad = ctx.createLinearGradient(0, 0, W * 0.72, 0);
-  leftGrad.addColorStop(0, 'rgba(6,15,28,0.97)');
-  leftGrad.addColorStop(0.55, 'rgba(6,15,28,0.88)');
-  leftGrad.addColorStop(1, 'rgba(6,15,28,0)');
+  // Left-side dark gradient so text is always readable over the artwork
+  const leftGrad = ctx.createLinearGradient(0, 0, W, 0);
+  leftGrad.addColorStop(0, 'rgba(6,15,28,1)');
+  leftGrad.addColorStop(0.42, 'rgba(6,15,28,0.95)');
+  leftGrad.addColorStop(0.62, 'rgba(6,15,28,0.55)');
+  leftGrad.addColorStop(1, 'rgba(6,15,28,0.05)');
   ctx.fillStyle = leftGrad;
   ctx.fillRect(0, 0, W, H);
 
