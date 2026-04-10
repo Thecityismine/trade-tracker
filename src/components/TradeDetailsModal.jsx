@@ -1,8 +1,9 @@
 import { useState } from 'react';
-import { Pencil, Trash2 } from 'lucide-react';
+import { Pencil, Trash2, ImageDown } from 'lucide-react';
 import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import TradeModal from './TradeModal';
+import { generatePnlImage, downloadCanvas } from '../utils/generatePnlImage';
 
 const MISTAKE_TAGS = [
   { id: 'over-risk', label: 'Over-Risk' },
@@ -118,6 +119,23 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
   const [deleting, setDeleting] = useState(false);
   const [localMistakeTags, setLocalMistakeTags] = useState(trade.mistakeTags || []);
   const [savingTags, setSavingTags] = useState(false);
+  const [generatingImage, setGeneratingImage] = useState(false);
+
+  const handleSharePnl = async () => {
+    setGeneratingImage(true);
+    try {
+      const canvas = await generatePnlImage(trade);
+      const ticker = (trade.ticker || 'BTC').toUpperCase();
+      const date = (trade.tradeDate?.toDate?.() || new Date(trade.tradeDate))
+        .toISOString().slice(0, 10);
+      downloadCanvas(canvas, `${ticker}-pnl-${date}.png`);
+    } catch (err) {
+      console.error('Failed to generate PnL image:', err);
+      alert('Failed to generate image. Please try again.');
+    } finally {
+      setGeneratingImage(false);
+    }
+  };
 
   if (!trade) return null;
 
@@ -409,6 +427,15 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                 >
                   <Pencil size={15} />
                   Edit Trade
+                </button>
+                <button
+                  onClick={handleSharePnl}
+                  disabled={generatingImage}
+                  aria-label="Share PnL image"
+                  className="flex-1 flex items-center justify-center gap-2 bg-dark-bg hover:bg-dark-border border border-dark-border text-gray-300 hover:text-white font-medium py-3 px-4 rounded-lg transition-all disabled:opacity-50"
+                >
+                  <ImageDown size={15} />
+                  {generatingImage ? 'Generating…' : 'Share PnL'}
                 </button>
                 <button
                   onClick={onClose}
