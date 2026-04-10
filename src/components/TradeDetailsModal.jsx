@@ -204,14 +204,24 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                   })}
                 </p>
               </div>
-              <button
-                onClick={handleDeleteTrade}
-                disabled={deleting}
-                aria-label={deleting ? 'Deleting trade' : 'Delete trade'}
-                className="text-gray-600 hover:text-red-400 transition-colors disabled:opacity-50 p-1 mt-0.5"
-              >
-                <Trash2 size={17} />
-              </button>
+              <div className="flex items-center gap-1 mt-0.5">
+                <button
+                  onClick={handleSharePnl}
+                  disabled={generatingImage}
+                  aria-label="Share PnL image"
+                  className="text-gray-600 hover:text-green-400 transition-colors disabled:opacity-50 p-1"
+                >
+                  <ImageDown size={17} />
+                </button>
+                <button
+                  onClick={handleDeleteTrade}
+                  disabled={deleting}
+                  aria-label={deleting ? 'Deleting trade' : 'Delete trade'}
+                  className="text-gray-600 hover:text-red-400 transition-colors disabled:opacity-50 p-1"
+                >
+                  <Trash2 size={17} />
+                </button>
+              </div>
             </div>
 
             <div className="p-6 space-y-5">
@@ -427,15 +437,6 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                 >
                   <Pencil size={15} />
                   Edit Trade
-                </button>
-                <button
-                  onClick={handleSharePnl}
-                  disabled={generatingImage}
-                  aria-label="Share PnL image"
-                  className="flex-1 flex items-center justify-center gap-2 bg-dark-bg hover:bg-dark-border border border-dark-border text-gray-300 hover:text-white font-medium py-3 px-4 rounded-lg transition-all disabled:opacity-50"
-                >
-                  <ImageDown size={15} />
-                  {generatingImage ? 'Generating…' : 'Share PnL'}
                 </button>
                 <button
                   onClick={onClose}
