@@ -64,15 +64,15 @@ export async function generatePnlImage(trade) {
 
   // Mid-section gradient — fades in over the text area, then fades back to
   // transparent so the bottom logo shows through with no hard line
-  const botGrad = ctx.createLinearGradient(0, H * 0.28, 0, H);
+  const botGrad = ctx.createLinearGradient(0, H * 0.18, 0, H);
   botGrad.addColorStop(0,    'rgba(7,18,30,0)');
-  botGrad.addColorStop(0.18, 'rgba(7,18,30,0.68)');
-  botGrad.addColorStop(0.42, 'rgba(7,18,30,0.86)');
-  botGrad.addColorStop(0.65, 'rgba(7,18,30,0.72)');
-  botGrad.addColorStop(0.85, 'rgba(7,18,30,0.28)');
+  botGrad.addColorStop(0.14, 'rgba(7,18,30,0.68)');
+  botGrad.addColorStop(0.38, 'rgba(7,18,30,0.86)');
+  botGrad.addColorStop(0.62, 'rgba(7,18,30,0.72)');
+  botGrad.addColorStop(0.82, 'rgba(7,18,30,0.28)');
   botGrad.addColorStop(1,    'rgba(7,18,30,0)');
   ctx.fillStyle = botGrad;
-  ctx.fillRect(0, H * 0.28, W, H * 0.72);
+  ctx.fillRect(0, H * 0.18, W, H * 0.82);
 
   // ── Trade data ────────────────────────────────────────────
   const isWin = (trade.pnlPercent ?? 0) >= 0;
@@ -98,7 +98,7 @@ export async function generatePnlImage(trade) {
   });
 
   // ── Ticker + Direction/Leverage badge ─────────────────────
-  const TICKER_Y = H * 0.37; // moved up
+  const TICKER_Y = H * 0.27;
 
   ctx.font = `bold 52px ${FONT}`;
   ctx.fillStyle = '#ffffff';
