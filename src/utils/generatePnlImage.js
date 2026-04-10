@@ -38,12 +38,13 @@ export async function generatePnlImage(trade) {
 
   // Load and draw the background image — portrait image anchored to the right
   try {
-    const bg = await loadImage('/PNL%20Tracker.png');
+    const bg = await loadImage('/pnl-tracker-bg.png');
     // Scale so height fills the canvas, anchor right edge flush with canvas right
     const scale = H / bg.height;
     const bw = bg.width * scale;
     ctx.drawImage(bg, W - bw, 0, bw, H);
-  } catch {
+  } catch (e) {
+    console.warn('PNL background image failed to load:', e.message);
     // Fallback: concentric circles
     ctx.save();
     ctx.strokeStyle = 'rgba(34, 197, 94, 0.07)';
