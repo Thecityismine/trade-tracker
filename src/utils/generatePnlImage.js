@@ -96,6 +96,9 @@ export async function generatePnlImage(trade) {
   const dateStr = tradeDate.toLocaleDateString('en-US', {
     month: 'long', day: 'numeric', year: 'numeric',
   });
+  const timeStr = tradeDate.toLocaleTimeString('en-US', {
+    hour: 'numeric', minute: '2-digit', hour12: true,
+  });
 
   // ── Ticker + Direction/Leverage badge ─────────────────────
   const TICKER_Y = H * 0.27;
@@ -160,6 +163,9 @@ export async function generatePnlImage(trade) {
   ctx.font = `22px ${FONT}`;
   ctx.fillStyle = 'rgba(255,255,255,0.45)';
   ctx.fillText(dateStr, PAD, priceY + 124);
+  ctx.font = `18px ${FONT}`;
+  ctx.fillStyle = 'rgba(255,255,255,0.28)';
+  ctx.fillText(timeStr, PAD, priceY + 152);
 
   return canvas;
 }
