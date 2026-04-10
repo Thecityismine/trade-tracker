@@ -22,9 +22,10 @@ function drawRoundRect(ctx, x, y, w, h, r) {
 }
 
 export async function generatePnlImage(trade) {
-  const W = 1200;
-  const H = 675;
-  const PAD = 72;
+  // Portrait canvas — same aspect ratio as a phone screenshot
+  const W = 630;
+  const H = 1120;
+  const PAD = 44;
   const FONT = '"Inter", "Helvetica Neue", Arial, sans-serif';
 
   const canvas = document.createElement('canvas');
@@ -32,56 +33,58 @@ export async function generatePnlImage(trade) {
   canvas.height = H;
   const ctx = canvas.getContext('2d');
 
-  // ── Background ───────────────────────────────────────────
-  ctx.fillStyle = '#060f1c';
+  // ── Background: fill entire canvas with portrait image ────
+  ctx.fillStyle = '#07121e';
   ctx.fillRect(0, 0, W, H);
 
-  // Load and draw the background image — portrait image anchored to the right
   try {
     const bg = await loadImage('/pnl-tracker-bg.png');
-    // Scale so height fills the canvas, anchor right edge flush with canvas right
-    const scale = H / bg.height;
+    // Scale to cover — image fills whole canvas, centered
+    const scale = Math.max(W / bg.width, H / bg.height);
     const bw = bg.width * scale;
-    ctx.drawImage(bg, W - bw, 0, bw, H);
+    const bh = bg.height * scale;
+    ctx.drawImage(bg, (W - bw) / 2, (H - bh) / 2, bw, bh);
   } catch (e) {
     console.warn('PNL background image failed to load:', e.message);
-    // Fallback: concentric circles
+    // Fallback: dark teal with circles
     ctx.save();
-    ctx.strokeStyle = 'rgba(34, 197, 94, 0.07)';
+    ctx.strokeStyle = 'rgba(34, 197, 94, 0.08)';
     ctx.lineWidth = 1.5;
-    const cx = W - 200;
-    const cy = H / 2;
-    for (let r = 40; r < 700; r += 38) {
+    for (let r = 40; r < 900; r += 40) {
       ctx.beginPath();
-      ctx.arc(cx, cy, r, 0, Math.PI * 2);
+      ctx.arc(W / 2, H * 0.38, r, 0, Math.PI * 2);
       ctx.stroke();
     }
     ctx.restore();
   }
 
-  // Left-side dark gradient so text is always readable over the artwork
-  const leftGrad = ctx.createLinearGradient(0, 0, W, 0);
-  leftGrad.addColorStop(0, 'rgba(6,15,28,1)');
-  leftGrad.addColorStop(0.42, 'rgba(6,15,28,0.95)');
-  leftGrad.addColorStop(0.62, 'rgba(6,15,28,0.55)');
-  leftGrad.addColorStop(1, 'rgba(6,15,28,0.05)');
-  ctx.fillStyle = leftGrad;
+  // Slight overall dark tint so text always has contrast
+  ctx.fillStyle = 'rgba(7, 18, 30, 0.18)';
   ctx.fillRect(0, 0, W, H);
 
-  // Bottom gradient for date line
-  const botGrad = ctx.createLinearGradient(0, H - 100, 0, H);
-  botGrad.addColorStop(0, 'rgba(6,15,28,0)');
-  botGrad.addColorStop(1, 'rgba(6,15,28,0.6)');
+  // Strong bottom-up gradient — makes lower half readable for text
+  const botGrad = ctx.createLinearGradient(0, H * 0.42, 0, H);
+  botGrad.addColorStop(0, 'rgba(7,18,30,0)');
+  botGrad.addColorStop(0.35, 'rgba(7,18,30,0.72)');
+  botGrad.addColorStop(0.65, 'rgba(7,18,30,0.90)');
+  botGrad.addColorStop(1, 'rgba(7,18,30,0.97)');
   ctx.fillStyle = botGrad;
-  ctx.fillRect(0, H - 100, W, 100);
+  ctx.fillRect(0, H * 0.42, W, H * 0.58);
 
-  // ── Derive trade data ─────────────────────────────────────
+  // Faint top gradient so branding text reads over the image
+  const topGrad = ctx.createLinearGradient(0, 0, 0, 130);
+  topGrad.addColorStop(0, 'rgba(7,18,30,0.72)');
+  topGrad.addColorStop(1, 'rgba(7,18,30,0)');
+  ctx.fillStyle = topGrad;
+  ctx.fillRect(0, 0, W, 130);
+
+  // ── Trade data ────────────────────────────────────────────
   const isWin = (trade.pnlPercent ?? 0) >= 0;
   const pnlColor = isWin ? '#22c55e' : '#ef4444';
   const direction = trade.direction === 'long' ? 'LONG' : 'SHORT';
   const dirColor = trade.direction === 'long' ? '#22c55e' : '#ef4444';
   const dirBgColor = trade.direction === 'long' ? 'rgba(34,197,94,0.22)' : 'rgba(239,68,68,0.22)';
-  const dirBorderColor = trade.direction === 'long' ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)';
+  const dirBorderColor = trade.direction === 'long' ? 'rgba(34,197,94,0.55)' : 'rgba(239,68,68,0.55)';
   const ticker = (trade.ticker || 'BTC').toUpperCase();
   const leverage = trade.leverage ? `${trade.leverage}X` : '';
   const badgeText = leverage ? `${direction} ${leverage}` : direction;
@@ -102,73 +105,78 @@ export async function generatePnlImage(trade) {
   let brandX = PAD;
   try {
     const icon = await loadImage('/trade-tracker-icon-transparent.png');
-    const iconSize = 42;
-    ctx.drawImage(icon, brandX, 46, iconSize, iconSize);
-    brandX += iconSize + 14;
-  } catch { /* no icon, skip */ }
+    const iconSize = 34;
+    ctx.drawImage(icon, brandX, 38, iconSize, iconSize);
+    brandX += iconSize + 12;
+  } catch { /* skip if missing */ }
 
-  ctx.font = `bold 28px ${FONT}`;
-  ctx.fillStyle = 'rgba(255,255,255,0.85)';
-  ctx.fillText('PNL Tracker', brandX, 76);
+  ctx.font = `bold 24px ${FONT}`;
+  ctx.fillStyle = 'rgba(255,255,255,0.88)';
+  ctx.fillText('PNL Tracker', brandX, 62);
 
   // ── Ticker + Direction/Leverage badge ─────────────────────
-  const TICKER_Y = 170;
+  const TICKER_Y = H * 0.56; // ~627px — sits just above midpoint
 
-  ctx.font = `bold 44px ${FONT}`;
+  ctx.font = `bold 52px ${FONT}`;
   ctx.fillStyle = '#ffffff';
   ctx.fillText(ticker, PAD, TICKER_Y);
   const tickerW = ctx.measureText(ticker).width;
 
-  // Badge
   ctx.font = `bold 22px ${FONT}`;
-  const badgePadX = 16;
-  const badgeH = 38;
+  const badgePadX = 15;
+  const badgeH = 37;
   const badgeW = ctx.measureText(badgeText).width + badgePadX * 2;
-  const badgeX = PAD + tickerW + 18;
-  const badgeTop = TICKER_Y - badgeH + 6;
+  const badgeX = PAD + tickerW + 16;
+  const badgeTop = TICKER_Y - badgeH + 5;
 
-  drawRoundRect(ctx, badgeX, badgeTop, badgeW, badgeH, 9);
+  drawRoundRect(ctx, badgeX, badgeTop, badgeW, badgeH, 8);
   ctx.fillStyle = dirBgColor;
   ctx.fill();
-
-  drawRoundRect(ctx, badgeX, badgeTop, badgeW, badgeH, 9);
+  drawRoundRect(ctx, badgeX, badgeTop, badgeW, badgeH, 8);
   ctx.strokeStyle = dirBorderColor;
   ctx.lineWidth = 1.5;
   ctx.stroke();
-
   ctx.fillStyle = dirColor;
-  ctx.fillText(badgeText, badgeX + badgePadX, badgeTop + 26);
+  ctx.fillText(badgeText, badgeX + badgePadX, badgeTop + 25);
 
   // ── Large PnL percentage ──────────────────────────────────
-  const maxPnlWidth = W * 0.58;
-  let pnlFontSize = 210;
+  const maxPnlWidth = W - PAD * 2;
+  let pnlFontSize = 155;
   ctx.font = `bold ${pnlFontSize}px ${FONT}`;
-  while (ctx.measureText(pnlText).width > maxPnlWidth && pnlFontSize > 80) {
-    pnlFontSize -= 8;
+  while (ctx.measureText(pnlText).width > maxPnlWidth && pnlFontSize > 60) {
+    pnlFontSize -= 6;
     ctx.font = `bold ${pnlFontSize}px ${FONT}`;
   }
-
   ctx.fillStyle = pnlColor;
-  ctx.fillText(pnlText, PAD, TICKER_Y + 48 + pnlFontSize);
+  ctx.fillText(pnlText, PAD, TICKER_Y + 28 + pnlFontSize);
+
+  // ── Divider line ──────────────────────────────────────────
+  const divY = TICKER_Y + 28 + pnlFontSize + 36;
+  ctx.strokeStyle = 'rgba(255,255,255,0.12)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(PAD, divY);
+  ctx.lineTo(W - PAD, divY);
+  ctx.stroke();
 
   // ── Entry / Exit prices ───────────────────────────────────
-  const priceY = H - 148;
-  const col2 = PAD + 280;
+  const priceY = divY + 38;
+  const col2 = PAD + (W - PAD * 2) / 2;
 
-  ctx.font = `20px ${FONT}`;
+  ctx.font = `18px ${FONT}`;
   ctx.fillStyle = 'rgba(255,255,255,0.42)';
   ctx.fillText('Entry Price', PAD, priceY);
   ctx.fillText('Exit Price', col2, priceY);
 
-  ctx.font = `bold 34px ${FONT}`;
+  ctx.font = `bold 38px ${FONT}`;
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(entryPrice, PAD, priceY + 44);
-  ctx.fillText(exitPrice, col2, priceY + 44);
+  ctx.fillText(entryPrice, PAD, priceY + 48);
+  ctx.fillText(exitPrice, col2, priceY + 48);
 
   // ── Date ──────────────────────────────────────────────────
-  ctx.font = `20px ${FONT}`;
+  ctx.font = `18px ${FONT}`;
   ctx.fillStyle = 'rgba(255,255,255,0.38)';
-  ctx.fillText(dateStr, PAD, H - 34);
+  ctx.fillText(dateStr, PAD, priceY + 110);
 
   return canvas;
 }
