@@ -62,14 +62,17 @@ export async function generatePnlImage(trade) {
   ctx.fillStyle = 'rgba(7, 18, 30, 0.18)';
   ctx.fillRect(0, 0, W, H);
 
-  // Bottom-up gradient — covers the text area, fades out before the bottom logo
-  const botGrad = ctx.createLinearGradient(0, H * 0.36, 0, H * 0.88);
-  botGrad.addColorStop(0, 'rgba(7,18,30,0)');
-  botGrad.addColorStop(0.3, 'rgba(7,18,30,0.70)');
-  botGrad.addColorStop(0.7, 'rgba(7,18,30,0.88)');
-  botGrad.addColorStop(1, 'rgba(7,18,30,0.92)');
+  // Mid-section gradient — fades in over the text area, then fades back to
+  // transparent so the bottom logo shows through with no hard line
+  const botGrad = ctx.createLinearGradient(0, H * 0.28, 0, H);
+  botGrad.addColorStop(0,    'rgba(7,18,30,0)');
+  botGrad.addColorStop(0.18, 'rgba(7,18,30,0.68)');
+  botGrad.addColorStop(0.42, 'rgba(7,18,30,0.86)');
+  botGrad.addColorStop(0.65, 'rgba(7,18,30,0.72)');
+  botGrad.addColorStop(0.85, 'rgba(7,18,30,0.28)');
+  botGrad.addColorStop(1,    'rgba(7,18,30,0)');
   ctx.fillStyle = botGrad;
-  ctx.fillRect(0, H * 0.36, W, H * 0.52);
+  ctx.fillRect(0, H * 0.28, W, H * 0.72);
 
   // ── Trade data ────────────────────────────────────────────
   const isWin = (trade.pnlPercent ?? 0) >= 0;
@@ -95,29 +98,29 @@ export async function generatePnlImage(trade) {
   });
 
   // ── Ticker + Direction/Leverage badge ─────────────────────
-  const TICKER_Y = H * 0.46; // ~515px — upper-middle, clear of bottom logo
+  const TICKER_Y = H * 0.37; // moved up
 
   ctx.font = `bold 52px ${FONT}`;
   ctx.fillStyle = '#ffffff';
   ctx.fillText(ticker, PAD, TICKER_Y);
   const tickerW = ctx.measureText(ticker).width;
 
-  ctx.font = `bold 22px ${FONT}`;
-  const badgePadX = 15;
-  const badgeH = 37;
+  ctx.font = `bold 28px ${FONT}`;
+  const badgePadX = 18;
+  const badgeH = 46;
   const badgeW = ctx.measureText(badgeText).width + badgePadX * 2;
   const badgeX = PAD + tickerW + 16;
   const badgeTop = TICKER_Y - badgeH + 5;
 
-  drawRoundRect(ctx, badgeX, badgeTop, badgeW, badgeH, 8);
+  drawRoundRect(ctx, badgeX, badgeTop, badgeW, badgeH, 10);
   ctx.fillStyle = dirBgColor;
   ctx.fill();
-  drawRoundRect(ctx, badgeX, badgeTop, badgeW, badgeH, 8);
+  drawRoundRect(ctx, badgeX, badgeTop, badgeW, badgeH, 10);
   ctx.strokeStyle = dirBorderColor;
   ctx.lineWidth = 1.5;
   ctx.stroke();
   ctx.fillStyle = dirColor;
-  ctx.fillText(badgeText, badgeX + badgePadX, badgeTop + 25);
+  ctx.fillText(badgeText, badgeX + badgePadX, badgeTop + 32);
 
   // ── Large PnL percentage ──────────────────────────────────
   const maxPnlWidth = W - PAD * 2;
@@ -143,20 +146,20 @@ export async function generatePnlImage(trade) {
   const priceY = divY + 38;
   const col2 = PAD + (W - PAD * 2) / 2;
 
-  ctx.font = `18px ${FONT}`;
-  ctx.fillStyle = 'rgba(255,255,255,0.42)';
+  ctx.font = `22px ${FONT}`;
+  ctx.fillStyle = 'rgba(255,255,255,0.50)';
   ctx.fillText('Entry Price', PAD, priceY);
   ctx.fillText('Exit Price', col2, priceY);
 
-  ctx.font = `bold 38px ${FONT}`;
+  ctx.font = `bold 46px ${FONT}`;
   ctx.fillStyle = '#ffffff';
-  ctx.fillText(entryPrice, PAD, priceY + 48);
-  ctx.fillText(exitPrice, col2, priceY + 48);
+  ctx.fillText(entryPrice, PAD, priceY + 56);
+  ctx.fillText(exitPrice, col2, priceY + 56);
 
   // ── Date ──────────────────────────────────────────────────
-  ctx.font = `18px ${FONT}`;
-  ctx.fillStyle = 'rgba(255,255,255,0.38)';
-  ctx.fillText(dateStr, PAD, priceY + 110);
+  ctx.font = `22px ${FONT}`;
+  ctx.fillStyle = 'rgba(255,255,255,0.45)';
+  ctx.fillText(dateStr, PAD, priceY + 124);
 
   return canvas;
 }
