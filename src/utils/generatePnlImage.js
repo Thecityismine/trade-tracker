@@ -62,21 +62,14 @@ export async function generatePnlImage(trade) {
   ctx.fillStyle = 'rgba(7, 18, 30, 0.18)';
   ctx.fillRect(0, 0, W, H);
 
-  // Strong bottom-up gradient — makes lower half readable for text
-  const botGrad = ctx.createLinearGradient(0, H * 0.42, 0, H);
+  // Bottom-up gradient — covers the text area, fades out before the bottom logo
+  const botGrad = ctx.createLinearGradient(0, H * 0.36, 0, H * 0.88);
   botGrad.addColorStop(0, 'rgba(7,18,30,0)');
-  botGrad.addColorStop(0.35, 'rgba(7,18,30,0.72)');
-  botGrad.addColorStop(0.65, 'rgba(7,18,30,0.90)');
-  botGrad.addColorStop(1, 'rgba(7,18,30,0.97)');
+  botGrad.addColorStop(0.3, 'rgba(7,18,30,0.70)');
+  botGrad.addColorStop(0.7, 'rgba(7,18,30,0.88)');
+  botGrad.addColorStop(1, 'rgba(7,18,30,0.92)');
   ctx.fillStyle = botGrad;
-  ctx.fillRect(0, H * 0.42, W, H * 0.58);
-
-  // Faint top gradient so branding text reads over the image
-  const topGrad = ctx.createLinearGradient(0, 0, 0, 130);
-  topGrad.addColorStop(0, 'rgba(7,18,30,0.72)');
-  topGrad.addColorStop(1, 'rgba(7,18,30,0)');
-  ctx.fillStyle = topGrad;
-  ctx.fillRect(0, 0, W, 130);
+  ctx.fillRect(0, H * 0.36, W, H * 0.52);
 
   // ── Trade data ────────────────────────────────────────────
   const isWin = (trade.pnlPercent ?? 0) >= 0;
@@ -101,21 +94,8 @@ export async function generatePnlImage(trade) {
     month: 'long', day: 'numeric', year: 'numeric',
   });
 
-  // ── Branding (top-left) ───────────────────────────────────
-  let brandX = PAD;
-  try {
-    const icon = await loadImage('/trade-tracker-icon-transparent.png');
-    const iconSize = 34;
-    ctx.drawImage(icon, brandX, 38, iconSize, iconSize);
-    brandX += iconSize + 12;
-  } catch { /* skip if missing */ }
-
-  ctx.font = `bold 24px ${FONT}`;
-  ctx.fillStyle = 'rgba(255,255,255,0.88)';
-  ctx.fillText('PNL Tracker', brandX, 62);
-
   // ── Ticker + Direction/Leverage badge ─────────────────────
-  const TICKER_Y = H * 0.56; // ~627px — sits just above midpoint
+  const TICKER_Y = H * 0.46; // ~515px — upper-middle, clear of bottom logo
 
   ctx.font = `bold 52px ${FONT}`;
   ctx.fillStyle = '#ffffff';
