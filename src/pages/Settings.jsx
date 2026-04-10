@@ -252,7 +252,7 @@ function Settings() {
       {/* Add Deposit / Withdrawal */}
       <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
         <h3 className="text-white font-semibold mb-4">Log Deposit / Withdrawal</h3>
-        <div className="flex flex-wrap gap-3 items-end">
+        <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 items-end">
 
           {/* Type toggle */}
           <div>
@@ -306,7 +306,7 @@ function Settings() {
           </div>
 
           {/* Note */}
-          <div className="flex-1 min-w-36">
+          <div className="col-span-2 sm:flex-1 sm:min-w-36">
             <label className="text-gray-400 text-xs block mb-1">Note (optional)</label>
             <input
               type="text"
@@ -320,7 +320,7 @@ function Settings() {
           <button
             onClick={handleAdd}
             disabled={!form.amount || parseFloat(form.amount) <= 0 || saving}
-            className="bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white px-5 py-2 rounded-lg font-medium transition-colors"
+            className="col-span-2 sm:col-span-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white px-5 py-2 rounded-lg font-medium transition-colors"
           >
             {saving ? 'Adding...' : 'Add'}
           </button>
@@ -335,23 +335,30 @@ function Settings() {
             {deposits.map(d => (
               <div
                 key={d.id}
-                className="flex items-center justify-between py-2 border-b border-dark-border last:border-0"
+                className="flex items-center justify-between py-3 border-b border-dark-border last:border-0 gap-3"
               >
-                <div className="flex items-center space-x-4">
-                  <span className="text-gray-400 text-sm w-28">
-                    {d.date?.toDate?.().toLocaleDateString('en-US', {
-                      month: 'short', day: 'numeric', year: 'numeric'
-                    })}
-                  </span>
-                  <span className={`text-sm font-medium capitalize ${
-                    d.type === 'deposit' ? 'text-green-400' : 'text-red-400'
-                  }`}>
-                    {d.type}
-                  </span>
-                  {d.note && <span className="text-gray-500 text-sm">{d.note}</span>}
+                {/* Left: date + type + note stacked */}
+                <div className="flex flex-col gap-0.5 min-w-0">
+                  <div className="flex items-center gap-2">
+                    <span className="text-gray-400 text-xs">
+                      {d.date?.toDate?.().toLocaleDateString('en-US', {
+                        month: 'short', day: 'numeric', year: 'numeric'
+                      })}
+                    </span>
+                    <span className={`text-xs font-semibold capitalize ${
+                      d.type === 'deposit' ? 'text-green-400' : 'text-red-400'
+                    }`}>
+                      {d.type}
+                    </span>
+                  </div>
+                  {d.note && (
+                    <span className="text-gray-500 text-xs truncate">{d.note}</span>
+                  )}
                 </div>
-                <div className="flex items-center space-x-3">
-                  <span className={`font-medium ${d.type === 'deposit' ? 'text-green-400' : 'text-red-400'}`}>
+
+                {/* Right: amount + delete */}
+                <div className="flex items-center gap-3 shrink-0">
+                  <span className={`font-semibold text-sm ${d.type === 'deposit' ? 'text-green-400' : 'text-red-400'}`}>
                     {d.type === 'deposit' ? '+' : '-'}${d.amount.toFixed(2)}
                   </span>
                   <button
