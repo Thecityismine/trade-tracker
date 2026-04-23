@@ -161,6 +161,9 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       if (!snapshot.empty) {
         const lastTrade = snapshot.docs[0].data();
         setLastTicker(lastTrade.ticker || 'BTC');
+        if (!editTrade && lastTrade.leverage) {
+          setFormData(prev => ({ ...prev, leverage: lastTrade.leverage.toString() }));
+        }
       }
     } catch (error) {
       console.error('Error loading last ticker:', error);
@@ -254,7 +257,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
           entryPrice: '',
           exitPrice: '',
           stopLoss: '',
-          leverage: '25',
+          leverage: formData.leverage,
           gainLoss: '',
           fee: '',
           result: 'win',
