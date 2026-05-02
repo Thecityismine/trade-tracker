@@ -870,7 +870,7 @@ function Strategies() {
       {/* Strategy modal */}
       {isStrategyModalOpen && (
         <div
-          className="fixed inset-0 bg-black/75 z-[70] p-2 sm:p-4 overflow-y-auto flex items-center justify-center"
+          className="fixed inset-0 bg-black/75 z-[85] p-2 sm:p-4 overflow-y-auto flex items-center justify-center"
           onClick={closeStrategyModal}
         >
           <div
