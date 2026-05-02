@@ -283,7 +283,7 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
               </div>
 
               {/* 3. EXECUTION */}
-              {((trade.executionScore || 0) > 0 || trade.chartPattern) && (
+              {((trade.executionScore || 0) > 0 || trade.chartPattern || trade.strategyName) && (
                 <div>
                   <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3">Execution</h3>
                   <div className="grid grid-cols-2 gap-3">
@@ -303,6 +303,12 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                       <div className="bg-dark-bg rounded-lg p-4">
                         <div className="text-gray-500 text-xs mb-1">Pattern</div>
                         <div className="text-white font-medium text-sm mt-1">{trade.chartPattern}</div>
+                      </div>
+                    )}
+                    {trade.strategyName && (
+                      <div className="bg-dark-bg rounded-lg p-4 col-span-2">
+                        <div className="text-gray-500 text-xs mb-1">Strategy</div>
+                        <div className="text-blue-300 font-medium text-sm mt-1">{trade.strategyName}</div>
                       </div>
                     )}
                   </div>

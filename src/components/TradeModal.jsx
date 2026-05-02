@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { X, Upload } from 'lucide-react';
-import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, updateDoc, doc } from 'firebase/firestore';
+import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, updateDoc, doc, onSnapshot } from 'firebase/firestore';
 import { db, storage } from '../config/firebase';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 
@@ -44,6 +44,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     result: 'win',
     comment: '',
     chartPattern: '',
+    strategyId: '',
     executionScore: 5,
     tradeDate: formatDateForInput(new Date())
   });
@@ -57,9 +58,24 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   const [formError, setFormError] = useState('');
   const [priceMovePercent, setPriceMovePercent] = useState(0);
   const [riskReward, setRiskReward] = useState(null);
+  const [strategies, setStrategies] = useState([]);
 
   useEffect(() => {
     loadLastTicker();
+  }, []);
+
+  useEffect(() => {
+    const q = query(collection(db, 'strategies'), orderBy('name', 'asc'));
+    const unsubscribe = onSnapshot(
+      q,
+      (snapshot) => {
+        setStrategies(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
+      },
+      (error) => {
+        console.error('Error loading strategies for trade modal:', error);
+      }
+    );
+    return () => unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -86,6 +102,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       result: normalizedResult,
       comment: editTrade.comment || '',
       chartPattern: editTrade.chartPattern || '',
+      strategyId: editTrade.strategyId || '',
       executionScore: editTrade.executionScore || 5,
       tradeDate: formattedDate
     });
@@ -229,6 +246,10 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
         result: formData.result,
         comment: formData.comment,
         chartPattern: formData.chartPattern || null,
+        strategyId: formData.strategyId || null,
+        strategyName: formData.strategyId
+          ? (strategies.find((s) => s.id === formData.strategyId)?.name || null)
+          : null,
         executionScore: Number(formData.executionScore),
         chartImageUrl,
         chartImageSource,
@@ -263,6 +284,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
           result: 'win',
           comment: '',
           chartPattern: '',
+          strategyId: formData.strategyId,
           executionScore: 5,
           tradeDate: formatDateForInput(new Date())
         });
@@ -546,6 +568,24 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                 placeholder="e.g. Bull Flag, Head & Shoulders"
                 className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
               />
+            </div>
+
+            <div>
+              <label className="block text-gray-400 text-sm mb-2">Strategy <span className="text-gray-600">(optional)</span></label>
+              <select
+                name="strategyId"
+                value={formData.strategyId}
+                onChange={handleInputChange}
+                className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+              >
+                <option value="">— No strategy —</option>
+                {strategies.map((s) => (
+                  <option key={s.id} value={s.id}>{s.name}</option>
+                ))}
+              </select>
+              {strategies.length === 0 && (
+                <p className="text-xs text-gray-500 mt-1">Create a strategy in the Strategies tab to link trades to it.</p>
+              )}
             </div>
 
             <div>
