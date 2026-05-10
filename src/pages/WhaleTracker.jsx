@@ -51,6 +51,7 @@ function WhaleTracker() {
   const [error, setError] = useState(null);
   const [lastUpdated, setLastUpdated] = useState(null);
   const [expandedWhale, setExpandedWhale] = useState(null);
+  const [expandedCoin, setExpandedCoin] = useState(null);
 
   const saveAddresses = (addrs) => {
     setAddresses(addrs);
@@ -82,6 +83,7 @@ function WhaleTracker() {
     setLoading(true);
     setError(null);
     setExpandedWhale(null);
+    setExpandedCoin(null);
     try {
       const results = await Promise.allSettled(
         addrs.map((addr) => hlPost({ type: 'clearinghouseState', user: addr }))
@@ -105,8 +107,9 @@ function WhaleTracker() {
       // Sort by account value descending
       whales.sort((a, b) => b.accountValue - a.accountValue);
 
-      // Aggregate exposure per coin
+      // Aggregate exposure per coin + per-coin position breakdown
       const coinMap = {};
+      const coinPositions = {};
       whales.forEach((whale) => {
         whale.openPositions.forEach((pos) => {
           const coin = pos.coin;
@@ -115,8 +118,19 @@ function WhaleTracker() {
           if (!coinMap[coin]) coinMap[coin] = { longs: 0, shorts: 0, longValue: 0, shortValue: 0 };
           if (sz > 0) { coinMap[coin].longs++; coinMap[coin].longValue += val; }
           else { coinMap[coin].shorts++; coinMap[coin].shortValue += val; }
+          if (!coinPositions[coin]) coinPositions[coin] = [];
+          coinPositions[coin].push({
+            address: whale.address,
+            sz,
+            entryPx: parseFloat(pos.entryPx ?? 0),
+            value: val,
+            upnl: parseFloat(pos.unrealizedPnl ?? 0),
+            lev: pos.leverage?.value,
+          });
         });
       });
+      // Sort each coin's positions by value descending
+      Object.values(coinPositions).forEach((arr) => arr.sort((a, b) => b.value - a.value));
 
       const coins = Object.entries(coinMap)
         .map(([coin, d]) => {
@@ -128,7 +142,7 @@ function WhaleTracker() {
         .slice(0, 12);
 
       const totalValue = whales.reduce((s, w) => s + w.accountValue, 0);
-      setData({ whales, coins, totalValue, withPositions: whales.filter((w) => w.openPositions.length > 0).length });
+      setData({ whales, coins, coinPositions, totalValue, withPositions: whales.filter((w) => w.openPositions.length > 0).length });
       setLastUpdated(new Date());
     } catch (err) {
       setError(err.message || 'Unknown error');
@@ -346,26 +360,82 @@ function WhaleTracker() {
                   </tr>
                 </thead>
                 <tbody>
-                  {data.coins.map((c) => (
-                    <tr key={c.coin} className="border-t border-dark-border hover:bg-dark-bg transition-colors">
-                      <td className="py-3 px-4 text-white font-bold text-sm">{c.coin}</td>
-                      <td className="py-3 px-3 text-center text-green-400 font-medium text-sm">{c.longs}</td>
-                      <td className="py-3 px-3 text-center text-red-400 font-medium text-sm">{c.shorts}</td>
-                      <td className="py-3 px-3 text-right text-green-400 text-sm">{fmtUsd(c.longValue)}</td>
-                      <td className="py-3 px-3 text-right text-red-400 text-sm">{fmtUsd(c.shortValue)}</td>
-                      <td className="py-3 px-4">
-                        <div className="flex items-center justify-end gap-2">
-                          <div className="w-16 h-1.5 bg-dark-bg rounded-full overflow-hidden flex">
-                            <div className="h-full bg-green-500" style={{ width: `${c.longPct}%` }} />
-                            <div className="h-full bg-red-500 flex-1" />
-                          </div>
-                          <span className={`text-xs font-semibold w-12 text-right ${c.bias === 'long' ? 'text-green-400' : 'text-red-400'}`}>
-                            {c.bias === 'long' ? `${c.longPct.toFixed(0)}%L` : `${(100 - c.longPct).toFixed(0)}%S`}
-                          </span>
-                        </div>
-                      </td>
-                    </tr>
-                  ))}
+                  {data.coins.map((c) => {
+                    const isOpen = expandedCoin === c.coin;
+                    const entries = data.coinPositions[c.coin] ?? [];
+                    return (
+                      <>
+                        <tr
+                          key={c.coin}
+                          onClick={() => setExpandedCoin(isOpen ? null : c.coin)}
+                          className="border-t border-dark-border hover:bg-dark-bg transition-colors cursor-pointer"
+                        >
+                          <td className="py-3 px-4">
+                            <div className="flex items-center gap-2">
+                              <span className="text-white font-bold text-sm">{c.coin}</span>
+                              {isOpen ? <ChevronUp size={12} className="text-gray-500" /> : <ChevronDown size={12} className="text-gray-500" />}
+                            </div>
+                          </td>
+                          <td className="py-3 px-3 text-center text-green-400 font-medium text-sm">{c.longs}</td>
+                          <td className="py-3 px-3 text-center text-red-400 font-medium text-sm">{c.shorts}</td>
+                          <td className="py-3 px-3 text-right text-green-400 text-sm">{fmtUsd(c.longValue)}</td>
+                          <td className="py-3 px-3 text-right text-red-400 text-sm">{fmtUsd(c.shortValue)}</td>
+                          <td className="py-3 px-4">
+                            <div className="flex items-center justify-end gap-2">
+                              <div className="w-16 h-1.5 bg-dark-bg rounded-full overflow-hidden flex">
+                                <div className="h-full bg-green-500" style={{ width: `${c.longPct}%` }} />
+                                <div className="h-full bg-red-500 flex-1" />
+                              </div>
+                              <span className={`text-xs font-semibold w-12 text-right ${c.bias === 'long' ? 'text-green-400' : 'text-red-400'}`}>
+                                {c.bias === 'long' ? `${c.longPct.toFixed(0)}%L` : `${(100 - c.longPct).toFixed(0)}%S`}
+                              </span>
+                            </div>
+                          </td>
+                        </tr>
+                        {isOpen && (
+                          <tr key={`${c.coin}-detail`} className="border-t border-dark-border/40">
+                            <td colSpan={6} className="px-4 py-3 bg-dark-bg">
+                              <table className="w-full">
+                                <thead>
+                                  <tr className="text-gray-600 text-xs">
+                                    <th className="text-left pb-2 font-medium">Wallet</th>
+                                    <th className="text-center pb-2 font-medium">Side</th>
+                                    <th className="text-right pb-2 font-medium">Entry Price</th>
+                                    <th className="text-right pb-2 font-medium">Size</th>
+                                    <th className="text-right pb-2 font-medium">Value</th>
+                                    <th className="text-right pb-2 font-medium">uPnL</th>
+                                  </tr>
+                                </thead>
+                                <tbody className="divide-y divide-dark-border/30">
+                                  {entries.map((e, idx) => {
+                                    const isLong = e.sz > 0;
+                                    return (
+                                      <tr key={idx}>
+                                        <td className="py-1.5 font-mono text-xs text-gray-400">{shortenAddr(e.address)}</td>
+                                        <td className="py-1.5 text-center">
+                                          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${isLong ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
+                                            {isLong ? 'LONG' : 'SHORT'}
+                                          </span>
+                                        </td>
+                                        <td className="py-1.5 text-right text-white text-xs font-medium">
+                                          ${e.entryPx.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                                        </td>
+                                        <td className="py-1.5 text-right text-gray-300 text-xs">{Math.abs(e.sz).toFixed(4)}</td>
+                                        <td className="py-1.5 text-right text-gray-300 text-xs">{fmtUsd(e.value)}</td>
+                                        <td className={`py-1.5 text-right text-xs font-medium ${e.upnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                          {signedUsd(e.upnl)}
+                                        </td>
+                                      </tr>
+                                    );
+                                  })}
+                                </tbody>
+                              </table>
+                            </td>
+                          </tr>
+                        )}
+                      </>
+                    );
+                  })}
                   {data.coins.length === 0 && (
                     <tr>
                       <td colSpan={6} className="text-center py-8 text-gray-600 text-sm">
