@@ -3,10 +3,10 @@ import { RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
 
 const FEEDS = [
   {
-    id: 'npr',
-    name: 'NPR Business',
-    tag: 'Markets',
-    url: 'https://feeds.npr.org/1006/rss.xml',
+    id: 'cryptopanic',
+    name: 'CryptoPanic',
+    tag: 'Crypto',
+    url: 'https://cryptopanic.com/news/rss/',
     dot: 'bg-orange-500',
   },
   {
