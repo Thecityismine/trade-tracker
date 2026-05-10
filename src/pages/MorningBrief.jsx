@@ -3,10 +3,10 @@ import { RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
 
 const FEEDS = [
   {
-    id: 'cryptopanic',
-    name: 'CryptoPanic',
+    id: 'theblock',
+    name: 'The Block',
     tag: 'Crypto',
-    url: 'https://cryptopanic.com/news/rss/',
+    url: 'https://www.theblock.co/rss.xml',
     dot: 'bg-orange-500',
   },
   {
