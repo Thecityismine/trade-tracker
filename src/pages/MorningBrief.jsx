@@ -3,10 +3,10 @@ import { RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
 
 const FEEDS = [
   {
-    id: 'reuters',
-    name: 'Reuters Business',
+    id: 'npr',
+    name: 'NPR Business',
     tag: 'Markets',
-    url: 'https://feeds.reuters.com/reuters/businessNews',
+    url: 'https://feeds.npr.org/1006/rss.xml',
     dot: 'bg-orange-500',
   },
   {
