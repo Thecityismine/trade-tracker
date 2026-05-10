@@ -40,14 +40,13 @@ const FEEDS = [
 ];
 
 async function fetchFeed(url, count = 5) {
-  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+  const proxyUrl = `/api/feed?url=${encodeURIComponent(url)}`;
   const res = await fetch(proxyUrl);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
-  const data = await res.json();
-  if (!data.contents) throw new Error('Empty response');
+  const text = await res.text();
 
   const parser = new DOMParser();
-  const xml = parser.parseFromString(data.contents, 'text/xml');
+  const xml = parser.parseFromString(text, 'text/xml');
 
   if (xml.querySelector('parsererror')) throw new Error('Invalid feed format');
 
