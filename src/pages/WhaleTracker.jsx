@@ -1,8 +1,10 @@
 import { useState, useEffect, useCallback } from 'react';
+import { doc, onSnapshot, setDoc } from 'firebase/firestore';
+import { db } from '../config/firebase';
 import { RefreshCw, Eye, AlertCircle, ChevronDown, ChevronUp, Plus, X, ExternalLink } from 'lucide-react';
 
 const HL_API = 'https://api.hyperliquid.xyz/info';
-const STORAGE_KEY = 'hl_watchlist_addresses';
+const WATCHLIST_DOC = doc(db, 'settings', 'whaleWatchlist');
 
 async function hlPost(body) {
   const res = await fetch(HL_API, {
@@ -35,16 +37,16 @@ function isValidAddress(addr) {
 }
 
 function WhaleTracker() {
-  const [addresses, setAddresses] = useState(() => {
-    try {
-      const saved = localStorage.getItem(STORAGE_KEY);
-      return saved ? JSON.parse(saved) : [];
-    } catch {
-      return [];
-    }
-  });
+  const [addresses, setAddresses] = useState([]);
   const [newAddr, setNewAddr] = useState('');
   const [addrError, setAddrError] = useState('');
+
+  // Sync watchlist from Firestore so it works across all devices
+  useEffect(() => {
+    return onSnapshot(WATCHLIST_DOC, (snap) => {
+      setAddresses(snap.exists() ? (snap.data().addresses ?? []) : []);
+    });
+  }, []);
 
   const [data, setData] = useState(null);
   const [loading, setLoading] = useState(false);
@@ -54,8 +56,8 @@ function WhaleTracker() {
   const [expandedCoin, setExpandedCoin] = useState(null);
 
   const saveAddresses = (addrs) => {
-    setAddresses(addrs);
-    localStorage.setItem(STORAGE_KEY, JSON.stringify(addrs));
+    setAddresses(addrs); // optimistic update
+    setDoc(WATCHLIST_DOC, { addresses: addrs });
   };
 
   const handleAddAddress = () => {
