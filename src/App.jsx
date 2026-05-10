@@ -9,7 +9,8 @@ import TradeJournal from './pages/TradeJournal';
 import Notebook from './pages/Notebook';
 import Strategies from './pages/Strategies';
 import Settings from './pages/Settings';
-import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText, Lightbulb, Settings as SettingsIcon } from 'lucide-react';
+import WhaleTracker from './pages/WhaleTracker';
+import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText, Lightbulb, Settings as SettingsIcon, Eye } from 'lucide-react';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -24,6 +25,7 @@ function App() {
     { id: 'journal', label: 'Trade Journal', icon: FileText },
     { id: 'mindset', label: 'Mindset', icon: BookOpen },
     { id: 'notebook', label: 'Notebook', icon: BookOpen },
+    { id: 'whales', label: 'Whales', icon: Eye },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 
@@ -47,6 +49,8 @@ function App() {
         return <Notebook />;
       case 'mindset':
         return <TradingMindset />;
+      case 'whales':
+        return <WhaleTracker />;
       case 'settings':
         return <Settings />;
       default:
