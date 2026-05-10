@@ -303,8 +303,8 @@ function WhaleTracker() {
               { label: 'Total Value Tracked', value: fmtUsd(data.totalValue), color: 'text-white' },
             ].map((s) => (
               <div key={s.label} className="bg-dark-card border border-dark-border rounded-lg p-4">
-                <div className="text-gray-500 text-xs mb-1">{s.label}</div>
-                <div className={`text-xl font-bold ${s.color}`}>{s.value}</div>
+                <div className="text-gray-500 text-sm mb-1">{s.label}</div>
+                <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
               </div>
             ))}
           </div>
@@ -318,19 +318,19 @@ function WhaleTracker() {
               ].map(({ items, label, iconColor, barColor, textColor, getCount, getValue, getPct }) =>
                 items.length > 0 ? (
                   <div key={label} className="bg-dark-card border border-dark-border rounded-lg p-5">
-                    <h3 className={`font-semibold text-sm mb-4 ${iconColor}`}>{label}</h3>
+                    <h3 className={`font-semibold text-base mb-4 ${iconColor}`}>{label}</h3>
                     <div className="space-y-3">
                       {items.map((c) => (
                         <div key={c.coin} className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3 min-w-0">
-                            <span className="text-white font-bold text-sm w-12 flex-shrink-0">{c.coin}</span>
-                            <span className="text-gray-500 text-xs">{getCount(c)} wallets</span>
+                            <span className="text-white font-bold text-base w-14 flex-shrink-0">{c.coin}</span>
+                            <span className="text-gray-500 text-sm">{getCount(c)} wallets</span>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
                             <div className="w-20 h-1.5 bg-dark-bg rounded-full overflow-hidden">
                               <div className={`h-full ${barColor} rounded-full`} style={{ width: `${getPct(c)}%` }} />
                             </div>
-                            <span className={`text-xs font-medium w-14 text-right ${textColor}`}>
+                            <span className={`text-sm font-medium w-16 text-right ${textColor}`}>
                               {fmtUsd(getValue(c))}
                             </span>
                           </div>
@@ -469,10 +469,10 @@ function WhaleTracker() {
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-gray-600 text-xs w-5 flex-shrink-0">{i + 1}</span>
+                        <span className="text-gray-600 text-sm w-5 flex-shrink-0">{i + 1}</span>
                         <div className="min-w-0">
-                          <div className="text-gray-300 font-mono text-xs">{shortenAddr(whale.address)}</div>
-                          <div className="text-gray-600 text-xs mt-0.5">
+                          <div className="text-gray-300 font-mono text-sm">{shortenAddr(whale.address)}</div>
+                          <div className="text-gray-500 text-sm mt-0.5">
                             {whale.fetchFailed
                               ? 'Fetch failed'
                               : hasPositions
@@ -483,8 +483,8 @@ function WhaleTracker() {
                       </div>
                       <div className="flex items-center gap-4 md:gap-6 flex-shrink-0">
                         <div className="text-right">
-                          <div className="text-gray-500 text-xs">Account Value</div>
-                          <div className="text-white text-sm font-medium">{fmtUsd(whale.accountValue)}</div>
+                          <div className="text-gray-500 text-sm">Account Value</div>
+                          <div className="text-white text-base font-semibold">{fmtUsd(whale.accountValue)}</div>
                         </div>
                         {hasPositions ? (
                           isExpanded ? <ChevronUp size={14} className="text-gray-500" /> : <ChevronDown size={14} className="text-gray-500" />
@@ -506,39 +506,39 @@ function WhaleTracker() {
                             return (
                               <div
                                 key={j}
-                                className={`rounded-lg p-3 border ${
+                                className={`rounded-lg p-4 border ${
                                   isLong ? 'bg-green-500/5 border-green-500/15' : 'bg-red-500/5 border-red-500/15'
                                 }`}
                               >
-                                <div className="flex items-center justify-between mb-2">
-                                  <span className="text-white font-bold">{pos.coin}</span>
-                                  <div className="flex items-center gap-1.5">
-                                    {lev && <span className="text-gray-500 text-xs">{lev}x</span>}
-                                    <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
+                                <div className="flex items-center justify-between mb-3">
+                                  <span className="text-white font-bold text-lg">{pos.coin}</span>
+                                  <div className="flex items-center gap-2">
+                                    {lev && <span className="text-gray-400 text-sm">{lev}x</span>}
+                                    <span className={`text-sm font-semibold px-2 py-0.5 rounded ${
                                       isLong ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
                                     }`}>
                                       {isLong ? 'LONG' : 'SHORT'}
                                     </span>
                                   </div>
                                 </div>
-                                <div className="grid grid-cols-2 gap-x-3 gap-y-1.5 text-xs">
+                                <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
                                   <div>
-                                    <div className="text-gray-600">Size</div>
-                                    <div className="text-gray-300">{Math.abs(sz).toFixed(4)}</div>
+                                    <div className="text-gray-500">Size</div>
+                                    <div className="text-gray-200 font-medium">{Math.abs(sz).toFixed(4)}</div>
                                   </div>
                                   <div>
-                                    <div className="text-gray-600">Value</div>
-                                    <div className="text-gray-300">{fmtUsd(val)}</div>
+                                    <div className="text-gray-500">Value</div>
+                                    <div className="text-gray-200 font-medium">{fmtUsd(val)}</div>
                                   </div>
                                   <div>
-                                    <div className="text-gray-600">Entry</div>
-                                    <div className="text-gray-300">
+                                    <div className="text-gray-500">Entry</div>
+                                    <div className="text-gray-200 font-medium">
                                       ${parseFloat(pos.entryPx ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                     </div>
                                   </div>
                                   <div>
-                                    <div className="text-gray-600">uPnL</div>
-                                    <div className={upnl >= 0 ? 'text-green-400' : 'text-red-400'}>{signedUsd(upnl)}</div>
+                                    <div className="text-gray-500">uPnL</div>
+                                    <div className={`font-medium ${upnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{signedUsd(upnl)}</div>
                                   </div>
                                 </div>
                               </div>
