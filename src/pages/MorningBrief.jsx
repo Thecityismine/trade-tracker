@@ -3,49 +3,70 @@ import { RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
 
 const FEEDS = [
   {
-    id: 'wsj',
-    name: 'Wall Street Journal',
+    id: 'reuters',
+    name: 'Reuters Business',
     tag: 'Markets',
-    url: 'https://feeds.a.dj.com/rss/RSSMarketsMain.xml',
-    dot: 'bg-blue-500',
+    url: 'https://feeds.reuters.com/reuters/businessNews',
+    dot: 'bg-orange-500',
   },
   {
-    id: 'cnbc',
-    name: 'CNBC Markets',
-    tag: 'Business',
-    url: 'https://www.cnbc.com/id/10000664/device/rss/rss.html',
-    dot: 'bg-yellow-400',
-  },
-  {
-    id: 'marketwatch',
-    name: 'MarketWatch',
+    id: 'yahoo',
+    name: 'Yahoo Finance',
     tag: 'Markets',
-    url: 'https://feeds.content.dowjones.io/public/rss/mw_topstories',
-    dot: 'bg-green-500',
+    url: 'https://finance.yahoo.com/news/rssindex',
+    dot: 'bg-purple-500',
   },
   {
     id: 'coindesk',
     name: 'CoinDesk',
     tag: 'Crypto',
     url: 'https://www.coindesk.com/arc/outboundfeeds/rss/',
-    dot: 'bg-orange-500',
+    dot: 'bg-blue-500',
   },
   {
     id: 'ct',
     name: 'Cointelegraph',
     tag: 'Crypto',
     url: 'https://cointelegraph.com/rss',
-    dot: 'bg-purple-500',
+    dot: 'bg-yellow-400',
+  },
+  {
+    id: 'decrypt',
+    name: 'Decrypt',
+    tag: 'Crypto',
+    url: 'https://decrypt.co/feed',
+    dot: 'bg-green-500',
   },
 ];
 
 async function fetchFeed(url, count = 5) {
-  const apiUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(url)}&count=${count}`;
-  const res = await fetch(apiUrl);
+  const proxyUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`;
+  const res = await fetch(proxyUrl);
   if (!res.ok) throw new Error(`HTTP ${res.status}`);
   const data = await res.json();
-  if (data.status !== 'ok') throw new Error(data.message || 'Feed unavailable');
-  return data.items;
+  if (!data.contents) throw new Error('Empty response');
+
+  const parser = new DOMParser();
+  const xml = parser.parseFromString(data.contents, 'text/xml');
+
+  if (xml.querySelector('parsererror')) throw new Error('Invalid feed format');
+
+  const items = Array.from(xml.querySelectorAll('item')).slice(0, count);
+  if (items.length === 0) throw new Error('No articles found');
+
+  return items.map((item) => {
+    const getText = (tag) => item.querySelector(tag)?.textContent?.trim() ?? '';
+    const link =
+      getText('link') ||
+      item.querySelector('link')?.getAttribute('href') ||
+      getText('guid');
+    return {
+      title: getText('title'),
+      link,
+      description: getText('description'),
+      pubDate: getText('pubDate') || getText('updated') || getText('dc\\:date'),
+    };
+  });
 }
 
 function stripHtml(str) {
@@ -80,14 +101,12 @@ function FeedSkeleton() {
 function FeedCard({ feed, items, error, loading }) {
   return (
     <div className="bg-dark-card border border-dark-border rounded-lg overflow-hidden flex flex-col">
-      {/* Card header */}
       <div className="flex items-center gap-2.5 px-4 py-3 border-b border-dark-border">
         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${feed.dot}`} />
         <span className="text-white font-semibold text-sm">{feed.name}</span>
         <span className="text-gray-600 text-xs ml-auto">{feed.tag}</span>
       </div>
 
-      {/* Content */}
       {loading && items.length === 0 ? (
         <FeedSkeleton />
       ) : error ? (
@@ -159,7 +178,6 @@ function MorningBrief() {
   return (
     <div className="space-y-5">
 
-      {/* Header */}
       <div className="bg-dark-card border border-dark-border rounded-lg p-5 md:p-6">
         <div className="flex items-start justify-between gap-4">
           <div>
@@ -180,7 +198,6 @@ function MorningBrief() {
         </div>
       </div>
 
-      {/* Feed grid */}
       <div className="grid md:grid-cols-2 gap-4">
         {FEEDS.map((feed) => {
           const { items = [], error } = feedData[feed.id] ?? {};
