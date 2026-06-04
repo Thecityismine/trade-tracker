@@ -11,7 +11,8 @@ import Strategies from './pages/Strategies';
 import Settings from './pages/Settings';
 import WhaleTracker from './pages/WhaleTracker';
 import MorningBrief from './pages/MorningBrief';
-import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText, Lightbulb, Settings as SettingsIcon, Eye, Newspaper } from 'lucide-react';
+import Alarms from './pages/Alarms';
+import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText, Lightbulb, Settings as SettingsIcon, Eye, Newspaper, Bell } from 'lucide-react';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -28,6 +29,7 @@ function App() {
     { id: 'notebook', label: 'Notebook', icon: BookOpen },
     { id: 'news', label: 'News', icon: Newspaper },
     { id: 'whales', label: 'Whales', icon: Eye },
+    { id: 'alarms', label: 'Alarms', icon: Bell },
     { id: 'settings', label: 'Settings', icon: SettingsIcon },
   ];
 
@@ -55,6 +57,8 @@ function App() {
         return <MorningBrief />;
       case 'whales':
         return <WhaleTracker />;
+      case 'alarms':
+        return <Alarms />;
       case 'settings':
         return <Settings />;
       default:
