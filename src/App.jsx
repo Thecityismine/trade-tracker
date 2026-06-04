@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import Dashboard from './pages/Dashboard';
 import Analytics from './pages/Analytics';
 import WeeklyTracker from './pages/WeeklyTracker';
@@ -12,10 +12,48 @@ import Settings from './pages/Settings';
 import WhaleTracker from './pages/WhaleTracker';
 import MorningBrief from './pages/MorningBrief';
 import Alarms from './pages/Alarms';
+import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
+import { db } from './config/firebase';
+import { playSound } from './utils/alarmSounds';
 import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText, Lightbulb, Settings as SettingsIcon, Eye, Newspaper, Bell } from 'lucide-react';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
+  const [alarms, setAlarms] = useState([]);
+  const [ringing, setRinging] = useState(null);
+  const firedRef = useRef(new Set());
+
+  // Load alarms from Firestore — syncs across devices
+  useEffect(() => {
+    const q = query(collection(db, 'alarms'), orderBy('time'));
+    return onSnapshot(q, snap => {
+      setAlarms(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+  }, []);
+
+  // Alarm ticker lives here so it fires regardless of which tab is active
+  useEffect(() => {
+    const check = () => {
+      const now = new Date();
+      const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
+      const today = now.toISOString().split('T')[0];
+      const dayOfWeek = now.getDay();
+
+      alarms.forEach(alarm => {
+        if (!alarm.enabled || alarm.time !== hhmm) return;
+        if (!alarm.days.includes(dayOfWeek)) return;
+        const key = `${alarm.id}-${today}-${hhmm}`;
+        if (firedRef.current.has(key)) return;
+        firedRef.current.add(key);
+        playSound(alarm.sound);
+        setRinging(alarm.id);
+        setTimeout(() => setRinging(r => r === alarm.id ? null : r), 5000);
+      });
+    };
+
+    const interval = setInterval(check, 1000);
+    return () => clearInterval(interval);
+  }, [alarms]);
 
   const tabs = [
     { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -58,7 +96,7 @@ function App() {
       case 'whales':
         return <WhaleTracker />;
       case 'alarms':
-        return <Alarms />;
+        return <Alarms alarms={alarms} ringing={ringing} />;
       case 'settings':
         return <Settings />;
       default:

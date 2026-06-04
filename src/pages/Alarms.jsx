@@ -1,65 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
+import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
+import { db } from '../config/firebase';
+import { SOUNDS, playSound } from '../utils/alarmSounds';
 import { Bell, BellOff, Plus, Trash2, Play, Pencil, Check, X } from 'lucide-react';
-
-const SOUNDS = {
-  short: {
-    label: 'Short Beep',
-    description: 'Single clean tone',
-    play: (ctx) => {
-      const osc = ctx.createOscillator();
-      const gain = ctx.createGain();
-      osc.connect(gain);
-      gain.connect(ctx.destination);
-      osc.type = 'sine';
-      osc.frequency.value = 880;
-      gain.gain.setValueAtTime(0.5, ctx.currentTime);
-      gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.5);
-      osc.start(ctx.currentTime);
-      osc.stop(ctx.currentTime + 0.5);
-    }
-  },
-  double: {
-    label: 'Double Beep',
-    description: 'Two quick pulses',
-    play: (ctx) => {
-      [0, 0.35].forEach(offset => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = 'sine';
-        osc.frequency.value = 880;
-        gain.gain.setValueAtTime(0.5, ctx.currentTime + offset);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + offset + 0.25);
-        osc.start(ctx.currentTime + offset);
-        osc.stop(ctx.currentTime + offset + 0.25);
-      });
-    }
-  },
-  alert: {
-    label: 'Alert Tone',
-    description: 'Rising alarm sequence',
-    play: (ctx) => {
-      [440, 554, 659, 880].forEach((freq, i) => {
-        const osc = ctx.createOscillator();
-        const gain = ctx.createGain();
-        osc.connect(gain);
-        gain.connect(ctx.destination);
-        osc.type = 'square';
-        osc.frequency.value = freq;
-        gain.gain.setValueAtTime(0.15, ctx.currentTime + i * 0.18);
-        gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + i * 0.18 + 0.18);
-        osc.start(ctx.currentTime + i * 0.18);
-        osc.stop(ctx.currentTime + i * 0.18 + 0.18);
-      });
-    }
-  }
-};
-
-function playSound(soundKey) {
-  const ctx = new (window.AudioContext || window.webkitAudioContext)();
-  SOUNDS[soundKey].play(ctx);
-}
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -70,12 +13,8 @@ function formatTime12(time24) {
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
 }
 
-function Alarms() {
-  const [alarms, setAlarms] = useState(() => {
-    try { return JSON.parse(localStorage.getItem('trade-alarms') || '[]'); }
-    catch { return []; }
-  });
-
+// alarms + ringing come from App.jsx so the ticker runs on every tab
+function Alarms({ alarms = [], ringing }) {
   const [form, setForm] = useState({
     time: '',
     label: '',
@@ -85,52 +24,26 @@ function Alarms() {
 
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(null);
-
-  const [ringing, setRinging] = useState(null);
   const [currentTime, setCurrentTime] = useState('');
-  const firedRef = useRef(new Set());
 
   useEffect(() => {
-    localStorage.setItem('trade-alarms', JSON.stringify(alarms));
-  }, [alarms]);
+    const tick = () => setCurrentTime(
+      new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' })
+    );
+    tick();
+    const id = setInterval(tick, 1000);
+    return () => clearInterval(id);
+  }, []);
 
-  useEffect(() => {
-    const check = () => {
-      const now = new Date();
-      const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      setCurrentTime(now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit' }));
-
-      const today = now.toISOString().split('T')[0];
-      const dayOfWeek = now.getDay();
-
-      alarms.forEach(alarm => {
-        if (!alarm.enabled || alarm.time !== hhmm) return;
-        if (!alarm.days.includes(dayOfWeek)) return;
-        const key = `${alarm.id}-${today}-${hhmm}`;
-        if (firedRef.current.has(key)) return;
-        firedRef.current.add(key);
-        playSound(alarm.sound);
-        setRinging(alarm.id);
-        setTimeout(() => setRinging(r => r === alarm.id ? null : r), 5000);
-      });
-    };
-
-    check();
-    const interval = setInterval(check, 1000);
-    return () => clearInterval(interval);
-  }, [alarms]);
-
-  const addAlarm = () => {
+  const addAlarm = async () => {
     if (!form.time || form.days.length === 0) return;
-    const alarm = {
-      id: Date.now().toString(),
+    await addDoc(collection(db, 'alarms'), {
       time: form.time,
       label: form.label.trim() || 'Alarm',
       sound: form.sound,
       days: [...form.days].sort(),
       enabled: true
-    };
-    setAlarms(prev => [...prev, alarm].sort((a, b) => a.time.localeCompare(b.time)));
+    });
     setForm(f => ({ ...f, time: '', label: '' }));
   };
 
@@ -139,44 +52,40 @@ function Alarms() {
     setEditForm({ time: alarm.time, label: alarm.label, sound: alarm.sound, days: [...alarm.days] });
   };
 
-  const cancelEdit = () => {
-    setEditingId(null);
-    setEditForm(null);
-  };
+  const cancelEdit = () => { setEditingId(null); setEditForm(null); };
 
-  const saveEdit = () => {
+  const saveEdit = async () => {
     if (!editForm.time || editForm.days.length === 0) return;
-    setAlarms(prev =>
-      prev.map(a =>
-        a.id === editingId
-          ? { ...a, time: editForm.time, label: editForm.label.trim() || 'Alarm', sound: editForm.sound, days: [...editForm.days].sort() }
-          : a
-      ).sort((a, b) => a.time.localeCompare(b.time))
-    );
+    await updateDoc(doc(db, 'alarms', editingId), {
+      time: editForm.time,
+      label: editForm.label.trim() || 'Alarm',
+      sound: editForm.sound,
+      days: [...editForm.days].sort()
+    });
     cancelEdit();
   };
 
-  const toggleEditDay = (day) => {
-    setEditForm(f => ({
-      ...f,
-      days: f.days.includes(day) ? f.days.filter(d => d !== day) : [...f.days, day]
-    }));
+  const toggleAlarm = (alarm) => {
+    updateDoc(doc(db, 'alarms', alarm.id), { enabled: !alarm.enabled });
   };
 
-  const toggleAlarm = (id) => {
-    setAlarms(prev => prev.map(a => a.id === id ? { ...a, enabled: !a.enabled } : a));
-  };
-
-  const deleteAlarm = (id) => {
-    setAlarms(prev => prev.filter(a => a.id !== id));
+  const deleteAlarm = async (id) => {
+    await deleteDoc(doc(db, 'alarms', id));
     if (editingId === id) cancelEdit();
   };
 
-  const toggleDay = (day) => {
-    setForm(f => ({
-      ...f,
-      days: f.days.includes(day) ? f.days.filter(d => d !== day) : [...f.days, day]
-    }));
+  const toggleDay = (day, isEdit = false) => {
+    if (isEdit) {
+      setEditForm(f => ({
+        ...f,
+        days: f.days.includes(day) ? f.days.filter(d => d !== day) : [...f.days, day]
+      }));
+    } else {
+      setForm(f => ({
+        ...f,
+        days: f.days.includes(day) ? f.days.filter(d => d !== day) : [...f.days, day]
+      }));
+    }
   };
 
   return (
@@ -344,7 +253,7 @@ function Alarms() {
                         {DAYS.map((day, i) => (
                           <button
                             key={day}
-                            onClick={() => toggleEditDay(i)}
+                            onClick={() => toggleDay(i, true)}
                             className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                               editForm.days.includes(i)
                                 ? 'bg-blue-600 text-white'
@@ -410,7 +319,7 @@ function Alarms() {
                         <Pencil size={15} />
                       </button>
                       <button
-                        onClick={() => toggleAlarm(alarm.id)}
+                        onClick={() => toggleAlarm(alarm)}
                         className={`transition-colors ${alarm.enabled ? 'text-blue-400 hover:text-blue-300' : 'text-gray-600 hover:text-gray-400'}`}
                         title={alarm.enabled ? 'Disable' : 'Enable'}
                       >
@@ -435,6 +344,10 @@ function Alarms() {
           No alarms set. Add one above.
         </div>
       )}
+
+      <p className="text-center text-gray-600 text-xs pb-2">
+        Alarms fire as long as this app is open in any tab — no need to be on the Alarms page.
+      </p>
     </div>
   );
 }
