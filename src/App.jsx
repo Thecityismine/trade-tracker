@@ -36,12 +36,12 @@ function App() {
     const check = () => {
       const now = new Date();
       const hhmm = `${String(now.getHours()).padStart(2, '0')}:${String(now.getMinutes()).padStart(2, '0')}`;
-      const today = now.toISOString().split('T')[0];
+      const today = `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, '0')}-${String(now.getDate()).padStart(2, '0')}`;
       const dayOfWeek = now.getDay();
 
       alarms.forEach(alarm => {
         if (!alarm.enabled || alarm.time !== hhmm) return;
-        if (!alarm.days.includes(dayOfWeek)) return;
+        if (!alarm.days?.includes(dayOfWeek)) return;
         const key = `${alarm.id}-${today}-${hhmm}`;
         if (firedRef.current.has(key)) return;
         firedRef.current.add(key);
