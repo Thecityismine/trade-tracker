@@ -1,17 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
-import Dashboard from './pages/Dashboard';
-import Analytics from './pages/Analytics';
-import WeeklyTracker from './pages/WeeklyTracker';
-import MonthlyTracker from './pages/MonthlyTracker';
-import ChartPatterns from './pages/ChartPatterns';
-import TradingMindset from './pages/TradingMindset';
-import TradeJournal from './pages/TradeJournal';
-import Notebook from './pages/Notebook';
-import Strategies from './pages/Strategies';
-import Settings from './pages/Settings';
-import WhaleTracker from './pages/WhaleTracker';
-import MorningBrief from './pages/MorningBrief';
-import Alarms from './pages/Alarms';
+import { useState, useEffect, useRef, lazy, Suspense } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { db, auth } from './config/firebase';
@@ -19,6 +6,20 @@ import { TradesProvider } from './context/TradesContext';
 import { useHashRoute } from './hooks/useHashRoute';
 import { playSound } from './utils/alarmSounds';
 import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText, Lightbulb, Settings as SettingsIcon, Eye, Newspaper, Bell, LogOut } from 'lucide-react';
+
+const Dashboard = lazy(() => import('./pages/Dashboard'));
+const Analytics = lazy(() => import('./pages/Analytics'));
+const WeeklyTracker = lazy(() => import('./pages/WeeklyTracker'));
+const MonthlyTracker = lazy(() => import('./pages/MonthlyTracker'));
+const ChartPatterns = lazy(() => import('./pages/ChartPatterns'));
+const TradingMindset = lazy(() => import('./pages/TradingMindset'));
+const TradeJournal = lazy(() => import('./pages/TradeJournal'));
+const Notebook = lazy(() => import('./pages/Notebook'));
+const Strategies = lazy(() => import('./pages/Strategies'));
+const Settings = lazy(() => import('./pages/Settings'));
+const WhaleTracker = lazy(() => import('./pages/WhaleTracker'));
+const MorningBrief = lazy(() => import('./pages/MorningBrief'));
+const Alarms = lazy(() => import('./pages/Alarms'));
 
 const TABS = [
   { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
@@ -165,7 +166,9 @@ function App() {
 
       {/* Main Content */}
       <main key={activeTab} className="page-fade-in max-w-7xl mx-auto px-4 py-6">
-        {renderPage()}
+        <Suspense fallback={<div className="text-gray-500 text-sm py-12 text-center">Loading…</div>}>
+          {renderPage()}
+        </Suspense>
       </main>
     </div>
     </TradesProvider>
