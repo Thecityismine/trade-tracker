@@ -92,10 +92,8 @@ function Dashboard({ onNavigate }) {
     
     const avgWin = wins.length > 0 ? totalWins / wins.length : 0;
     const avgLoss = losses.length > 0 ? totalLosses / losses.length : 0;
-    const expectancy = winRate > 0 && avgLoss > 0
-      ? ((winRate / 100) * avgWin) - ((1 - winRate / 100) * avgLoss)
-      : 0;
-    
+    const expectancy = ((winRate / 100) * avgWin) - ((1 - winRate / 100) * avgLoss);
+
     const profitFactor = totalLosses > 0 ? totalWins / totalLosses : 0;
 
     setMetrics({
@@ -103,12 +101,27 @@ function Dashboard({ onNavigate }) {
       winRate,
       wins: wins.length,
       losses: losses.length,
-      expectancy: (expectancy / avgLoss) * 100 || 0,
+      expectancy,
       profitFactor
     });
   };
 
   const getTradeDate = (trade) => trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
+
+  // Shared chronological trade list + funding total, reused by period-% and drawdown calcs below
+  const sortedTrades = [...trades]
+    .filter(t => t.tradeDate)
+    .sort((a, b) => getTradeDate(a) - getTradeDate(b));
+  const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
+
+  const balanceAt = (date) => {
+    let balance = totalFunded;
+    for (const t of sortedTrades) {
+      if (getTradeDate(t) >= date) break;
+      balance += Number(t.gainLoss) || 0;
+    }
+    return balance;
+  };
 
   const calculatePeriodPercent = (period) => {
     const now = new Date();
@@ -134,24 +147,23 @@ function Dashboard({ onNavigate }) {
         return 0;
     }
 
-    return trades
+    const periodPnl = trades
       .filter(t => {
         const d = getTradeDate(t);
         return !Number.isNaN(d.getTime()) && d >= periodStart && d <= now;
       })
-      .reduce((sum, t) => sum + (Number(t.pnlPercent) || 0), 0);
+      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
+
+    const startBalance = balanceAt(periodStart);
+    return startBalance > 0 ? (periodPnl / startBalance) * 100 : 0;
   };
 
   const maxDrawdown = (() => {
     if (deposits.length === 0 || trades.length === 0) return 0;
-    const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
-    const sorted = [...trades]
-      .filter(t => t.tradeDate)
-      .sort((a, b) => getTradeDate(a) - getTradeDate(b));
     let peak = totalFunded;
     let balance = totalFunded;
     let maxDD = 0;
-    for (const t of sorted) {
+    for (const t of sortedTrades) {
       balance += Number(t.gainLoss) || 0;
       if (balance > peak) peak = balance;
       if (peak > 0) maxDD = Math.max(maxDD, ((peak - balance) / peak) * 100);
@@ -406,7 +418,13 @@ function Dashboard({ onNavigate }) {
           <div>
             <p className="text-gray-500 text-xs mb-1">Expect.</p>
             <p className={`text-base font-bold tabular-nums ${metrics.expectancy >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-              <CountUp end={metrics.expectancy} suffix="%" decimals={1} duration={1} preserveValue />
+              <CountUp
+                end={metrics.expectancy}
+                decimals={2}
+                duration={1}
+                preserveValue
+                formattingFn={(val) => `${val < 0 ? '-' : ''}$${Math.abs(val).toFixed(2)}`}
+              />
             </p>
           </div>
           <div>
