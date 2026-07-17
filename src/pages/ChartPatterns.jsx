@@ -2,6 +2,7 @@ import { useState, useEffect, useMemo } from 'react';
 import { Plus, X, Upload, Pencil, Trash2, ImageIcon, Check } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { db, storage } from '../config/firebase';
+import { useTrades } from '../context/TradesContext';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 
 const TIMEFRAME_OPTIONS = [
@@ -66,7 +67,7 @@ function getDisplaySummary(pattern) {
 
 function ChartPatterns() {
   const [patterns, setPatterns] = useState([]);
-  const [trades, setTrades] = useState([]);
+  const { trades } = useTrades();
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [expandedImage, setExpandedImage] = useState(null);
   const [editingPattern, setEditingPattern] = useState(null);
@@ -98,13 +99,6 @@ function ChartPatterns() {
     }, (error) => {
       console.error('Error loading patterns:', error);
       setFormError('Could not load patterns. Please refresh.');
-    });
-  }, []);
-
-  useEffect(() => {
-    const q = query(collection(db, 'trades'), orderBy('tradeDate', 'desc'));
-    return onSnapshot(q, (snapshot) => {
-      setTrades(snapshot.docs.map((d) => ({ id: d.id, ...d.data() })));
     });
   }, []);
 

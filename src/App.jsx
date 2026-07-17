@@ -15,6 +15,7 @@ import Alarms from './pages/Alarms';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { db, auth } from './config/firebase';
+import { TradesProvider } from './context/TradesContext';
 import { playSound } from './utils/alarmSounds';
 import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText, Lightbulb, Settings as SettingsIcon, Eye, Newspaper, Bell, LogOut } from 'lucide-react';
 
@@ -115,6 +116,7 @@ function App() {
   };
 
   return (
+    <TradesProvider>
     <div className="min-h-screen">
       {/* Header */}
       <header className="bg-black border-b border-dark-border sticky top-0 z-50">
@@ -164,6 +166,7 @@ function App() {
         {renderPage()}
       </main>
     </div>
+    </TradesProvider>
   );
 }
 

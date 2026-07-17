@@ -1,12 +1,12 @@
 import { useState, useEffect } from 'react';
-import { collection, addDoc, deleteDoc, doc, onSnapshot, query, orderBy, Timestamp, setDoc } from 'firebase/firestore';
+import { collection, addDoc, deleteDoc, doc, onSnapshot, Timestamp, setDoc } from 'firebase/firestore';
 import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianGrid } from 'recharts';
 import { db } from '../config/firebase';
+import { useTrades } from '../context/TradesContext';
 import { Trash2, Target, AlertTriangle } from 'lucide-react';
 
 function Settings() {
-  const [deposits, setDeposits] = useState([]);
-  const [trades, setTrades] = useState([]);
+  const { trades, deposits } = useTrades();
   const [form, setForm] = useState({
     amount: '',
     type: 'deposit',
@@ -22,19 +22,6 @@ function Settings() {
   const [dailyPnlGoal, setDailyPnlGoal] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
-
-  useEffect(() => {
-    const q = query(collection(db, 'deposits'), orderBy('date', 'desc'));
-    return onSnapshot(q, (snap) => {
-      setDeposits(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-  }, []);
-
-  useEffect(() => {
-    return onSnapshot(collection(db, 'trades'), (snap) => {
-      setTrades(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-  }, []);
 
   useEffect(() => {
     return onSnapshot(doc(db, 'settings', 'user'), (snap) => {

@@ -1,6 +1,5 @@
 import { useState, useEffect } from 'react';
-import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from '../config/firebase';
+import { useTrades } from '../context/TradesContext';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 
 function getWeeklyVerdict(week) {
@@ -88,23 +87,9 @@ function verdictClasses(type) {
 }
 
 function WeeklyTracker() {
-  const [trades, setTrades] = useState([]);
-  const [deposits, setDeposits] = useState([]);
+  const { trades, deposits } = useTrades();
   const [weeklyData, setWeeklyData] = useState([]);
   const [expandedWeek, setExpandedWeek] = useState(null);
-
-  useEffect(() => {
-    const q = query(collection(db, 'trades'), orderBy('tradeDate', 'desc'));
-    return onSnapshot(q, (snapshot) => {
-      setTrades(snapshot.docs.map((doc) => ({ id: doc.id, ...doc.data() })));
-    });
-  }, []);
-
-  useEffect(() => {
-    return onSnapshot(collection(db, 'deposits'), (snap) => {
-      setDeposits(snap.docs.map((d) => ({ id: d.id, ...d.data() })));
-    });
-  }, []);
 
   useEffect(() => {
     calculateWeeklyStats(trades, deposits);

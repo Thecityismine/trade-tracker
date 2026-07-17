@@ -5,12 +5,13 @@ import MetricCard from '../components/MetricCard';
 import EquityCurve from '../components/EquityCurve';
 import RecentTrades from '../components/RecentTrades';
 import TradeModal from '../components/TradeModal';
-import { collection, query, orderBy, onSnapshot, doc } from 'firebase/firestore';
+import { collection, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { useTrades } from '../context/TradesContext';
 
 function Dashboard({ onNavigate }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const [trades, setTrades] = useState([]);
+  const { trades, deposits } = useTrades();
   const [metrics, setMetrics] = useState({
     totalPnl: 0,
     winRate: 0,
@@ -19,7 +20,6 @@ function Dashboard({ onNavigate }) {
     expectancy: 0,
     profitFactor: 0
   });
-  const [deposits, setDeposits] = useState([]);
   const [pinnedNotes, setPinnedNotes] = useState([]);
   const [appSettings, setAppSettings] = useState({});
 
@@ -27,13 +27,6 @@ function Dashboard({ onNavigate }) {
   useEffect(() => {
     return onSnapshot(doc(db, 'settings', 'user'), (snap) => {
       if (snap.exists()) setAppSettings(snap.data());
-    });
-  }, []);
-
-  // Fetch deposits from Firebase
-  useEffect(() => {
-    return onSnapshot(collection(db, 'deposits'), (snap) => {
-      setDeposits(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
   }, []);
 
@@ -48,24 +41,10 @@ function Dashboard({ onNavigate }) {
     });
   }, []);
 
-  // Fetch trades from Firebase
+  // Recompute metrics whenever the shared trades list changes
   useEffect(() => {
-    const tradesQuery = query(
-      collection(db, 'trades'),
-      orderBy('tradeDate', 'desc')
-    );
-
-    const unsubscribe = onSnapshot(tradesQuery, (snapshot) => {
-      const tradesData = snapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setTrades(tradesData);
-      calculateMetrics(tradesData);
-    });
-
-    return () => unsubscribe();
-  }, []);
+    calculateMetrics(trades);
+  }, [trades]);
 
   const calculateMetrics = (tradesData) => {
     // Filter for current month

@@ -1,5 +1,6 @@
 import { useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot, orderBy, query, getDocs } from 'firebase/firestore';
+import { collection, onSnapshot } from 'firebase/firestore';
+import { useTrades } from '../context/TradesContext';
 import {
   Bar,
   BarChart,
@@ -69,29 +70,8 @@ const getWeekLabel = (startDate) => {
 };
 
 function Analytics() {
-  const [trades, setTrades] = useState([]);
-  const [deposits, setDeposits] = useState([]);
+  const { trades, deposits } = useTrades();
   const [journalEntries, setJournalEntries] = useState([]);
-
-  useEffect(() => {
-    return onSnapshot(collection(db, 'deposits'), (snap) => {
-      setDeposits(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
-  }, []);
-
-  useEffect(() => {
-    const tradesQuery = query(collection(db, 'trades'), orderBy('tradeDate', 'desc'));
-
-    const unsubscribe = onSnapshot(tradesQuery, (snapshot) => {
-      const tradesData = snapshot.docs.map((doc) => ({
-        id: doc.id,
-        ...doc.data()
-      }));
-      setTrades(tradesData);
-    });
-
-    return () => unsubscribe();
-  }, []);
 
   useEffect(() => {
     return onSnapshot(collection(db, 'tradeJournalEntries'), (snap) => {

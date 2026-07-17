@@ -16,6 +16,7 @@ import { Plus, Search, X, Pencil, Trash2, Pin, PinOff, Upload, BookOpen, ArrowLe
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { db, storage } from '../config/firebase';
+import { useTrades } from '../context/TradesContext';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 
 const SORT_OPTIONS = [
@@ -156,7 +157,7 @@ const markdownComponents = {
 function Strategies() {
   const [strategies, setStrategies] = useState([]);
   const [entries, setEntries] = useState([]);
-  const [tradeStats, setTradeStats] = useState({}); // { [strategyId]: { trades, wins, losses, winRate, totalPnl } }
+  const { trades } = useTrades();
 
   const [activeStrategy, setActiveStrategy] = useState(null);
   const [isStrategyModalOpen, setIsStrategyModalOpen] = useState(false);
@@ -213,38 +214,27 @@ function Strategies() {
     return () => unsubscribe();
   }, []);
 
-  // Subscribe to all trades to compute per-strategy stats
-  useEffect(() => {
-    const q = query(collection(db, 'trades'));
-    const unsubscribe = onSnapshot(
-      q,
-      (snapshot) => {
-        const stats = {};
-        snapshot.docs.forEach((d) => {
-          const trade = d.data();
-          const sid = trade.strategyId;
-          if (!sid) return;
-          if (!stats[sid]) {
-            stats[sid] = { trades: 0, wins: 0, losses: 0, totalPnl: 0 };
-          }
-          stats[sid].trades += 1;
-          if (trade.result === 'win') stats[sid].wins += 1;
-          else if (trade.result === 'loss') stats[sid].losses += 1;
-          stats[sid].totalPnl += Number(trade.gainLoss) || 0;
-        });
-        Object.keys(stats).forEach((sid) => {
-          const s = stats[sid];
-          const decided = s.wins + s.losses;
-          s.winRate = decided > 0 ? (s.wins / decided) * 100 : 0;
-        });
-        setTradeStats(stats);
-      },
-      (error) => {
-        console.error('Error loading trades for strategy stats:', error);
+  // Derive per-strategy stats from the shared trades list
+  const tradeStats = useMemo(() => {
+    const stats = {};
+    trades.forEach((trade) => {
+      const sid = trade.strategyId;
+      if (!sid) return;
+      if (!stats[sid]) {
+        stats[sid] = { trades: 0, wins: 0, losses: 0, totalPnl: 0 };
       }
-    );
-    return () => unsubscribe();
-  }, []);
+      stats[sid].trades += 1;
+      if (trade.result === 'win') stats[sid].wins += 1;
+      else if (trade.result === 'loss') stats[sid].losses += 1;
+      stats[sid].totalPnl += Number(trade.gainLoss) || 0;
+    });
+    Object.keys(stats).forEach((sid) => {
+      const s = stats[sid];
+      const decided = s.wins + s.losses;
+      s.winRate = decided > 0 ? (s.wins / decided) * 100 : 0;
+    });
+    return stats;
+  }, [trades]);
 
   // Auto-clear status banner
   useEffect(() => {
