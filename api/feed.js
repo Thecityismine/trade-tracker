@@ -1,8 +1,27 @@
+const ALLOWED_HOSTS = new Set([
+  'www.theblock.co',
+  'finance.yahoo.com',
+  'www.coindesk.com',
+  'cointelegraph.com',
+  'decrypt.co',
+]);
+
 export default async function handler(req, res) {
   const { url } = req.query;
 
   if (!url || !/^https?:\/\//i.test(url)) {
     return res.status(400).json({ error: 'Invalid or missing url' });
+  }
+
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    return res.status(400).json({ error: 'Invalid url' });
+  }
+
+  if (!ALLOWED_HOSTS.has(parsed.hostname)) {
+    return res.status(403).json({ error: 'Host not allowed' });
   }
 
   try {
