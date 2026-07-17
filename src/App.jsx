@@ -16,11 +16,29 @@ import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
 import { signOut } from 'firebase/auth';
 import { db, auth } from './config/firebase';
 import { TradesProvider } from './context/TradesContext';
+import { useHashRoute } from './hooks/useHashRoute';
 import { playSound } from './utils/alarmSounds';
 import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText, Lightbulb, Settings as SettingsIcon, Eye, Newspaper, Bell, LogOut } from 'lucide-react';
 
+const TABS = [
+  { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
+  { id: 'analytics', label: 'Analytics', icon: TrendingUp },
+  { id: 'weekly', label: 'Weekly', icon: Calendar },
+  { id: 'monthly', label: 'Monthly', icon: CalendarDays },
+  { id: 'patterns', label: 'Chart Patterns', icon: Target },
+  { id: 'strategies', label: 'Strategies', icon: Lightbulb },
+  { id: 'journal', label: 'Trade Journal', icon: FileText },
+  { id: 'mindset', label: 'Mindset', icon: BookOpen },
+  { id: 'notebook', label: 'Notebook', icon: BookOpen },
+  { id: 'news', label: 'News', icon: Newspaper },
+  { id: 'whales', label: 'Whales', icon: Eye },
+  { id: 'alarms', label: 'Alarms', icon: Bell },
+  { id: 'settings', label: 'Settings', icon: SettingsIcon },
+];
+const TAB_IDS = TABS.map(t => t.id);
+
 function App() {
-  const [activeTab, setActiveTab] = useState('dashboard');
+  const [activeTab, setActiveTab] = useHashRoute(TAB_IDS, 'dashboard');
   const [alarms, setAlarms] = useState([]);
   const [ringing, setRinging] = useState(null);
   const firedRef = useRef(new Set());
@@ -65,22 +83,6 @@ function App() {
       document.removeEventListener('visibilitychange', onVisible);
     };
   }, [alarms]);
-
-  const tabs = [
-    { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-    { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-    { id: 'weekly', label: 'Weekly', icon: Calendar },
-    { id: 'monthly', label: 'Monthly', icon: CalendarDays },
-    { id: 'patterns', label: 'Chart Patterns', icon: Target },
-    { id: 'strategies', label: 'Strategies', icon: Lightbulb },
-    { id: 'journal', label: 'Trade Journal', icon: FileText },
-    { id: 'mindset', label: 'Mindset', icon: BookOpen },
-    { id: 'notebook', label: 'Notebook', icon: BookOpen },
-    { id: 'news', label: 'News', icon: Newspaper },
-    { id: 'whales', label: 'Whales', icon: Eye },
-    { id: 'alarms', label: 'Alarms', icon: Bell },
-    { id: 'settings', label: 'Settings', icon: SettingsIcon },
-  ];
 
   const renderPage = () => {
     switch (activeTab) {
@@ -138,7 +140,7 @@ function App() {
       <nav className="bg-black border-b border-dark-border sticky top-16 z-40 overflow-x-auto">
         <div className="max-w-7xl mx-auto px-4">
           <div className="flex min-w-max">
-            {tabs.map((tab) => {
+            {TABS.map((tab) => {
               const Icon = tab.icon;
               const isActive = activeTab === tab.id;
               return (
