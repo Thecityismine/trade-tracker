@@ -49,11 +49,20 @@ function App() {
         playSound(alarm.sound);
         setRinging(alarm.id);
         setTimeout(() => setRinging(r => r === alarm.id ? null : r), 5000);
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+          new Notification(alarm.label || 'Alarm', { body: hhmm });
+        }
       });
     };
 
     const interval = setInterval(check, 1000);
-    return () => clearInterval(interval);
+    // Background tabs throttle setInterval, so also re-check whenever the tab regains focus
+    const onVisible = () => { if (document.visibilityState === 'visible') check(); };
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
   }, [alarms]);
 
   const tabs = [

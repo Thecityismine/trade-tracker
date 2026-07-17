@@ -2,7 +2,9 @@ import { useState, useEffect, useRef } from 'react';
 import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { SOUNDS, playSound } from '../utils/alarmSounds';
-import { Bell, BellOff, Plus, Trash2, Play, Pencil, Check, X } from 'lucide-react';
+import { Bell, BellOff, Plus, Trash2, Play, Pencil, Check, X, BellRing } from 'lucide-react';
+
+const notificationsSupported = typeof Notification !== 'undefined';
 
 const DAYS = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
@@ -25,6 +27,15 @@ function Alarms({ alarms = [], ringing }) {
   const [editingId, setEditingId] = useState(null);
   const [editForm, setEditForm] = useState(null);
   const [currentTime, setCurrentTime] = useState('');
+  const [notifPermission, setNotifPermission] = useState(
+    notificationsSupported ? Notification.permission : 'unsupported'
+  );
+
+  const requestNotifPermission = async () => {
+    if (!notificationsSupported) return;
+    const result = await Notification.requestPermission();
+    setNotifPermission(result);
+  };
 
   useEffect(() => {
     const tick = () => setCurrentTime(
@@ -94,6 +105,25 @@ function Alarms({ alarms = [], ringing }) {
         <h2 className="text-xl font-bold text-white">Alarms</h2>
         <span className="text-gray-400 font-mono text-sm">{currentTime}</span>
       </div>
+
+      {notificationsSupported && notifPermission !== 'granted' && (
+        <div className="bg-dark-card rounded-xl p-4 border border-dark-border flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 text-sm text-gray-400">
+            <BellRing size={16} className="text-blue-400 shrink-0" />
+            {notifPermission === 'denied'
+              ? 'System notifications are blocked — enable them in your browser settings to get alerts when this tab is in the background.'
+              : 'Enable system notifications to still catch alarms when this tab is backgrounded.'}
+          </div>
+          {notifPermission !== 'denied' && (
+            <button
+              onClick={requestNotifPermission}
+              className="shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
+            >
+              Enable
+            </button>
+          )}
+        </div>
+      )}
 
       {/* Sound Preview */}
       <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
@@ -297,7 +327,7 @@ function Alarms({ alarms = [], ringing }) {
                           <span
                             key={d}
                             className={`text-[10px] font-medium ${
-                              alarm.days.includes(i) && alarm.enabled ? 'text-blue-400' : 'text-gray-700'
+                              alarm.days?.includes(i) && alarm.enabled ? 'text-blue-400' : 'text-gray-700'
                             }`}
                           >
                             {d[0]}
