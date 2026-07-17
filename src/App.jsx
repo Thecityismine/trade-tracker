@@ -13,9 +13,10 @@ import WhaleTracker from './pages/WhaleTracker';
 import MorningBrief from './pages/MorningBrief';
 import Alarms from './pages/Alarms';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { db } from './config/firebase';
+import { signOut } from 'firebase/auth';
+import { db, auth } from './config/firebase';
 import { playSound } from './utils/alarmSounds';
-import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText, Lightbulb, Settings as SettingsIcon, Eye, Newspaper, Bell } from 'lucide-react';
+import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText, Lightbulb, Settings as SettingsIcon, Eye, Newspaper, Bell, LogOut } from 'lucide-react';
 
 function App() {
   const [activeTab, setActiveTab] = useState('dashboard');
@@ -108,10 +109,17 @@ function App() {
     <div className="min-h-screen">
       {/* Header */}
       <header className="bg-black border-b border-dark-border sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4">
+        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
           <h1 className="text-2xl font-bold text-white">
             <span className="text-blue-500">T</span>rade <span className="text-red-500">T</span>racker
           </h1>
+          <button
+            onClick={() => signOut(auth)}
+            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
+          >
+            <LogOut size={16} />
+            <span className="hidden sm:inline">Sign out</span>
+          </button>
         </div>
       </header>
 
