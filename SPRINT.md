@@ -141,11 +141,20 @@ Display average execution score in Analytics.
 - Call Anthropic/OpenAI API with structured trade data as context.
 **Files:** New `AICoach.jsx` component, `Dashboard.jsx`
 
-### 5.2 AI Weekly Feedback
-**Problem:** No weekly behavioral review.
-**Fix:** At the end of each week, generate a narrative like:
-- "This week you traded 8 times. You performed best on Tuesday mornings. You lost 2 trades after taking profits on a 3rd — possible overconfidence pattern."
-**Files:** `WeeklyTracker.jsx` or `AICoach.jsx`
+### 5.2 AI Weekly Feedback — ✅ DONE
+**Shipped:** "Generate report" button on each week in the Weekly tab. Two-phase call to
+Claude Opus 5 via Vercel functions (text review, then chart review) — results cached in
+the `weeklyReports` Firestore collection, keyed by the Monday of the week.
+
+Every claim cites specific trades, trades are checked against the rules written in
+Strategies, and each report grades the commitments made in the previous week's report.
+
+**Files:** `api/weekly-report.js`, `api/weekly-report-charts.js`, `api/_auth.js`,
+`src/components/WeeklyReport.jsx`, `src/utils/weeklyReport.js`, `WeeklyTracker.jsx`
+
+**Deliberately excluded:** time-of-day conclusions. `tradeDate` records when a trade was
+logged, not when it was entered (see 3.2 — adding real entry/exit times would unlock this
+plus hold-time metrics).
 
 ### 5.3 Mistake Engine — Rank by P&L impact
 **Problem:** No way to know which mistake costs the most money.

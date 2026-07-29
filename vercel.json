@@ -1,0 +1,6 @@
+{
+  "functions": {
+    "api/weekly-report.js": { "maxDuration": 60 },
+    "api/weekly-report-charts.js": { "maxDuration": 60 }
+  }
+}

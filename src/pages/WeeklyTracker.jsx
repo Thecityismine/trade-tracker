@@ -1,6 +1,17 @@
 import { useState, useEffect } from 'react';
+import { collection, doc, onSnapshot, setDoc, serverTimestamp } from 'firebase/firestore';
 import { useTrades } from '../context/TradesContext';
+import { db } from '../config/firebase';
 import { ChevronDown, ChevronUp } from 'lucide-react';
+import WeeklyReport from '../components/WeeklyReport';
+import {
+  buildChartPayload,
+  buildReportPayload,
+  buildTradeRefs,
+  requestChartNotes,
+  requestWeeklyReport,
+  weekKeyFor
+} from '../utils/weeklyReport';
 
 function getWeeklyVerdict(week) {
   const { winRate, pnl, profitFactor, wins, losses } = week;
@@ -90,10 +101,117 @@ function WeeklyTracker() {
   const { trades, deposits } = useTrades();
   const [weeklyData, setWeeklyData] = useState([]);
   const [expandedWeek, setExpandedWeek] = useState(null);
+  const [reports, setReports] = useState({});
+  const [strategies, setStrategies] = useState([]);
+  const [journalEntries, setJournalEntries] = useState([]);
+  const [mindsetEntries, setMindsetEntries] = useState([]);
+  const [generatingKey, setGeneratingKey] = useState(null);
+  const [chartsPendingKey, setChartsPendingKey] = useState(null);
+  const [reportErrors, setReportErrors] = useState({});
 
   useEffect(() => {
     calculateWeeklyStats(trades, deposits);
   }, [trades, deposits]);
+
+  useEffect(() => {
+    const subscribe = (name, setter) =>
+      onSnapshot(
+        collection(db, name),
+        (snap) => setter(snap.docs.map((d) => ({ id: d.id, ...d.data() }))),
+        (error) => console.error(`Error loading ${name}:`, error)
+      );
+
+    const unsubReports = onSnapshot(
+      collection(db, 'weeklyReports'),
+      (snap) => {
+        const next = {};
+        snap.docs.forEach((d) => { next[d.id] = { id: d.id, ...d.data() }; });
+        setReports(next);
+      },
+      (error) => console.error('Error loading weekly reports:', error)
+    );
+    const unsubStrategies = subscribe('strategies', setStrategies);
+    const unsubJournal = subscribe('tradeJournalEntries', setJournalEntries);
+    const unsubMindset = subscribe('mindsetEntries', setMindsetEntries);
+
+    return () => {
+      unsubReports();
+      unsubStrategies();
+      unsubJournal();
+      unsubMindset();
+    };
+  }, []);
+
+  const handleGenerateReport = async (week) => {
+    const key = weekKeyFor(week.startDate);
+    const reportRef = doc(db, 'weeklyReports', key);
+
+    setGeneratingKey(key);
+    setReportErrors((prev) => ({ ...prev, [key]: null }));
+
+    try {
+      // weeklyData is sorted newest-first, so the entries after this week are the prior ones.
+      const index = weeklyData.findIndex((w) => weekKeyFor(w.startDate) === key);
+      const priorReports = weeklyData
+        .slice(index + 1, index + 3)
+        .map((w) => reports[weekKeyFor(w.startDate)])
+        .filter(Boolean);
+
+      const { report, usage } = await requestWeeklyReport(
+        buildReportPayload({ week, strategies, journalEntries, mindsetEntries, priorReports })
+      );
+
+      await setDoc(reportRef, {
+        weekKey: key,
+        weekLabel: week.weekLabel,
+        model: 'claude-opus-5',
+        report,
+        usage,
+        tradeIds: week.trades.map((t) => t.id),
+        chartNotes: [],
+        chartError: null,
+        generatedAt: serverTimestamp()
+      });
+
+      // Phase 2 — charts. Failures here leave the written report intact.
+      const chartPayload = await buildChartPayload({ week });
+      if (chartPayload.charts.length > 0) {
+        setChartsPendingKey(key);
+        try {
+          const { chartNotes } = await requestChartNotes(chartPayload);
+          await setDoc(reportRef, { chartNotes, chartError: null }, { merge: true });
+        } catch (chartError) {
+          await setDoc(
+            reportRef,
+            { chartError: chartError.message || 'Chart review failed.' },
+            { merge: true }
+          );
+        } finally {
+          setChartsPendingKey(null);
+        }
+      }
+    } catch (error) {
+      console.error('Weekly report failed:', error);
+      setReportErrors((prev) => ({ ...prev, [key]: error.message || 'Report generation failed.' }));
+    } finally {
+      setGeneratingKey(null);
+    }
+  };
+
+  const renderReport = (week) => {
+    const key = weekKeyFor(week.startDate);
+    return (
+      <WeeklyReport
+        doc={reports[key]}
+        tradesByRef={buildTradeRefs(week.trades).byRef}
+        generating={generatingKey === key}
+        chartsPending={chartsPendingKey === key}
+        error={reportErrors[key]}
+        hasCharts={week.trades.some((t) => t.chartImageUrl)}
+        onGenerate={() => handleGenerateReport(week)}
+      />
+    );
+  };
 
   const getWeekRange = (date) => {
     const d = new Date(date);
@@ -265,6 +383,9 @@ function WeeklyTracker() {
                     {expandedWeek === idx && (
                       <tr className="bg-dark-bg">
                         <td colSpan="12" className="p-4">
+                          <div className="mb-5">
+                            {renderReport(week)}
+                          </div>
                           <div className="space-y-4">
                             {groupByDay(week.trades).map((day) => (
                               <div key={day.label}>
@@ -397,17 +518,25 @@ function WeeklyTracker() {
                   </div>
                 )}
 
-                {/* Next week focus */}
+                {/* Coach review — replaces the rule-based focus list once generated,
+                    so there is only ever one set of recommendations on screen. */}
                 <div className="mb-3">
-                  <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Next Week Focus</div>
-                  <div className="bg-blue-500/5 border border-blue-500/15 rounded-lg px-3 py-2 space-y-1">
-                    {nextFocus.map((f, i) => (
-                      <div key={i} className="text-xs text-gray-300 flex items-start gap-1.5">
-                        <span className="text-blue-400 flex-shrink-0 mt-0.5">•</span>
-                        {f}
+                  {reports[weekKeyFor(week.startDate)] || generatingKey === weekKeyFor(week.startDate) ? (
+                    renderReport(week)
+                  ) : (
+                    <>
+                      <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Next Week Focus</div>
+                      <div className="bg-blue-500/5 border border-blue-500/15 rounded-lg px-3 py-2 space-y-1 mb-3">
+                        {nextFocus.map((f, i) => (
+                          <div key={i} className="text-xs text-gray-300 flex items-start gap-1.5">
+                            <span className="text-blue-400 flex-shrink-0 mt-0.5">•</span>
+                            {f}
+                          </div>
+                        ))}
                       </div>
-                    ))}
-                  </div>
+                      {renderReport(week)}
+                    </>
+                  )}
                 </div>
 
                 {/* Expand toggle */}

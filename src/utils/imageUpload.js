@@ -94,6 +94,50 @@ export const fileToInlineDataUrl = (file, options = {}) => {
   });
 };
 
+/**
+ * Re-encodes an existing inline data URL at a smaller size. Used before sending
+ * chart screenshots to the coach endpoint so the request body stays well under
+ * the serverless body limit. Only accepts data URLs — remote Storage URLs would
+ * taint the canvas, so those are passed to the API as URLs instead.
+ */
+export const shrinkImageDataUrl = (dataUrl, options = {}) => {
+  const { maxDimension = 1024, quality = 0.7 } = options;
+
+  return new Promise((resolve, reject) => {
+    if (typeof dataUrl !== 'string' || !dataUrl.startsWith('data:')) {
+      reject(new Error('shrinkImageDataUrl expects a data URL.'));
+      return;
+    }
+
+    const img = new Image();
+
+    img.onload = () => {
+      let width = img.width;
+      let height = img.height;
+      if (width > maxDimension || height > maxDimension) {
+        const scale = Math.min(maxDimension / width, maxDimension / height);
+        width = Math.round(width * scale);
+        height = Math.round(height * scale);
+      }
+
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d');
+      if (!ctx) {
+        reject(new Error('Could not process chart image.'));
+        return;
+      }
+
+      ctx.drawImage(img, 0, 0, width, height);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+
+    img.onerror = () => reject(new Error('Could not read chart image.'));
+    img.src = dataUrl;
+  });
+};
+
 export const uploadImageWithFallback = async ({
   file,
   storage,
