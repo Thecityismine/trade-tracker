@@ -4,6 +4,31 @@ import { AreaChart, Area, XAxis, YAxis, Tooltip, ResponsiveContainer, CartesianG
 import { db } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
 import { Trash2, Target, AlertTriangle } from 'lucide-react';
+import Page from '../components/ui/Page';
+import { Card } from '../components/ui/Surface';
+
+const SECTIONS = [
+  { id: 'account', label: 'Account' },
+  { id: 'funding', label: 'Funding' },
+  { id: 'goals', label: 'Goals' },
+  { id: 'risk', label: 'Risk Rules' },
+];
+
+// Both the Goals and Risk Rules panes write the same settings doc, so they
+// share one save control.
+function SaveSettingsButton({ onClick, saving, saved }) {
+  return (
+    <button
+      onClick={onClick}
+      disabled={saving}
+      className={`w-full rounded-control py-2.5 font-medium text-white transition-colors disabled:opacity-40 ${
+        saved ? 'bg-profit/80' : 'bg-brand hover:bg-brand-hover'
+      }`}
+    >
+      {saving ? 'Saving…' : saved ? '✓ Saved' : 'Save Settings'}
+    </button>
+  );
+}
 
 function Settings() {
   const { trades, deposits } = useTrades();
@@ -22,6 +47,7 @@ function Settings() {
   const [dailyPnlGoal, setDailyPnlGoal] = useState('');
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
+  const [section, setSection] = useState('account');
 
   useEffect(() => {
     return onSnapshot(doc(db, 'settings', 'user'), (snap) => {
@@ -137,28 +163,47 @@ function Settings() {
   })();
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <h2 className="text-xl font-bold text-white">Settings</h2>
+    <Page>
+      <div className="grid gap-8 lg:grid-cols-[180px_minmax(0,1fr)] lg:items-start">
+        {/* Sub-navigation */}
+        <nav className="flex gap-1 overflow-x-auto lg:sticky lg:top-24 lg:flex-col lg:overflow-visible">
+          {SECTIONS.map((s) => (
+            <button
+              key={s.id}
+              onClick={() => setSection(s.id)}
+              className={`whitespace-nowrap rounded-control px-3 py-2 text-left text-sm transition-colors ${
+                section === s.id
+                  ? 'bg-brand-muted font-medium text-content-primary'
+                  : 'text-content-secondary hover:bg-surface-hover hover:text-content-primary'
+              }`}
+            >
+              {s.label}
+            </button>
+          ))}
+        </nav>
 
+        <div className="space-y-6">
+      {section === 'account' && (
+      <>
       {/* Current Balance */}
-      <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
-        <div className="text-gray-400 text-sm mb-1">Current Account Balance</div>
-        <div className={`text-3xl font-bold ${currentBalance >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+      <Card>
+        <div className="mb-1 text-sm text-content-secondary">Current Account Balance</div>
+        <div className={`tabular text-3xl font-semibold ${currentBalance >= 0 ? 'text-profit' : 'text-loss'}`}>
           ${currentBalance.toFixed(2)}
         </div>
         <div className="mt-3 flex space-x-6 text-sm">
           <div>
-            <span className="text-gray-500">Total Deposited</span>
-            <div className="text-white font-medium">${totalFunded.toFixed(2)}</div>
+            <span className="text-content-muted">Total Deposited</span>
+            <div className="tabular font-medium text-content-primary">${totalFunded.toFixed(2)}</div>
           </div>
           <div>
-            <span className="text-gray-500">All-time P&L</span>
-            <div className={`font-medium ${totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            <span className="text-content-muted">All-time P&L</span>
+            <div className={`tabular font-medium ${totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
               {totalPnl >= 0 ? '+' : ''}${totalPnl.toFixed(2)}
             </div>
           </div>
         </div>
-      </div>
+      </Card>
 
       {goalAmt > 0 && (
         <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
@@ -213,8 +258,37 @@ function Settings() {
           )}
         </div>
       )}
+      </>
+      )}
 
-      {riskStatus && (
+      {section === 'account' && equityChartData.length >= 2 && (
+        <Card>
+          <h3 className="mb-4 font-semibold text-content-primary">Account Growth</h3>
+          <div className="h-44 w-full">
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={equityChartData}>
+                <defs>
+                  <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor="var(--brand)" stopOpacity={0.25} />
+                    <stop offset="95%" stopColor="var(--brand)" stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid strokeDasharray="2 4" stroke="var(--line)" vertical={false} />
+                <XAxis dataKey="label" stroke="var(--content-muted)" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} interval="preserveStartEnd" />
+                <YAxis stroke="var(--content-muted)" tickLine={false} axisLine={false} tickFormatter={v => `$${v.toFixed(0)}`} width={55} tick={{ fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={{ background: 'var(--surface-overlay)', border: '1px solid var(--line-strong)', borderRadius: '10px' }}
+                  labelStyle={{ color: 'var(--content-primary)', fontWeight: 600 }}
+                  formatter={v => [`$${Number(v).toFixed(2)}`, 'Balance']}
+                />
+                <Area type="monotone" dataKey="balance" stroke="var(--brand)" strokeWidth={2} fill="url(#balanceGradient)" dot={false} />
+              </AreaChart>
+            </ResponsiveContainer>
+          </div>
+        </Card>
+      )}
+
+      {section === 'risk' && riskStatus && (
         <div className={`${riskStatus.bg} border rounded-xl p-4`}>
           <div className="flex items-center justify-between mb-1">
             <p className={`font-bold text-sm ${riskStatus.text}`}>{riskStatus.label}</p>
@@ -237,6 +311,7 @@ function Settings() {
       )}
 
       {/* Add Deposit / Withdrawal */}
+      {section === 'funding' && (
       <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
         <h3 className="text-white font-semibold mb-4">Log Deposit / Withdrawal</h3>
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 items-end">
@@ -314,8 +389,10 @@ function Settings() {
         </div>
       </div>
 
+      )}
+
       {/* Funding History */}
-      {deposits.length > 0 && (
+      {section === 'funding' && deposits.length > 0 && (
         <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
           <h3 className="text-white font-semibold mb-4">Funding History</h3>
           <div className="space-y-1">
@@ -361,9 +438,10 @@ function Settings() {
         </div>
       )}
 
-      {/* Goals & Risk Settings */}
-      <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
-        <h3 className="text-white font-semibold mb-4">Goals &amp; Risk Settings</h3>
+      {/* Goals */}
+      {section === 'goals' && (
+      <Card>
+        <h3 className="mb-4 font-semibold text-content-primary">Goals</h3>
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
@@ -388,6 +466,35 @@ function Settings() {
               />
             </div>
           </div>
+
+          <div>
+            <label className="text-gray-400 text-xs block mb-1">Daily P&amp;L Goal (%)</label>
+            <input
+              type="number"
+              min="0"
+              step="0.1"
+              value={dailyPnlGoal}
+              onChange={e => setDailyPnlGoal(e.target.value)}
+              className="w-full sm:w-40 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              placeholder="e.g. 25"
+            />
+            <p className="text-gray-500 text-xs mt-1">Target % gain on your account per trading day. Dashboard tracks your progress toward this each day.</p>
+          </div>
+
+          <SaveSettingsButton
+            onClick={handleSaveSettings}
+            saving={savingSettings}
+            saved={settingsSaved}
+          />
+        </div>
+      </Card>
+      )}
+
+      {/* Risk Rules */}
+      {section === 'risk' && (
+      <Card>
+        <h3 className="mb-4 font-semibold text-content-primary">Risk Rules</h3>
+        <div className="space-y-4">
           <div>
             <label className="text-gray-400 text-xs block mb-1">Max Risk Per Trade (%)</label>
             <input
@@ -448,66 +555,23 @@ function Settings() {
             </div>
           </div>
 
-          <div>
-            <label className="text-gray-400 text-xs block mb-1">Daily P&amp;L Goal (%)</label>
-            <input
-              type="number"
-              min="0"
-              step="0.1"
-              value={dailyPnlGoal}
-              onChange={e => setDailyPnlGoal(e.target.value)}
-              className="w-full sm:w-40 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
-              placeholder="e.g. 25"
-            />
-            <p className="text-gray-500 text-xs mt-1">Target % gain on your account per trading day. Dashboard tracks your progress toward this each day.</p>
-          </div>
-
-          <button
+          <SaveSettingsButton
             onClick={handleSaveSettings}
-            disabled={savingSettings}
-            className={`w-full py-2.5 rounded-lg font-medium transition-all text-white ${
-              settingsSaved ? 'bg-green-600' : 'bg-blue-600 hover:bg-blue-700'
-            } disabled:opacity-40`}
-          >
-            {savingSettings ? 'Saving...' : settingsSaved ? '✓ Saved' : 'Save Settings'}
-          </button>
+            saving={savingSettings}
+            saved={settingsSaved}
+          />
         </div>
-      </div>
-
-      {/* Account Growth Chart */}
-      {equityChartData.length >= 2 && (
-        <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
-          <h3 className="text-white font-semibold mb-4">Account Growth</h3>
-          <div className="w-full h-44">
-            <ResponsiveContainer width="100%" height="100%">
-              <AreaChart data={equityChartData}>
-                <defs>
-                  <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
-                  </linearGradient>
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-                <XAxis dataKey="label" stroke="#9ca3af" tick={{ fontSize: 11 }} interval="preserveStartEnd" />
-                <YAxis stroke="#9ca3af" tickFormatter={v => `$${v.toFixed(0)}`} width={55} tick={{ fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{ background: '#111827', border: '1px solid #374151', borderRadius: '8px' }}
-                  labelStyle={{ color: '#f9fafb', fontWeight: 600 }}
-                  formatter={v => [`$${Number(v).toFixed(2)}`, 'Balance']}
-                />
-                <Area type="monotone" dataKey="balance" stroke="#3b82f6" strokeWidth={2} fill="url(#balanceGradient)" dot={false} />
-              </AreaChart>
-            </ResponsiveContainer>
-          </div>
-        </div>
+      </Card>
       )}
 
-      {deposits.length === 0 && (
-        <div className="bg-yellow-900/30 border border-yellow-700/50 rounded-lg px-4 py-3 text-yellow-400 text-sm">
+      {section === 'funding' && deposits.length === 0 && (
+        <div className="rounded-control border border-warn/30 bg-warn-soft px-4 py-3 text-sm text-warn">
           Add your initial deposit above to enable accurate % gain tracking on the dashboard.
         </div>
       )}
-    </div>
+        </div>
+      </div>
+    </Page>
   );
 }
 

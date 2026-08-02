@@ -2,6 +2,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
 import { Brain, CheckSquare, Lightbulb, Search, Trash2 } from 'lucide-react';
 import { db } from '../config/firebase';
+import Page from '../components/ui/Page';
 
 const defaultChecklist = {
   followedPlan: false,
@@ -207,14 +208,7 @@ function TradingMindset() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-dark-card border border-dark-border rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-white">Trading Mindset</h2>
-        <p className="text-gray-400 mt-2">
-          Journal your thoughts, process quality, and next actions so you can improve your decision-making.
-        </p>
-      </div>
-
+    <Page>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-dark-card border border-dark-border rounded-lg p-4">
           <p className="text-gray-400 text-sm">Total Entries</p>
@@ -500,7 +494,7 @@ function TradingMindset() {
           </div>
         </div>
       </div>
-    </div>
+    </Page>
   );
 }
 

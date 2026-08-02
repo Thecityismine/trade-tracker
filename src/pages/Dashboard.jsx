@@ -8,6 +8,7 @@ import TradeModal from '../components/TradeModal';
 import { collection, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
+import Page from '../components/ui/Page';
 
 function Dashboard({ onNavigate }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -326,7 +327,7 @@ function Dashboard({ onNavigate }) {
   })();
 
   return (
-    <div className="space-y-6">
+    <Page>
       {/* Risk Status Badge */}
       {riskStatus && (
         <div className={`rounded-xl px-4 py-3 flex items-center justify-between border ${
@@ -548,7 +549,7 @@ function Dashboard({ onNavigate }) {
           onClose={() => setIsModalOpen(false)}
         />
       )}
-    </div>
+    </Page>
   );
 }
 

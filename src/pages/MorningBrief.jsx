@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
+import Page from '../components/ui/Page';
+import Button from '../components/ui/Button';
 
 const FEEDS = [
   {
@@ -175,28 +177,21 @@ function MorningBrief() {
   useEffect(() => { loadAll(); }, []);
 
   return (
-    <div className="space-y-5">
-
-      <div className="bg-dark-card border border-dark-border rounded-lg p-5 md:p-6">
-        <div className="flex items-start justify-between gap-4">
-          <div>
-            <h2 className="text-2xl font-bold text-white">Morning Brief</h2>
-            <p className="text-gray-400 text-sm mt-1">Markets &amp; crypto headlines — loads automatically</p>
-            {lastUpdated && (
-              <p className="text-gray-600 text-xs mt-1">Updated {lastUpdated.toLocaleTimeString()}</p>
-            )}
-          </div>
-          <button
-            onClick={loadAll}
-            disabled={loading}
-            className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0"
-          >
-            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-            {loading ? 'Loading…' : 'Refresh'}
-          </button>
-        </div>
-      </div>
-
+    <Page
+      toolbar={
+        lastUpdated && (
+          <p className="text-xs text-content-muted">
+            Updated {lastUpdated.toLocaleTimeString()}
+          </p>
+        )
+      }
+      actions={
+        <Button onClick={loadAll} disabled={loading}>
+          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+          {loading ? 'Loading…' : 'Refresh'}
+        </Button>
+      }
+    >
       <div className="grid md:grid-cols-2 gap-4">
         {FEEDS.map((feed) => {
           const { items = [], error } = feedData[feed.id] ?? {};
@@ -211,8 +206,7 @@ function MorningBrief() {
           );
         })}
       </div>
-
-    </div>
+    </Page>
   );
 }
 

@@ -2,6 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import { doc, onSnapshot, setDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { RefreshCw, Eye, AlertCircle, ChevronDown, ChevronUp, Plus, X, ExternalLink } from 'lucide-react';
+import Page from '../components/ui/Page';
+import Button from '../components/ui/Button';
 
 const HL_API = 'https://api.hyperliquid.xyz/info';
 const WATCHLIST_DOC = doc(db, 'settings', 'whaleWatchlist');
@@ -159,40 +161,32 @@ function WhaleTracker() {
   const crowdedShorts = data?.coins.filter((c) => c.bias === 'short' && c.shorts >= 2).slice(0, 3) ?? [];
 
   return (
-    <div className="space-y-5">
-
-      {/* Header */}
-      <div className="bg-dark-card border border-dark-border rounded-lg p-5 md:p-6">
-        <div className="flex flex-col sm:flex-row sm:items-start gap-4">
-          <div className="flex-1 min-w-0">
-            <h2 className="text-2xl font-bold text-white">Whale Tracker</h2>
-            <p className="text-gray-400 text-sm mt-1">Track live Hyperliquid positions for any wallet</p>
-            {lastUpdated && (
-              <p className="text-gray-600 text-xs mt-1">Last updated {lastUpdated.toLocaleTimeString()}</p>
-            )}
-          </div>
-          <div className="flex items-center gap-2 flex-shrink-0">
-            <a
-              href="https://app.hyperliquid.xyz/leaderboard"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="flex items-center gap-1.5 text-gray-400 hover:text-white border border-dark-border hover:border-gray-500 px-3 py-2 rounded-lg text-xs font-medium transition-colors"
-            >
-              <ExternalLink size={12} />
-              Leaderboard
-            </a>
-            <button
-              onClick={handleRefresh}
-              disabled={loading || addresses.length === 0}
-              className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 text-white px-4 py-2 rounded-lg text-sm font-medium transition-colors"
-            >
-              <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-              {loading ? 'Loading…' : 'Refresh'}
-            </button>
-          </div>
-        </div>
-      </div>
-
+    <Page
+      toolbar={
+        lastUpdated && (
+          <p className="text-xs text-content-muted">
+            Last updated {lastUpdated.toLocaleTimeString()}
+          </p>
+        )
+      }
+      actions={
+        <>
+          <a
+            href="https://app.hyperliquid.xyz/leaderboard"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center gap-1.5 rounded-control border border-line px-3 py-2 text-xs font-medium text-content-secondary transition-colors hover:bg-surface-hover hover:text-content-primary"
+          >
+            <ExternalLink size={12} />
+            Leaderboard
+          </a>
+          <Button onClick={handleRefresh} disabled={loading || addresses.length === 0}>
+            <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
+            {loading ? 'Loading…' : 'Refresh'}
+          </Button>
+        </>
+      }
+    >
       {/* Watchlist manager */}
       <div className="bg-dark-card border border-dark-border rounded-lg p-5">
         <h3 className="text-white font-semibold text-sm mb-1">Watchlist</h3>
@@ -554,7 +548,7 @@ function WhaleTracker() {
           </div>
         </>
       )}
-    </div>
+    </Page>
   );
 }
 

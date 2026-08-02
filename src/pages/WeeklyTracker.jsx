@@ -4,6 +4,8 @@ import { useTrades } from '../context/TradesContext';
 import { db } from '../config/firebase';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import WeeklyReport from '../components/WeeklyReport';
+import Page from '../components/ui/Page';
+import { Card } from '../components/ui/Surface';
 import {
   buildChartPayload,
   buildReportPayload,
@@ -310,13 +312,8 @@ function WeeklyTracker() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-dark-card border border-dark-border rounded-lg overflow-hidden">
-        <div className="p-6 border-b border-dark-border">
-          <h2 className="text-2xl font-bold text-white">Weekly Tracker</h2>
-          <p className="text-gray-400 text-sm mt-1">Performance breakdown by week</p>
-        </div>
-
+    <Page>
+      <Card padded={false} className="overflow-hidden">
         {/* Desktop Table */}
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
@@ -595,8 +592,8 @@ function WeeklyTracker() {
             </div>
           )}
         </div>
-      </div>
-    </div>
+      </Card>
+    </Page>
   );
 }
 

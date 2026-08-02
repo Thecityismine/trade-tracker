@@ -3,6 +3,10 @@ import { collection, addDoc, updateDoc, deleteDoc, doc } from 'firebase/firestor
 import { db } from '../config/firebase';
 import { SOUNDS, playSound } from '../utils/alarmSounds';
 import { Bell, BellOff, Plus, Trash2, Play, Pencil, Check, X, BellRing } from 'lucide-react';
+import Page from '../components/ui/Page';
+import Button, { Chip } from '../components/ui/Button';
+import EmptyState from '../components/ui/EmptyState';
+import { Card, Panel } from '../components/ui/Surface';
 
 const notificationsSupported = typeof Notification !== 'undefined';
 
@@ -100,12 +104,9 @@ function Alarms({ alarms = [], ringing }) {
   };
 
   return (
-    <div className="max-w-2xl mx-auto space-y-6">
-      <div className="flex items-center justify-between">
-        <h2 className="text-xl font-bold text-white">Alarms</h2>
-        <span className="text-gray-400 font-mono text-sm">{currentTime}</span>
-      </div>
-
+    <Page
+      toolbar={<span className="tabular text-sm text-content-secondary">{currentTime}</span>}
+    >
       {notificationsSupported && notifPermission !== 'granted' && (
         <div className="bg-dark-card rounded-xl p-4 border border-dark-border flex items-center justify-between gap-3">
           <div className="flex items-center gap-2 text-sm text-gray-400">
@@ -125,28 +126,11 @@ function Alarms({ alarms = [], ringing }) {
         </div>
       )}
 
-      {/* Sound Preview */}
-      <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
-        <h3 className="text-white font-semibold mb-4">Beep Options — Preview</h3>
-        <div className="grid grid-cols-3 gap-3">
-          {Object.entries(SOUNDS).map(([key, s]) => (
-            <div key={key} className="bg-dark-bg rounded-xl p-4 border border-dark-border text-center flex flex-col items-center gap-2">
-              <div className="text-white text-sm font-semibold">{s.label}</div>
-              <div className="text-gray-500 text-xs">{s.description}</div>
-              <button
-                onClick={() => playSound(key)}
-                className="flex items-center gap-1.5 text-xs text-blue-400 hover:text-blue-300 transition-colors mt-1"
-              >
-                <Play size={12} /> Preview
-              </button>
-            </div>
-          ))}
-        </div>
-      </div>
-
+      <div className="grid gap-6 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:items-start">
+      <div className="space-y-6">
       {/* Add Alarm */}
-      <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
-        <h3 className="text-white font-semibold mb-4">Add Alarm</h3>
+      <Card>
+        <h3 className="mb-4 font-semibold text-content-primary">Add Alarm</h3>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
@@ -190,38 +174,78 @@ function Alarms({ alarms = [], ringing }) {
           </div>
 
           <div>
-            <label className="text-gray-400 text-xs block mb-2">Repeat on days</label>
+            <div className="mb-2 flex items-center justify-between">
+              <label className="text-xs text-content-secondary">Repeat on days</label>
+              <div className="flex gap-2 text-[11px]">
+                <button
+                  onClick={() => setForm(f => ({ ...f, days: [0, 1, 2, 3, 4, 5, 6] }))}
+                  className="text-content-muted transition-colors hover:text-brand"
+                >
+                  Every day
+                </button>
+                <button
+                  onClick={() => setForm(f => ({ ...f, days: [1, 2, 3, 4, 5] }))}
+                  className="text-content-muted transition-colors hover:text-brand"
+                >
+                  Weekdays
+                </button>
+                <button
+                  onClick={() => setForm(f => ({ ...f, days: [] }))}
+                  className="text-content-muted transition-colors hover:text-brand"
+                >
+                  Clear
+                </button>
+              </div>
+            </div>
             <div className="flex gap-1.5">
               {DAYS.map((day, i) => (
-                <button
+                <Chip
                   key={day}
+                  selected={form.days.includes(i)}
                   onClick={() => toggleDay(i)}
-                  className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
-                    form.days.includes(i)
-                      ? 'bg-blue-600 text-white'
-                      : 'bg-dark-bg text-gray-500 hover:text-gray-300 border border-dark-border'
-                  }`}
+                  className="flex-1"
                 >
                   {day}
-                </button>
+                </Chip>
               ))}
             </div>
           </div>
 
-          <button
+          <Button
+            icon={Plus}
             onClick={addAlarm}
             disabled={!form.time || form.days.length === 0}
-            className="w-full py-2.5 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg font-medium transition-colors flex items-center justify-center gap-2"
+            className="w-full"
           >
-            <Plus size={16} /> Add Alarm
-          </button>
+            Add Alarm
+          </Button>
         </div>
+      </Card>
+
+      {/* Sound Preview */}
+      <Card>
+        <h3 className="mb-4 font-semibold text-content-primary">Beep Options — Preview</h3>
+        <div className="grid grid-cols-3 gap-3">
+          {Object.entries(SOUNDS).map(([key, s]) => (
+            <Panel key={key} className="flex flex-col items-center gap-2 text-center">
+              <div className="text-sm font-semibold text-content-primary">{s.label}</div>
+              <div className="text-xs text-content-muted">{s.description}</div>
+              <button
+                onClick={() => playSound(key)}
+                className="mt-1 flex items-center gap-1.5 text-xs text-brand transition-colors hover:text-brand-hover"
+              >
+                <Play size={12} /> Preview
+              </button>
+            </Panel>
+          ))}
+        </div>
+      </Card>
       </div>
 
       {/* Alarm List */}
       {alarms.length > 0 ? (
-        <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
-          <h3 className="text-white font-semibold mb-4">Scheduled Alarms</h3>
+        <Card>
+          <h3 className="mb-4 font-semibold text-content-primary">Scheduled Alarms</h3>
           <div className="space-y-2">
             {alarms.map(alarm => (
               <div
@@ -368,17 +392,20 @@ function Alarms({ alarms = [], ringing }) {
               </div>
             ))}
           </div>
-        </div>
+        </Card>
       ) : (
-        <div className="bg-dark-card rounded-xl p-6 border border-dark-border text-center text-gray-500 text-sm">
-          No alarms set. Add one above.
-        </div>
+        <EmptyState
+          icon={BellOff}
+          title="No alarms set"
+          description="Add a time on the left and it will fire in any open tab — you don't have to stay on this page."
+        />
       )}
+      </div>
 
-      <p className="text-center text-gray-600 text-xs pb-2">
+      <p className="pb-2 text-center text-xs text-content-muted">
         Alarms fire as long as this app is open in any tab — no need to be on the Alarms page.
       </p>
-    </div>
+    </Page>
   );
 }
 

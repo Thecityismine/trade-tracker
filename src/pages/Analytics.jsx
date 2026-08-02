@@ -1,6 +1,10 @@
 import { useEffect, useMemo, useState } from 'react';
 import { collection, onSnapshot } from 'firebase/firestore';
 import { useTrades } from '../context/TradesContext';
+import { TrendingUp as TrendingUpIcon } from 'lucide-react';
+import Page from '../components/ui/Page';
+import EmptyState from '../components/ui/EmptyState';
+import { StatTile } from '../components/ui/Surface';
 import {
   Bar,
   BarChart,
@@ -502,54 +506,37 @@ function Analytics() {
   const overallWinRate = totalClosedTrades > 0 ? (totalWins / totalClosedTrades) * 100 : 0;
 
   return (
-    <div className="space-y-6">
-      <div className="bg-dark-card border border-dark-border rounded-lg p-6">
-        <h2 className="text-2xl font-bold text-white mb-1">Analytics</h2>
-        <p className="text-gray-400">Deeper performance breakdown from your trade history.</p>
-
-        <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3 mt-6">
-          <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
-            <p className="text-xs text-gray-400">Closed Trades</p>
-            <p className="text-2xl font-bold text-white mt-1">{totalClosedTrades}</p>
-          </div>
-          <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
-            <p className="text-xs text-gray-400">Overall Win Rate</p>
-            <p className={`text-2xl font-bold mt-1 ${overallWinRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
-              {overallWinRate.toFixed(2)}%
-            </p>
-          </div>
-          <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
-            <p className="text-xs text-gray-400">Best Win Streak</p>
-            <p className="text-2xl font-bold text-green-400 mt-1">{streakStats.maxWinStreak}</p>
-          </div>
-          <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
-            <p className="text-xs text-gray-400">Worst Loss Streak</p>
-            <p className="text-2xl font-bold text-red-400 mt-1">{streakStats.maxLossStreak}</p>
-          </div>
-          <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
-            <p className="text-xs text-gray-400">Max Drawdown</p>
-            <p className="text-2xl font-bold text-red-400 mt-1">-{maxDrawdown.toFixed(2)}%</p>
-          </div>
-          <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
-            <p className="text-xs text-gray-400">Trades / Day</p>
-            <p className="text-2xl font-bold text-white mt-1">{tradeFrequency.toFixed(2)}</p>
-            <p className="text-xs text-gray-500 mt-1">Last 30 days</p>
-          </div>
-          {avgExecutionScore !== null && (
-            <div className="col-span-2 sm:col-span-1 bg-dark-bg border border-dark-border rounded-lg p-4">
-              <p className="text-xs text-gray-400">Avg Execution</p>
-              <p className={`text-2xl font-bold mt-1 ${avgExecutionScore >= 7 ? 'text-green-400' : avgExecutionScore >= 5 ? 'text-yellow-400' : 'text-red-400'}`}>
-                {avgExecutionScore.toFixed(1)}/10
-              </p>
-            </div>
-          )}
-        </div>
+    <Page>
+      {/* 4-col grid with the headline metric spanning two cells, so the 7th tile
+          no longer orphans onto a row of its own. */}
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <StatTile
+          className="col-span-2"
+          label="Overall Win Rate"
+          value={`${overallWinRate.toFixed(2)}%`}
+          tone={overallWinRate >= 50 ? 'profit' : 'loss'}
+          hint={`Across ${totalClosedTrades} closed trades`}
+        />
+        <StatTile label="Closed Trades" value={totalClosedTrades} />
+        <StatTile label="Max Drawdown" value={`-${maxDrawdown.toFixed(2)}%`} tone="loss" />
+        <StatTile label="Best Win Streak" value={streakStats.maxWinStreak} tone="profit" />
+        <StatTile label="Worst Loss Streak" value={streakStats.maxLossStreak} tone="loss" />
+        <StatTile label="Trades / Day" value={tradeFrequency.toFixed(2)} hint="Last 30 days" />
+        {avgExecutionScore !== null && (
+          <StatTile
+            label="Avg Execution"
+            value={`${avgExecutionScore.toFixed(1)}/10`}
+            tone={avgExecutionScore >= 7 ? 'profit' : avgExecutionScore >= 5 ? 'warn' : 'loss'}
+          />
+        )}
       </div>
 
       {totalClosedTrades === 0 ? (
-        <div className="bg-dark-card border border-dark-border rounded-lg p-8 text-center text-gray-400">
-          Add closed trades to unlock analytics.
-        </div>
+        <EmptyState
+          icon={TrendingUpIcon}
+          title="No closed trades yet"
+          description="Analytics unlock once you've logged trades with a result. Add your first one to see win rate, streaks and drawdown."
+        />
       ) : (
         <>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
@@ -954,7 +941,7 @@ function Analytics() {
           )}
         </div>
       )}
-    </div>
+    </Page>
   );
 }
 

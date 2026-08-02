@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useTrades } from '../context/TradesContext';
 import { ChevronDown, ChevronUp, CalendarDays, BarChart3 } from 'lucide-react';
+import Page from '../components/ui/Page';
+import { Card } from '../components/ui/Surface';
 
 function getMonthlyVerdict(month) {
   const { totalPnl, winRate, profitFactor, grade, totalTrades } = month;
@@ -348,37 +350,35 @@ function MonthlyTracker() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="bg-dark-card border border-dark-border rounded-lg overflow-hidden">
-        <div className="p-6 border-b border-dark-border">
-          <div className="flex items-start justify-between gap-4">
-            <div>
-              <h2 className="text-2xl font-bold text-white">Monthly Tracker</h2>
-              <p className="text-gray-400 text-sm mt-1">Performance breakdown by month with grades</p>
-            </div>
-            <div className="flex items-center bg-dark-bg border border-dark-border rounded-lg p-1 gap-1 flex-shrink-0">
-              <button
-                onClick={() => setViewMode('stats')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                  viewMode === 'stats' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <BarChart3 size={14} />
-                <span className="hidden sm:inline">Stats</span>
-              </button>
-              <button
-                onClick={() => setViewMode('calendar')}
-                className={`flex items-center gap-1.5 px-3 py-1.5 rounded text-sm font-medium transition-colors ${
-                  viewMode === 'calendar' ? 'bg-blue-600 text-white' : 'text-gray-400 hover:text-white'
-                }`}
-              >
-                <CalendarDays size={14} />
-                <span className="hidden sm:inline">Calendar</span>
-              </button>
-            </div>
-          </div>
+    <Page
+      actions={
+        <div className="flex items-center gap-1 rounded-control bg-surface p-1">
+          <button
+            onClick={() => setViewMode('stats')}
+            className={`flex items-center gap-1.5 rounded-chip px-3 py-1.5 text-sm font-medium transition-colors ${
+              viewMode === 'stats'
+                ? 'bg-brand text-white'
+                : 'text-content-secondary hover:text-content-primary'
+            }`}
+          >
+            <BarChart3 size={14} />
+            <span className="hidden sm:inline">Stats</span>
+          </button>
+          <button
+            onClick={() => setViewMode('calendar')}
+            className={`flex items-center gap-1.5 rounded-chip px-3 py-1.5 text-sm font-medium transition-colors ${
+              viewMode === 'calendar'
+                ? 'bg-brand text-white'
+                : 'text-content-secondary hover:text-content-primary'
+            }`}
+          >
+            <CalendarDays size={14} />
+            <span className="hidden sm:inline">Calendar</span>
+          </button>
         </div>
-
+      }
+    >
+      <Card padded={false} className="overflow-hidden">
         {/* Calendar View */}
         {viewMode === 'calendar' && (
           <div className="p-4 md:p-6 space-y-4">
@@ -647,8 +647,8 @@ function MonthlyTracker() {
             )}
           </div>
         )}
-      </div>
-    </div>
+      </Card>
+    </Page>
   );
 }
 

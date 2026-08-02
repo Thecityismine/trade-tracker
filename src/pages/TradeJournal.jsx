@@ -3,6 +3,8 @@ import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverT
 import { Plus, Search, X, Pencil, Trash2, ImageIcon, Upload } from 'lucide-react';
 import { db, storage } from '../config/firebase';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
+import Page from '../components/ui/Page';
+import Button from '../components/ui/Button';
 
 const withTimeout = (promise, ms, timeoutMessage) => {
   let timeoutId;
@@ -315,18 +317,13 @@ function TradeJournal() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-2xl font-bold text-white">Trade Journal</h2>
-        <button
-          onClick={openAddModal}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-        >
-          <Plus size={18} />
-          <span>New Journal Entry</span>
-        </button>
-      </div>
-
+    <Page
+      actions={
+        <Button icon={Plus} onClick={openAddModal}>
+          New Journal Entry
+        </Button>
+      }
+    >
       {statusMessage && (
         <div className="bg-green-900/30 border border-green-700/40 text-green-300 rounded-lg px-4 py-3 text-sm">
           {statusMessage}
@@ -762,7 +759,7 @@ function TradeJournal() {
           />
         </div>
       )}
-    </div>
+    </Page>
   );
 }
 

@@ -4,6 +4,8 @@ import { collection, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc, update
 import { db, storage } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
+import Page from '../components/ui/Page';
+import Button from '../components/ui/Button';
 
 const TIMEFRAME_OPTIONS = [
   { value: '1min', label: '1min' },
@@ -326,19 +328,13 @@ function ChartPatterns() {
   };
 
   return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex items-center justify-between">
-        <h2 className="text-2xl font-bold text-white">Chart Patterns</h2>
-        <button
-          onClick={openAddModal}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white px-4 py-2 rounded-lg transition-all text-sm font-medium"
-        >
-          <Plus size={18} />
+    <Page
+      actions={
+        <Button icon={Plus} onClick={openAddModal}>
           Add Pattern
-        </button>
-      </div>
-
+        </Button>
+      }
+    >
       {statusMessage && (
         <div className="bg-green-900/30 border border-green-700/40 text-green-300 rounded-lg px-4 py-3 text-sm">
           {statusMessage}
@@ -820,7 +816,7 @@ function ChartPatterns() {
           />
         </div>
       )}
-    </div>
+    </Page>
   );
 }
 

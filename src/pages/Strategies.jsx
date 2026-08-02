@@ -18,6 +18,8 @@ import remarkGfm from 'remark-gfm';
 import { db, storage } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
+import Page from '../components/ui/Page';
+import Button from '../components/ui/Button';
 
 const SORT_OPTIONS = [
   { id: 'newest', label: 'Newest' },
@@ -685,18 +687,13 @@ function Strategies() {
   };
 
   return (
-    <div className="space-y-6">
-      <div className="flex items-center justify-between gap-3">
-        <h2 className="text-2xl font-bold text-white">Strategies</h2>
-        <button
-          onClick={openAddStrategy}
-          className="flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg transition-colors"
-        >
-          <Plus size={18} />
-          <span>New Strategy</span>
-        </button>
-      </div>
-
+    <Page
+      actions={
+        <Button icon={Plus} onClick={openAddStrategy}>
+          New Strategy
+        </Button>
+      }
+    >
       {statusMessage && (
         <div className="bg-green-900/30 border border-green-700/40 text-green-300 rounded-lg px-4 py-3 text-sm">
           {statusMessage}
@@ -1343,7 +1340,7 @@ function Strategies() {
           />
         </div>
       )}
-    </div>
+    </Page>
   );
 }
 
