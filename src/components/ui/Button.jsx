@@ -1,5 +1,5 @@
 const VARIANTS = {
-  primary: 'bg-brand text-white hover:bg-brand-hover disabled:hover:bg-brand',
+  primary: 'bg-brand text-content-primary hover:bg-brand-hover disabled:hover:bg-brand',
   secondary:
     'bg-surface-raised text-content-primary hover:bg-surface-hover border border-line',
   ghost: 'text-content-secondary hover:bg-surface-hover hover:text-content-primary',
@@ -43,7 +43,7 @@ export function Chip({ selected, children, className = '', ...props }) {
       aria-pressed={selected}
       className={`rounded-chip px-3 py-1.5 text-xs font-medium transition-colors ${
         selected
-          ? 'bg-brand text-white'
+          ? 'bg-brand text-content-primary'
           : 'border border-line-strong text-content-secondary hover:border-brand/50 hover:text-content-primary'
       } ${className}`}
       {...props}

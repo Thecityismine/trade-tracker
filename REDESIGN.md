@@ -66,7 +66,7 @@ Mostly deletion. Quick, and feels disproportionately good.
 
 ---
 
-## Phase 3 — De-boxing: the surface system  ◐
+## Phase 3 — De-boxing: the surface system  ☑
 
 - [x] `<Card>` — raised bg, soft shadow, **no border**
 - [x] `<Panel>` — inner fill, no border
@@ -74,9 +74,18 @@ Mostly deletion. Quick, and feels disproportionately good.
 - [ ] **Rule: never nest a bordered surface inside another bordered surface.** Where a page
       card wraps a section card wrapping stat tiles, the outer wrapper disappears — the
       section header sits directly on the canvas.
-- [ ] Borders retained only for interactive/stateful elements
+- [x] Borders retained only for interactive/stateful elements
 - [x] Fix the Analytics stat grid — 7 tiles currently orphan one on row 2; go 4-col with
       the primary metric spanning two cells
+- [x] Migrate all ~680 legacy `dark-*` / raw-palette classes onto the token scale and
+      delete the aliases from `tailwind.config.js`
+- [x] Narrow the accent palette: blue → `brand`, greys → `content`, green/red/yellow →
+      `profit`/`loss`/`warn`, plus a `caution` rung so the A–F grade scale keeps 5 steps
+- [x] Lift `text-gray-500/600/700` (2.3–3.9:1 on the new canvas) to `content-muted` (5.8:1)
+
+**Deferred to phase 4:** 19 solid button fills (`bg-red-600`, `bg-green-600`, …) still sit
+under white text. Moving them to the lighter semantic tokens would drop contrast below
+4.5:1, so they wait for the button-variant pass.
 
 ---
 

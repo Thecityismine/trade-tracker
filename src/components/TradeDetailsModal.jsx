@@ -21,48 +21,48 @@ function getVerdict(trade, maxRiskPercent, mistakeTags) {
     return {
       icon: '✗', label: 'BAD TRADE',
       desc: 'Over-risked position — exceeded your risk limit',
-      color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20',
+      color: 'text-loss', bg: 'bg-loss/10 border-loss/20',
     };
   }
   if (mistakeTags.includes('revenge')) {
     return {
       icon: '✗', label: 'REVENGE TRADE',
       desc: 'Emotional decision, not part of your plan',
-      color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20',
+      color: 'text-loss', bg: 'bg-loss/10 border-loss/20',
     };
   }
   if (mistakeTags.includes('fomo')) {
     return {
       icon: '!', label: 'FOMO ENTRY',
       desc: 'Chased the move — wait for your setup',
-      color: 'text-orange-400', bg: 'bg-orange-500/10 border-orange-500/20',
+      color: 'text-caution', bg: 'bg-caution/10 border-caution/20',
     };
   }
   if (trade.result === 'win' && score >= 8) {
     return {
       icon: '◎', label: 'A+ SETUP',
       desc: 'Excellent execution — this is your template',
-      color: 'text-blue-400', bg: 'bg-blue-500/10 border-blue-500/20',
+      color: 'text-brand', bg: 'bg-brand/10 border-brand/20',
     };
   }
   if (trade.result === 'win') {
     return {
       icon: '✓', label: 'GOOD TRADE',
       desc: 'Followed plan, positive outcome',
-      color: 'text-green-400', bg: 'bg-green-500/10 border-green-500/20',
+      color: 'text-profit', bg: 'bg-profit/10 border-profit/20',
     };
   }
   if (trade.result === 'loss' && score >= 6) {
     return {
       icon: '!', label: 'MISSED EXECUTION',
       desc: 'Setup was valid — execution failed',
-      color: 'text-yellow-400', bg: 'bg-yellow-500/10 border-yellow-500/20',
+      color: 'text-caution', bg: 'bg-caution/10 border-caution/20',
     };
   }
   return {
     icon: '✗', label: 'BAD TRADE',
     desc: 'Review your process before the next trade',
-    color: 'text-red-400', bg: 'bg-red-500/10 border-red-500/20',
+    color: 'text-loss', bg: 'bg-loss/10 border-loss/20',
   };
 }
 
@@ -192,13 +192,13 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
       {!isEditing && (
         <div className="fixed inset-0 bg-black bg-opacity-80 z-[60] overflow-y-auto">
           <div className="flex min-h-full items-start justify-center p-4 py-8">
-          <div className="bg-dark-card border border-dark-border rounded-xl w-full max-w-2xl">
+          <div className="bg-surface rounded-card w-full max-w-2xl shadow-elev-1">
 
             {/* Header */}
-            <div className="flex items-start justify-between p-5 border-b border-dark-border">
+            <div className="flex items-start justify-between p-5 border-b border-line">
               <div>
-                <h2 className="text-xl font-bold text-white">{trade.ticker || 'BTC'} Trade</h2>
-                <p className="text-gray-500 text-sm mt-0.5">
+                <h2 className="text-xl font-bold text-content-primary">{trade.ticker || 'BTC'} Trade</h2>
+                <p className="text-content-muted text-sm mt-0.5">
                   {tradeDate.toLocaleDateString('en-US', {
                     weekday: 'long', year: 'numeric', month: 'long', day: 'numeric',
                   })}
@@ -209,7 +209,7 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                   onClick={handleSharePnl}
                   disabled={generatingImage}
                   aria-label="Share PnL image"
-                  className="text-gray-600 hover:text-green-400 transition-colors disabled:opacity-50 p-1"
+                  className="text-content-muted hover:text-profit transition-colors disabled:opacity-50 p-1"
                 >
                   <ImageDown size={17} />
                 </button>
@@ -217,7 +217,7 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                   onClick={handleDeleteTrade}
                   disabled={deleting}
                   aria-label={deleting ? 'Deleting trade' : 'Delete trade'}
-                  className="text-gray-600 hover:text-red-400 transition-colors disabled:opacity-50 p-1"
+                  className="text-content-muted hover:text-loss transition-colors disabled:opacity-50 p-1"
                 >
                   <Trash2 size={17} />
                 </button>
@@ -232,49 +232,49 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                   <span className={`text-base font-black ${verdict.color}`}>{verdict.icon}</span>
                   <span className={`text-sm font-bold tracking-wide ${verdict.color}`}>{verdict.label}</span>
                 </div>
-                <p className="text-gray-400 text-sm mt-1">{verdict.desc}</p>
+                <p className="text-content-secondary text-sm mt-1">{verdict.desc}</p>
               </div>
 
               {/* 2. PERFORMANCE */}
               <div>
-                <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3">Performance</h3>
+                <h3 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-3">Performance</h3>
                 <div className="grid grid-cols-2 gap-3">
                   <div className={`rounded-lg p-4 border ${
                     trade.gainLoss >= 0
-                      ? 'bg-green-500/5 border-green-500/15'
-                      : 'bg-red-500/5 border-red-500/15'
+                      ? 'bg-profit/5 border-profit/15'
+                      : 'bg-loss/5 border-loss/15'
                   }`}>
-                    <div className="text-gray-500 text-xs mb-1">Gain / Loss</div>
-                    <div className={`text-2xl font-bold ${trade.gainLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <div className="text-content-muted text-xs mb-1">Gain / Loss</div>
+                    <div className={`text-2xl font-bold ${trade.gainLoss >= 0 ? 'text-profit' : 'text-loss'}`}>
                       {gainPrefix}{absGain}
                     </div>
                   </div>
 
-                  <div className="bg-dark-bg rounded-lg p-4">
-                    <div className="text-gray-500 text-xs mb-1">Return</div>
-                    <div className={`text-2xl font-bold ${trade.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className="bg-surface-raised rounded-control p-4">
+                    <div className="text-content-muted text-xs mb-1">Return</div>
+                    <div className={`text-2xl font-bold ${trade.pnlPercent >= 0 ? 'text-profit' : 'text-loss'}`}>
                       {trade.pnlPercent?.toFixed(2)}%
                     </div>
                   </div>
 
                   <div className={`rounded-lg p-4 ${
                     isOverRisk
-                      ? 'bg-orange-500/10 border border-orange-500/20'
-                      : 'bg-dark-bg'
+                      ? 'bg-caution/10 border border-caution/20'
+                      : 'bg-surface-raised'
                   }`}>
-                    <div className="text-gray-500 text-xs mb-1">Risk Used</div>
-                    <div className={`text-base font-bold ${isOverRisk ? 'text-orange-400' : 'text-white'}`}>
+                    <div className="text-content-muted text-xs mb-1">Risk Used</div>
+                    <div className={`text-base font-bold ${isOverRisk ? 'text-caution' : 'text-content-primary'}`}>
                       {riskUsed}
-                      {isOverRisk && <span className="ml-1 text-orange-400 text-sm">⚠</span>}
+                      {isOverRisk && <span className="ml-1 text-caution text-sm">⚠</span>}
                     </div>
                   </div>
 
-                  <div className="bg-dark-bg rounded-lg p-4">
-                    <div className="text-gray-500 text-xs mb-1">R:R Ratio</div>
+                  <div className="bg-surface-raised rounded-control p-4">
+                    <div className="text-content-muted text-xs mb-1">R:R Ratio</div>
                     <div className={`text-base font-bold ${
                       trade.rr != null
-                        ? (trade.rr >= 1 ? 'text-green-400' : 'text-red-400')
-                        : 'text-gray-500'
+                        ? (trade.rr >= 1 ? 'text-profit' : 'text-loss')
+                        : 'text-content-muted'
                     }`}>
                       {rrDisplay}
                     </div>
@@ -285,30 +285,30 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
               {/* 3. EXECUTION */}
               {((trade.executionScore || 0) > 0 || trade.chartPattern || trade.strategyName) && (
                 <div>
-                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3">Execution</h3>
+                  <h3 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-3">Execution</h3>
                   <div className="grid grid-cols-2 gap-3">
                     {(trade.executionScore || 0) > 0 && (
-                      <div className="bg-dark-bg rounded-lg p-4">
-                        <div className="text-gray-500 text-xs mb-1">Execution Score</div>
+                      <div className="bg-surface-raised rounded-control p-4">
+                        <div className="text-content-muted text-xs mb-1">Execution Score</div>
                         <div className={`text-2xl font-bold ${
-                          trade.executionScore >= 7 ? 'text-green-400' :
-                          trade.executionScore >= 4 ? 'text-yellow-400' : 'text-red-400'
+                          trade.executionScore >= 7 ? 'text-profit' :
+                          trade.executionScore >= 4 ? 'text-warn' : 'text-loss'
                         }`}>
                           {trade.executionScore}
-                          <span className="text-gray-500 text-sm font-normal">/10</span>
+                          <span className="text-content-muted text-sm font-normal">/10</span>
                         </div>
                       </div>
                     )}
                     {trade.chartPattern && (
-                      <div className="bg-dark-bg rounded-lg p-4">
-                        <div className="text-gray-500 text-xs mb-1">Pattern</div>
-                        <div className="text-white font-medium text-sm mt-1">{trade.chartPattern}</div>
+                      <div className="bg-surface-raised rounded-control p-4">
+                        <div className="text-content-muted text-xs mb-1">Pattern</div>
+                        <div className="text-content-primary font-medium text-sm mt-1">{trade.chartPattern}</div>
                       </div>
                     )}
                     {trade.strategyName && (
-                      <div className="bg-dark-bg rounded-lg p-4 col-span-2">
-                        <div className="text-gray-500 text-xs mb-1">Strategy</div>
-                        <div className="text-blue-300 font-medium text-sm mt-1">{trade.strategyName}</div>
+                      <div className="bg-surface-raised rounded-control p-4 col-span-2">
+                        <div className="text-content-muted text-xs mb-1">Strategy</div>
+                        <div className="text-brand-hover font-medium text-sm mt-1">{trade.strategyName}</div>
                       </div>
                     )}
                   </div>
@@ -318,11 +318,11 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
               {/* 4. WHAT WENT WRONG */}
               {wrongPoints.length > 0 && (
                 <div>
-                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3">What Went Wrong</h3>
-                  <div className="bg-red-500/5 border border-red-500/15 rounded-lg p-4 space-y-2">
+                  <h3 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-3">What Went Wrong</h3>
+                  <div className="bg-loss/5 border border-loss/15 rounded-lg p-4 space-y-2">
                     {wrongPoints.map((point, i) => (
-                      <div key={i} className="flex items-start gap-2 text-sm text-gray-300">
-                        <span className="text-red-400 mt-0.5 flex-shrink-0">•</span>
+                      <div key={i} className="flex items-start gap-2 text-sm text-content-secondary">
+                        <span className="text-loss mt-0.5 flex-shrink-0">•</span>
                         <span>{point}</span>
                       </div>
                     ))}
@@ -332,7 +332,7 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
 
               {/* 5. MISTAKE TAGGING */}
               <div>
-                <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3">Tag This Trade</h3>
+                <h3 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-3">Tag This Trade</h3>
                 <div className="flex flex-wrap gap-2">
                   {MISTAKE_TAGS.map((tag) => (
                     <button
@@ -341,8 +341,8 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                       disabled={savingTags}
                       className={`px-3 py-1.5 rounded-full text-xs font-medium transition-all disabled:opacity-60 ${
                         localMistakeTags.includes(tag.id)
-                          ? 'bg-red-500/25 text-red-300 border border-red-500/50'
-                          : 'bg-dark-bg text-gray-400 border border-dark-border hover:border-gray-500 hover:text-gray-300'
+                          ? 'bg-loss/25 text-loss border border-loss/50'
+                          : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50 hover:text-content-primary'
                       }`}
                     >
                       {tag.label}
@@ -353,44 +353,44 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
 
               {/* 6. TRADE DETAILS */}
               <div>
-                <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3">Trade Details</h3>
+                <h3 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-3">Trade Details</h3>
                 <div className="grid grid-cols-2 gap-3">
-                  <div className="bg-dark-bg rounded-lg p-4">
-                    <div className="text-gray-500 text-xs mb-1">Direction</div>
+                  <div className="bg-surface-raised rounded-control p-4">
+                    <div className="text-content-muted text-xs mb-1">Direction</div>
                     <div className={`text-lg font-bold ${
-                      trade.direction === 'long' ? 'text-green-400' : 'text-red-400'
+                      trade.direction === 'long' ? 'text-profit' : 'text-loss'
                     }`}>
                       {trade.direction === 'long' ? 'LONG' : 'SHORT'}
                     </div>
                   </div>
-                  <div className="bg-dark-bg rounded-lg p-4">
-                    <div className="text-gray-500 text-xs mb-1">Result</div>
+                  <div className="bg-surface-raised rounded-control p-4">
+                    <div className="text-content-muted text-xs mb-1">Result</div>
                     <div className={`text-lg font-bold capitalize ${
-                      trade.result === 'win' ? 'text-green-400' :
-                      trade.result === 'loss' ? 'text-red-400' : 'text-yellow-400'
+                      trade.result === 'win' ? 'text-profit' :
+                      trade.result === 'loss' ? 'text-loss' : 'text-warn'
                     }`}>
                       {trade.result}
                     </div>
                   </div>
-                  <div className="bg-dark-bg rounded-lg p-4">
-                    <div className="text-gray-500 text-xs mb-1">Entry Price</div>
-                    <div className="text-lg font-bold text-white">
+                  <div className="bg-surface-raised rounded-control p-4">
+                    <div className="text-content-muted text-xs mb-1">Entry Price</div>
+                    <div className="text-lg font-bold text-content-primary">
                       ${trade.entryPrice?.toLocaleString()}
                     </div>
                   </div>
-                  <div className="bg-dark-bg rounded-lg p-4">
-                    <div className="text-gray-500 text-xs mb-1">Exit Price</div>
-                    <div className="text-lg font-bold text-white">
+                  <div className="bg-surface-raised rounded-control p-4">
+                    <div className="text-content-muted text-xs mb-1">Exit Price</div>
+                    <div className="text-lg font-bold text-content-primary">
                       {trade.exitPrice ? `$${trade.exitPrice.toLocaleString()}` : 'Open'}
                     </div>
                   </div>
-                  <div className="bg-dark-bg rounded-lg p-4">
-                    <div className="text-gray-500 text-xs mb-1">Leverage</div>
-                    <div className="text-lg font-bold text-white">{trade.leverage}x</div>
+                  <div className="bg-surface-raised rounded-control p-4">
+                    <div className="text-content-muted text-xs mb-1">Leverage</div>
+                    <div className="text-lg font-bold text-content-primary">{trade.leverage}x</div>
                   </div>
-                  <div className="bg-dark-bg rounded-lg p-4">
-                    <div className="text-gray-500 text-xs mb-1">Fee</div>
-                    <div className="text-lg font-bold text-white">
+                  <div className="bg-surface-raised rounded-control p-4">
+                    <div className="text-content-muted text-xs mb-1">Fee</div>
+                    <div className="text-lg font-bold text-content-primary">
                       ${trade.fee?.toFixed(2) || '0.00'}
                     </div>
                   </div>
@@ -400,11 +400,11 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
               {/* 7. CHART */}
               {trade.chartImageUrl && (
                 <div>
-                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3">Trade Chart</h3>
+                  <h3 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-3">Trade Chart</h3>
                   <img
                     src={trade.chartImageUrl}
                     alt="Trade chart"
-                    className="w-full rounded-lg border border-dark-border"
+                    className="w-full rounded-lg"
                   />
                 </div>
               )}
@@ -412,9 +412,9 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
               {/* 8. NOTES */}
               {trade.comment && (
                 <div>
-                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3">Notes</h3>
-                  <div className="bg-dark-bg rounded-lg p-4">
-                    <p className="text-gray-300 whitespace-pre-wrap text-sm">{trade.comment}</p>
+                  <h3 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-3">Notes</h3>
+                  <div className="bg-surface-raised rounded-control p-4">
+                    <p className="text-content-secondary whitespace-pre-wrap text-sm">{trade.comment}</p>
                   </div>
                 </div>
               )}
@@ -422,11 +422,11 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
               {/* 9. NEXT TRADE FOCUS */}
               {nextFocuses.length > 0 && (
                 <div>
-                  <h3 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-3">Next Trade Focus</h3>
-                  <div className="bg-blue-500/5 border border-blue-500/15 rounded-lg p-4 space-y-2">
+                  <h3 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-3">Next Trade Focus</h3>
+                  <div className="bg-brand/5 border border-brand/15 rounded-lg p-4 space-y-2">
                     {nextFocuses.map((focus, i) => (
-                      <div key={i} className="flex items-start gap-2 text-sm text-gray-300">
-                        <span className="text-blue-400 mt-0.5 flex-shrink-0">•</span>
+                      <div key={i} className="flex items-start gap-2 text-sm text-content-secondary">
+                        <span className="text-brand mt-0.5 flex-shrink-0">•</span>
                         <span>{focus}</span>
                       </div>
                     ))}
@@ -439,14 +439,14 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                 <button
                   onClick={() => setIsEditing(true)}
                   aria-label="Edit trade"
-                  className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:scale-[0.98] text-white font-medium py-3 px-4 rounded-lg transition-all"
+                  className="flex-1 flex items-center justify-center gap-2 bg-brand hover:bg-brand-hover active:scale-[0.98] text-content-primary font-medium py-3 px-4 rounded-lg transition-all"
                 >
                   <Pencil size={15} />
                   Edit Trade
                 </button>
                 <button
                   onClick={onClose}
-                  className="flex-1 bg-dark-bg hover:bg-dark-border border border-dark-border text-gray-300 hover:text-white font-medium py-3 px-4 rounded-lg transition-all"
+                  className="flex-1 bg-surface-raised hover:bg-surface-hover text-content-secondary hover:text-content-primary font-medium py-3 px-4 rounded-control transition-all"
                 >
                   Close
                 </button>

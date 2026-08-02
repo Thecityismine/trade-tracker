@@ -331,44 +331,44 @@ function Dashboard({ onNavigate }) {
       {/* Risk Status Badge */}
       {riskStatus && (
         <div className={`rounded-xl px-4 py-3 flex items-center justify-between border ${
-          riskStatus.level === 'green' ? 'bg-green-900/20 border-green-800/30' :
-          riskStatus.level === 'yellow' ? 'bg-yellow-900/20 border-yellow-800/30' :
-          'bg-red-900/20 border-red-800/30'
+          riskStatus.level === 'green' ? 'bg-profit/10 border-profit/15' :
+          riskStatus.level === 'yellow' ? 'bg-warn/10 border-warn/15' :
+          'bg-loss/10 border-loss/15'
         }`}>
           <span className={`font-bold text-sm ${
-            riskStatus.level === 'green' ? 'text-green-400' :
-            riskStatus.level === 'yellow' ? 'text-yellow-400' : 'text-red-400'
+            riskStatus.level === 'green' ? 'text-profit' :
+            riskStatus.level === 'yellow' ? 'text-warn' : 'text-loss'
           }`}>{riskStatus.label}</span>
           {riskStatus.level === 'red' && (
-            <span className="text-red-300/80 text-xs">Reduce size immediately</span>
+            <span className="text-loss/80 text-xs">Reduce size immediately</span>
           )}
           {riskStatus.level === 'yellow' && (
-            <span className="text-yellow-300/80 text-xs">{riskStatus.violations} breach{riskStatus.violations !== 1 ? 'es' : ''}</span>
+            <span className="text-warn/80 text-xs">{riskStatus.violations} breach{riskStatus.violations !== 1 ? 'es' : ''}</span>
           )}
         </div>
       )}
 
       {/* Today's Focus */}
       {todaysFocus && (
-        <div className="bg-dark-card border border-dark-border rounded-xl px-4 py-3">
-          <p className="text-gray-500 text-xs uppercase tracking-widest mb-2">Today's Focus</p>
+        <div className="bg-surface rounded-card px-4 py-3 shadow-elev-1">
+          <p className="text-content-muted text-xs uppercase tracking-widest mb-2">Today's Focus</p>
           <div className="space-y-1">
             {todaysFocus.map((item, i) => (
-              <p key={i} className="text-white text-sm">→ {item}</p>
+              <p key={i} className="text-content-primary text-sm">→ {item}</p>
             ))}
           </div>
         </div>
       )}
 
       {/* Hero Card — P&L + all key stats in one */}
-      <div className="bg-gradient-to-br from-[#0e1628] to-[#161622] border border-blue-900/40 rounded-2xl p-6 shadow-[0_0_50px_rgba(59,130,246,0.1)]">
+      <div className="bg-gradient-to-br from-[#0e1628] to-[#161622] border border-brand/30 rounded-2xl p-6 shadow-[0_0_50px_rgba(59,130,246,0.1)]">
         {/* P&L header */}
         <div className="flex items-center justify-between mb-1">
-          <p className="text-gray-500 text-xs uppercase tracking-widest">Monthly P&amp;L</p>
-          <p className="text-gray-500 text-xs">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
+          <p className="text-content-muted text-xs uppercase tracking-widest">Monthly P&amp;L</p>
+          <p className="text-content-muted text-xs">{new Date().toLocaleString('default', { month: 'short', year: 'numeric' })}</p>
         </div>
         <p
-          className={`text-4xl font-bold tabular-nums leading-none mb-1 ${metrics.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}
+          className={`text-4xl font-bold tabular-nums leading-none mb-1 ${metrics.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}
           style={{ filter: `drop-shadow(0 0 12px ${metrics.totalPnl >= 0 ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)'})` }}
         >
           <CountUp
@@ -379,25 +379,25 @@ function Dashboard({ onNavigate }) {
             formattingFn={(val) => `${val < 0 ? '-' : ''}$${Math.abs(val).toFixed(2)}`}
           />
         </p>
-        <p className="text-gray-500 text-sm mb-5">{metrics.wins}W · {metrics.losses}L</p>
+        <p className="text-content-muted text-sm mb-5">{metrics.wins}W · {metrics.losses}L</p>
 
         {/* Secondary stats row */}
         <div className="grid grid-cols-4 gap-3 mb-5 pb-4 border-b border-white/5">
           <div>
-            <p className="text-gray-500 text-xs mb-1">Win Rate</p>
-            <p className={`text-base font-bold tabular-nums ${metrics.winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+            <p className="text-content-muted text-xs mb-1">Win Rate</p>
+            <p className={`text-base font-bold tabular-nums ${metrics.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>
               <CountUp end={metrics.winRate} suffix="%" decimals={1} duration={1} preserveValue />
             </p>
           </div>
           <div>
-            <p className="text-gray-500 text-xs mb-1">P. Factor</p>
-            <p className={`text-base font-bold tabular-nums ${metrics.profitFactor >= 1 ? 'text-green-400' : 'text-red-400'}`}>
+            <p className="text-content-muted text-xs mb-1">P. Factor</p>
+            <p className={`text-base font-bold tabular-nums ${metrics.profitFactor >= 1 ? 'text-profit' : 'text-loss'}`}>
               <CountUp end={metrics.profitFactor} decimals={2} duration={1} preserveValue />
             </p>
           </div>
           <div>
-            <p className="text-gray-500 text-xs mb-1">Expect.</p>
-            <p className={`text-base font-bold tabular-nums ${metrics.expectancy >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+            <p className="text-content-muted text-xs mb-1">Expect.</p>
+            <p className={`text-base font-bold tabular-nums ${metrics.expectancy >= 0 ? 'text-profit' : 'text-loss'}`}>
               <CountUp
                 end={metrics.expectancy}
                 decimals={2}
@@ -408,8 +408,8 @@ function Dashboard({ onNavigate }) {
             </p>
           </div>
           <div>
-            <p className="text-gray-500 text-xs mb-1">Max DD</p>
-            <p className="text-base font-bold text-red-400 tabular-nums">
+            <p className="text-content-muted text-xs mb-1">Max DD</p>
+            <p className="text-base font-bold text-loss tabular-nums">
               <CountUp end={maxDrawdown} prefix="-" suffix="%" decimals={1} duration={1} preserveValue />
             </p>
           </div>
@@ -424,8 +424,8 @@ function Dashboard({ onNavigate }) {
             { label: 'Year', value: percentSummary.year },
           ].map(({ label, value }) => (
             <div key={label}>
-              <p className="text-gray-500 text-xs mb-1">{label}</p>
-              <p className={`text-base font-bold tabular-nums ${value >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+              <p className="text-content-muted text-xs mb-1">{label}</p>
+              <p className={`text-base font-bold tabular-nums ${value >= 0 ? 'text-profit' : 'text-loss'}`}>
                 {value >= 0 ? '+' : ''}{value.toFixed(1)}%
               </p>
             </div>
@@ -435,21 +435,21 @@ function Dashboard({ onNavigate }) {
         {dailyGoalProgress && (
           <div className="mt-5 pt-4 border-t border-white/5">
             <div className="flex items-center justify-between mb-1.5">
-              <p className="text-gray-500 text-xs uppercase tracking-widest">Daily Goal</p>
-              <p className={`text-xs font-bold tabular-nums ${dailyGoalProgress.hit ? 'text-green-400' : 'text-gray-400'}`}>
+              <p className="text-content-muted text-xs uppercase tracking-widest">Daily Goal</p>
+              <p className={`text-xs font-bold tabular-nums ${dailyGoalProgress.hit ? 'text-profit' : 'text-content-secondary'}`}>
                 {dailyGoalProgress.dayPct >= 0 ? '+' : ''}{dailyGoalProgress.dayPct.toFixed(1)}% / +{dailyGoalProgress.goal}%
               </p>
             </div>
             <div className="w-full bg-white/5 rounded-full h-2 overflow-hidden">
               <div
-                className={`h-2 rounded-full transition-all duration-700 ${dailyGoalProgress.hit ? 'bg-green-500' : 'bg-blue-500'}`}
+                className={`h-2 rounded-full transition-all duration-700 ${dailyGoalProgress.hit ? 'bg-profit' : 'bg-brand'}`}
                 style={{
                   width: `${dailyGoalProgress.progress}%`,
                   boxShadow: dailyGoalProgress.hit ? '0 0 6px rgba(34,197,94,0.7)' : '0 0 6px rgba(59,130,246,0.6)'
                 }}
               />
             </div>
-            <p className={`text-xs mt-1 ${dailyGoalProgress.hit ? 'text-green-400' : 'text-gray-500'}`}>
+            <p className={`text-xs mt-1 ${dailyGoalProgress.hit ? 'text-profit' : 'text-content-muted'}`}>
               {dailyGoalProgress.hit
                 ? '✓ Daily goal reached — protect your gains.'
                 : `${dailyGoalProgress.remaining.toFixed(1)}% remaining to hit today's target`}
@@ -458,26 +458,26 @@ function Dashboard({ onNavigate }) {
         )}
 
         {deposits.length === 0 && (
-          <p className="text-yellow-500/70 text-xs mt-4">Add a deposit in <strong>Settings</strong> to see accurate % gains.</p>
+          <p className="text-warn/70 text-xs mt-4">Add a deposit in <strong>Settings</strong> to see accurate % gains.</p>
         )}
       </div>
 
       {dashGoal && (
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
           <div className="flex items-baseline justify-between mb-2">
-            <p className="text-gray-400 text-sm">Account Goal</p>
-            <p className="text-gray-400 text-sm">${dashGoal.balance.toFixed(2)} / ${dashGoal.goalAmt.toFixed(2)}</p>
+            <p className="text-content-secondary text-sm">Account Goal</p>
+            <p className="text-content-secondary text-sm">${dashGoal.balance.toFixed(2)} / ${dashGoal.goalAmt.toFixed(2)}</p>
           </div>
-          <div className="w-full bg-dark-bg rounded-full h-2.5 overflow-hidden">
+          <div className="w-full bg-surface-raised rounded-full h-2.5 overflow-hidden">
             <div
-              className={`h-2.5 rounded-full transition-all duration-700 ${dashGoal.progress >= 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+              className={`h-2.5 rounded-full transition-all duration-700 ${dashGoal.progress >= 100 ? 'bg-profit' : 'bg-brand'}`}
               style={{ width: `${dashGoal.progress}%` }}
             />
           </div>
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <div className="flex justify-between text-xs text-content-muted mt-1">
             <span>{dashGoal.progress.toFixed(1)}% complete</span>
             {dashGoal.progress >= 100
-              ? <span className="text-green-400">Goal reached!</span>
+              ? <span className="text-profit">Goal reached!</span>
               : <span>${dashGoal.remaining.toFixed(2)} to go</span>
             }
           </div>
@@ -491,17 +491,17 @@ function Dashboard({ onNavigate }) {
       {(aiCoachSummary || performanceIdentity) && (
         <div className="space-y-3">
           {aiCoachSummary && (
-            <div className="bg-blue-900/20 border border-blue-800/40 rounded-lg p-5">
-              <p className="text-blue-400 text-xs font-semibold uppercase tracking-wider mb-2">Daily Coach</p>
-              <p className="text-blue-100 text-sm leading-relaxed">{aiCoachSummary}</p>
+            <div className="bg-brand-muted border border-brand/30 rounded-lg p-5">
+              <p className="text-brand text-xs font-semibold uppercase tracking-wider mb-2">Daily Coach</p>
+              <p className="text-content-primary text-sm leading-relaxed">{aiCoachSummary}</p>
             </div>
           )}
           {performanceIdentity && (
-            <div className="bg-purple-900/20 border border-purple-800/30 rounded-lg p-4">
-              <p className="text-purple-400 text-xs font-semibold uppercase tracking-wider mb-2">Performance Identity</p>
+            <div className="bg-brand/10 border border-brand/15 rounded-lg p-4">
+              <p className="text-brand text-xs font-semibold uppercase tracking-wider mb-2">Performance Identity</p>
               <div className="space-y-1">
                 {performanceIdentity.map((line, i) => (
-                  <p key={i} className="text-purple-100 text-sm leading-relaxed">{line}</p>
+                  <p key={i} className="text-brand text-sm leading-relaxed">{line}</p>
                 ))}
               </div>
             </div>
@@ -511,9 +511,9 @@ function Dashboard({ onNavigate }) {
 
       {/* Pinned Playbooks */}
       {pinnedNotes.length > 0 && (
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4 md:p-6">
-          <h2 className="text-lg font-bold text-white mb-3 flex items-center gap-2">
-            <Pin size={16} className="text-yellow-400" />
+        <div className="bg-surface rounded-card p-4 md:p-6 shadow-elev-1">
+          <h2 className="text-lg font-bold text-content-primary mb-3 flex items-center gap-2">
+            <Pin size={16} className="text-warn" />
             Pinned Playbooks
           </h2>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
@@ -521,10 +521,10 @@ function Dashboard({ onNavigate }) {
               <div
                 key={note.id}
                 onClick={() => onNavigate?.('notebook')}
-                className="bg-dark-bg border border-dark-border rounded-lg p-3 hover:border-gray-600 transition-colors cursor-pointer"
+                className="bg-surface-raised border border-line-strong rounded-lg p-3 hover:border-brand/50 transition-colors cursor-pointer"
               >
-                <p className="text-white text-sm font-medium mb-1 truncate">{note.title}</p>
-                <p className="text-gray-400 text-xs line-clamp-3 whitespace-pre-wrap">
+                <p className="text-content-primary text-sm font-medium mb-1 truncate">{note.title}</p>
+                <p className="text-content-secondary text-xs line-clamp-3 whitespace-pre-wrap">
                   {String(note.content || '').replace(/[#*`_~\[\]]/g, '').trim().slice(0, 120)}
                   {(note.content || '').length > 120 ? '...' : ''}
                 </p>

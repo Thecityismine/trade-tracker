@@ -9,7 +9,7 @@ function AuthGate() {
   const { user, loading } = useAuth();
 
   if (loading) {
-    return <div className="min-h-screen flex items-center justify-center text-gray-500">Loading…</div>;
+    return <div className="min-h-screen flex items-center justify-center text-content-muted">Loading…</div>;
   }
 
   return user ? <App /> : <LoginScreen />;

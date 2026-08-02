@@ -12,7 +12,7 @@ import {
   where,
   getDocs
 } from 'firebase/firestore';
-import { Plus, Search, X, Pencil, Trash2, Pin, PinOff, Upload, BookOpen, ArrowLeft } from 'lucide-react';
+import { Plus, Search, X, Pencil, Trash2, Pin, PinOff, Upload, BookOpen, ArrowLeft, Lightbulb } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { db, storage } from '../config/firebase';
@@ -20,6 +20,7 @@ import { useTrades } from '../context/TradesContext';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 import Page from '../components/ui/Page';
 import Button from '../components/ui/Button';
+import EmptyState from '../components/ui/EmptyState';
 
 const SORT_OPTIONS = [
   { id: 'newest', label: 'Newest' },
@@ -140,20 +141,20 @@ const getPreviewSnippet = (content, maxLength = 180, maxLines = 3) => {
 };
 
 const markdownComponents = {
-  h1: ({ node, ...props }) => <h1 className="text-2xl text-white font-bold mt-4 mb-2" {...props} />,
-  h2: ({ node, ...props }) => <h2 className="text-xl text-white font-semibold mt-4 mb-2" {...props} />,
-  h3: ({ node, ...props }) => <h3 className="text-lg text-white font-semibold mt-3 mb-2" {...props} />,
-  p: ({ node, ...props }) => <p className="text-gray-200 leading-7 mb-3 whitespace-pre-wrap" {...props} />,
-  ul: ({ node, ...props }) => <ul className="list-disc ml-5 mb-3 text-gray-200 space-y-1" {...props} />,
-  ol: ({ node, ...props }) => <ol className="list-decimal ml-5 mb-3 text-gray-200 space-y-1" {...props} />,
-  li: ({ node, ...props }) => <li className="text-gray-200" {...props} />,
-  blockquote: ({ node, ...props }) => <blockquote className="border-l-2 border-gray-600 pl-3 text-gray-300 italic mb-3" {...props} />,
+  h1: ({ node, ...props }) => <h1 className="text-2xl text-content-primary font-bold mt-4 mb-2" {...props} />,
+  h2: ({ node, ...props }) => <h2 className="text-xl text-content-primary font-semibold mt-4 mb-2" {...props} />,
+  h3: ({ node, ...props }) => <h3 className="text-lg text-content-primary font-semibold mt-3 mb-2" {...props} />,
+  p: ({ node, ...props }) => <p className="text-content-secondary leading-7 mb-3 whitespace-pre-wrap" {...props} />,
+  ul: ({ node, ...props }) => <ul className="list-disc ml-5 mb-3 text-content-secondary space-y-1" {...props} />,
+  ol: ({ node, ...props }) => <ol className="list-decimal ml-5 mb-3 text-content-secondary space-y-1" {...props} />,
+  li: ({ node, ...props }) => <li className="text-content-secondary" {...props} />,
+  blockquote: ({ node, ...props }) => <blockquote className="border-l-2 border-line-strong pl-3 text-content-secondary italic mb-3" {...props} />,
   code: ({ inline, node, ...props }) => (
     inline
-      ? <code className="bg-black/40 rounded px-1 py-0.5 text-blue-300 text-sm" {...props} />
-      : <code className="block bg-black/50 border border-dark-border rounded p-3 text-blue-300 text-sm overflow-x-auto mb-3" {...props} />
+      ? <code className="bg-black/40 rounded px-1 py-0.5 text-brand-hover text-sm" {...props} />
+      : <code className="block bg-black/50 rounded p-3 text-brand-hover text-sm overflow-x-auto mb-3" {...props} />
   ),
-  a: ({ node, ...props }) => <a className="text-blue-400 underline" target="_blank" rel="noreferrer" {...props} />
+  a: ({ node, ...props }) => <a className="text-brand underline" target="_blank" rel="noreferrer" {...props} />
 };
 
 function Strategies() {
@@ -695,52 +696,52 @@ function Strategies() {
       }
     >
       {statusMessage && (
-        <div className="bg-green-900/30 border border-green-700/40 text-green-300 rounded-lg px-4 py-3 text-sm">
+        <div className="bg-profit/15 border border-profit/40 text-profit rounded-lg px-4 py-3 text-sm">
           {statusMessage}
         </div>
       )}
 
       {/* Overall stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Total Strategies</p>
-          <p className="text-white text-2xl font-bold mt-1">{overallStats.totalStrategies}</p>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Total Strategies</p>
+          <p className="text-content-primary text-2xl font-bold mt-1">{overallStats.totalStrategies}</p>
         </div>
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Trades Linked</p>
-          <p className="text-blue-400 text-2xl font-bold mt-1">{overallStats.totalLinkedTrades}</p>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Trades Linked</p>
+          <p className="text-brand text-2xl font-bold mt-1">{overallStats.totalLinkedTrades}</p>
         </div>
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Overall Win Rate</p>
-          <p className={`text-2xl font-bold mt-1 ${overallStats.winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Overall Win Rate</p>
+          <p className={`text-2xl font-bold mt-1 ${overallStats.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>
             {overallStats.totalLinkedTrades > 0 ? `${overallStats.winRate.toFixed(1)}%` : '—'}
           </p>
         </div>
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Net P&L (linked)</p>
-          <p className={`text-2xl font-bold mt-1 ${overallStats.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Net P&L (linked)</p>
+          <p className={`text-2xl font-bold mt-1 ${overallStats.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
             {overallStats.totalPnl >= 0 ? '+' : '-'}${Math.abs(overallStats.totalPnl).toFixed(2)}
           </p>
         </div>
       </div>
 
       {/* Search & sort */}
-      <div className="bg-dark-card border border-dark-border rounded-lg p-4 sm:p-6">
+      <div className="bg-surface rounded-card p-4 sm:p-6 shadow-elev-1">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 mb-4">
           <div className="relative w-full lg:max-w-md">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" />
             <input
               type="text"
               placeholder="Search strategy, tag, notes..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-dark-bg border border-dark-border rounded-lg pl-9 pr-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-surface-raised border border-line-strong rounded-lg pl-9 pr-3 py-2 text-content-primary text-sm focus:outline-none focus:border-brand"
             />
           </div>
           <select
             value={sortBy}
             onChange={(e) => setSortBy(e.target.value)}
-            className="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+            className="bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-sm text-content-primary focus:outline-none focus:border-brand"
           >
             {SORT_OPTIONS.map((option) => (
               <option key={option.id} value={option.id}>{option.label}</option>
@@ -749,11 +750,15 @@ function Strategies() {
         </div>
 
         {filteredStrategies.length === 0 && (
-          <div className="bg-dark-bg border border-dark-border rounded-lg p-8 text-center text-gray-400">
-            {strategies.length === 0
-              ? 'No strategies yet. Create your first one to start tracking what works.'
-              : 'No strategies match your search.'}
-          </div>
+          <EmptyState
+            icon={Lightbulb}
+            title={strategies.length === 0 ? 'No strategies yet' : 'No strategies match your search'}
+            description={strategies.length === 0
+              ? 'Write down the rules for a setup once, then link trades to it. The win rate and P&L per strategy build themselves from there.'
+              : 'Try a different search term or clear the filter.'}
+            actionLabel={strategies.length === 0 ? 'Create your first strategy' : undefined}
+            onAction={strategies.length === 0 ? openAddStrategy : undefined}
+          />
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -770,10 +775,10 @@ function Strategies() {
               <div
                 key={strategy.id}
                 onClick={() => setActiveStrategy(strategy)}
-                className="bg-dark-bg border border-dark-border rounded-lg p-4 space-y-3 cursor-pointer hover:border-gray-500 transition-colors"
+                className="bg-surface-raised border border-line-strong rounded-lg p-4 space-y-3 cursor-pointer hover:border-brand/50 transition-colors"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-white text-lg font-semibold leading-tight truncate">
+                  <h3 className="text-content-primary text-lg font-semibold leading-tight truncate">
                     {strategy.name || 'Untitled'}
                   </h3>
                   <button
@@ -781,8 +786,8 @@ function Strategies() {
                     onClick={(event) => togglePinned(strategy, event)}
                     className={`p-2 rounded-lg border transition-colors ${
                       strategy.pinned
-                        ? 'bg-yellow-600/20 text-yellow-300 border-yellow-700/60 hover:border-yellow-500'
-                        : 'bg-dark-card text-gray-400 border-dark-border hover:border-gray-500'
+                        ? 'bg-warn/20 text-warn border-warn/60 hover:border-warn'
+                        : 'bg-surface text-content-secondary border-line-strong hover:border-brand/50'
                     }`}
                     aria-label={strategy.pinned ? 'Unpin strategy' : 'Pin strategy'}
                   >
@@ -794,58 +799,58 @@ function Strategies() {
                   <img
                     src={thumbnail}
                     alt="Strategy chart"
-                    className="w-full h-28 object-cover rounded border border-dark-border"
+                    className="w-full h-28 object-cover rounded"
                   />
                 )}
 
                 {strategy.description && (
-                  <p className="text-sm text-gray-300 leading-relaxed">
+                  <p className="text-sm text-content-secondary leading-relaxed">
                     {getPreviewSnippet(strategy.description)}
                   </p>
                 )}
 
                 {/* Per-strategy stats row */}
                 <div className="grid grid-cols-3 gap-2 pt-1">
-                  <div className="bg-dark-card rounded p-2">
-                    <p className="text-[10px] text-gray-500 uppercase">Trades</p>
-                    <p className="text-white font-semibold text-sm">{stats.trades}</p>
+                  <div className="bg-surface-hover rounded-chip p-2">
+                    <p className="text-[10px] text-content-muted uppercase">Trades</p>
+                    <p className="text-content-primary font-semibold text-sm">{stats.trades}</p>
                   </div>
-                  <div className="bg-dark-card rounded p-2">
-                    <p className="text-[10px] text-gray-500 uppercase">Win Rate</p>
-                    <p className={`font-semibold text-sm ${decided === 0 ? 'text-gray-400' : stats.winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className="bg-surface-hover rounded-chip p-2">
+                    <p className="text-[10px] text-content-muted uppercase">Win Rate</p>
+                    <p className={`font-semibold text-sm ${decided === 0 ? 'text-content-secondary' : stats.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>
                       {winRateDisplay}
                     </p>
                   </div>
-                  <div className="bg-dark-card rounded p-2">
-                    <p className="text-[10px] text-gray-500 uppercase">P&L</p>
-                    <p className={`font-semibold text-sm ${stats.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className="bg-surface-hover rounded-chip p-2">
+                    <p className="text-[10px] text-content-muted uppercase">P&L</p>
+                    <p className={`font-semibold text-sm ${stats.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                       {stats.totalPnl >= 0 ? '+' : '-'}${Math.abs(stats.totalPnl).toFixed(0)}
                     </p>
                   </div>
                 </div>
 
                 {/* W / L breakdown */}
-                <div className="flex items-center gap-3 text-xs text-gray-400">
-                  <span className="text-green-400">{stats.wins}W</span>
-                  <span className="text-red-400">{stats.losses}L</span>
+                <div className="flex items-center gap-3 text-xs text-content-secondary">
+                  <span className="text-profit">{stats.wins}W</span>
+                  <span className="text-loss">{stats.losses}L</span>
                 </div>
 
                 {visibleTags.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {visibleTags.map((tag) => (
-                      <span key={`${strategy.id}-${tag}`} className="bg-blue-600/20 text-blue-300 px-2 py-1 rounded text-xs">
+                      <span key={`${strategy.id}-${tag}`} className="bg-brand/20 text-brand-hover px-2 py-1 rounded text-xs">
                         {tag}
                       </span>
                     ))}
                     {remainingTags > 0 && (
-                      <span className="bg-dark-card text-gray-300 px-2 py-1 rounded text-xs border border-dark-border">
+                      <span className="bg-surface-hover text-content-secondary px-2 py-1 rounded-chip text-xs">
                         +{remainingTags}
                       </span>
                     )}
                   </div>
                 )}
 
-                <div className="text-xs text-gray-500">
+                <div className="text-xs text-content-muted">
                   Updated {formatDate(strategy.updatedAt || strategy.createdAt)}
                 </div>
               </div>
@@ -861,71 +866,71 @@ function Strategies() {
           onClick={closeStrategyModal}
         >
           <div
-            className="bg-dark-card border border-dark-border rounded-lg w-full max-w-3xl max-h-[calc(100vh-1rem)] overflow-y-auto"
+            className="bg-surface rounded-card w-full max-w-3xl max-h-[calc(100vh-1rem)] overflow-y-auto shadow-elev-1"
             onClick={(event) => event.stopPropagation()}
           >
             <form onSubmit={handleSaveStrategy} className="p-5 space-y-4">
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Strategy Name</label>
+                <label className="block text-content-secondary text-sm mb-2">Strategy Name</label>
                 <input
                   type="text"
                   value={strategyForm.name}
                   onChange={(e) => handleStrategyInput('name', e.target.value)}
                   placeholder="e.g., Liquidity Sweep Reversal"
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Description</label>
+                <label className="block text-content-secondary text-sm mb-2">Description</label>
                 <textarea
                   rows="3"
                   value={strategyForm.description}
                   onChange={(e) => handleStrategyInput('description', e.target.value)}
                   placeholder="Quick summary of the strategy..."
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 text-white resize-y focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-3 text-content-primary resize-y focus:outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">What Worked (Markdown)</label>
+                <label className="block text-content-secondary text-sm mb-2">What Worked (Markdown)</label>
                 <textarea
                   rows="5"
                   value={strategyForm.whatWorked}
                   onChange={(e) => handleStrategyInput('whatWorked', e.target.value)}
                   placeholder="What conditions made this strategy work in the past..."
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 text-white resize-y focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-3 text-content-primary resize-y focus:outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Lessons Learned (Markdown)</label>
+                <label className="block text-content-secondary text-sm mb-2">Lessons Learned (Markdown)</label>
                 <textarea
                   rows="5"
                   value={strategyForm.lessonsLearned}
                   onChange={(e) => handleStrategyInput('lessonsLearned', e.target.value)}
                   placeholder="Lessons, mistakes, and refinements..."
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 text-white resize-y focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-3 text-content-primary resize-y focus:outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Tags (comma separated)</label>
+                <label className="block text-content-secondary text-sm mb-2">Tags (comma separated)</label>
                 <input
                   type="text"
                   value={strategyForm.tags}
                   onChange={(e) => handleStrategyInput('tags', e.target.value)}
                   placeholder="e.g., reversal, 1H, high-volume"
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Reference Charts</label>
-                <label className="flex items-center justify-center w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 cursor-pointer hover:border-gray-500 transition-colors">
-                  <Upload size={18} className="mr-2 text-gray-400" />
-                  <span className="text-gray-400">Add Images</span>
+                <label className="block text-content-secondary text-sm mb-2">Reference Charts</label>
+                <label className="flex items-center justify-center w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-3 cursor-pointer hover:border-brand/50 transition-colors">
+                  <Upload size={18} className="mr-2 text-content-secondary" />
+                  <span className="text-content-secondary">Add Images</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -938,12 +943,12 @@ function Strategies() {
                 {strategyImages.length > 0 && (
                   <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {strategyImages.map((item) => (
-                      <div key={item.id} className="relative border border-dark-border rounded-lg overflow-hidden">
+                      <div key={item.id} className="relative rounded-lg overflow-hidden">
                         <img src={item.url} alt="Strategy attachment" className="w-full h-24 object-cover" />
                         <button
                           type="button"
                           onClick={() => removeStrategyImage(item.id)}
-                          className="absolute top-1 right-1 bg-black/70 hover:bg-black text-white p-1 rounded-full"
+                          className="absolute top-1 right-1 bg-black/70 hover:bg-black text-content-primary p-1 rounded-full"
                           aria-label="Remove image"
                         >
                           <X size={14} />
@@ -954,30 +959,30 @@ function Strategies() {
                 )}
               </div>
 
-              <label className="flex items-center gap-2 text-sm text-gray-300">
+              <label className="flex items-center gap-2 text-sm text-content-secondary">
                 <input
                   type="checkbox"
                   checked={Boolean(strategyForm.pinned)}
                   onChange={(e) => handleStrategyInput('pinned', e.target.checked)}
-                  className="accent-blue-600"
+                  className="accent-brand"
                 />
                 Pin this strategy
               </label>
 
-              {formError && <p className="text-sm text-red-400">{formError}</p>}
+              {formError && <p className="text-sm text-loss">{formError}</p>}
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={closeStrategyModal}
-                  className="flex-1 bg-dark-bg border border-dark-border rounded-lg py-3 text-gray-300 hover:border-gray-500 transition-colors"
+                  className="flex-1 bg-surface-raised border border-line-strong rounded-lg py-3 text-content-secondary hover:border-brand/50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg py-3 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-brand hover:bg-brand-hover rounded-lg py-3 text-content-primary font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Saving...' : editingStrategy ? 'Save Changes' : 'Save Strategy'}
                 </button>
@@ -991,26 +996,26 @@ function Strategies() {
       {activeStrategy && (
         <div className="fixed inset-0 z-[80]">
           <div className="absolute inset-0 bg-black/75" onClick={() => setActiveStrategy(null)} />
-          <aside className="absolute right-0 top-0 h-full w-full sm:w-[600px] md:w-[760px] bg-dark-card border-l border-dark-border flex flex-col">
-            <div className="flex items-start justify-between gap-3 p-5 border-b border-dark-border">
+          <aside className="absolute right-0 top-0 h-full w-full sm:w-[600px] md:w-[760px] bg-surface border-l border-line flex flex-col shadow-elev-1">
+            <div className="flex items-start justify-between gap-3 p-5 border-b border-line">
               <div className="min-w-0">
                 <button
                   type="button"
                   onClick={() => setActiveStrategy(null)}
-                  className="sm:hidden flex items-center gap-1 text-gray-400 hover:text-white text-sm mb-2"
+                  className="sm:hidden flex items-center gap-1 text-content-secondary hover:text-content-primary text-sm mb-2"
                 >
                   <ArrowLeft size={14} />
                   Back
                 </button>
-                <h3 className="text-xl text-white font-bold truncate">{activeStrategy.name || 'Untitled'}</h3>
-                <p className="text-xs text-gray-400 mt-1">
+                <h3 className="text-xl text-content-primary font-bold truncate">{activeStrategy.name || 'Untitled'}</h3>
+                <p className="text-xs text-content-secondary mt-1">
                   Created {formatDateTime(activeStrategy.createdAt)} | Updated {formatDateTime(activeStrategy.updatedAt || activeStrategy.createdAt)}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setActiveStrategy(null)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-content-secondary hover:text-content-primary transition-colors"
               >
                 <X size={22} />
               </button>
@@ -1023,27 +1028,27 @@ function Strategies() {
                 const decided = stats.wins + stats.losses;
                 return (
                   <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                    <div className="bg-dark-bg border border-dark-border rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase">Trades</p>
-                      <p className="text-white text-xl font-bold">{stats.trades}</p>
+                    <div className="bg-surface-raised rounded-control p-3">
+                      <p className="text-[10px] text-content-muted uppercase">Trades</p>
+                      <p className="text-content-primary text-xl font-bold">{stats.trades}</p>
                     </div>
-                    <div className="bg-dark-bg border border-dark-border rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase">Win Rate</p>
-                      <p className={`text-xl font-bold ${decided === 0 ? 'text-gray-400' : stats.winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+                    <div className="bg-surface-raised rounded-control p-3">
+                      <p className="text-[10px] text-content-muted uppercase">Win Rate</p>
+                      <p className={`text-xl font-bold ${decided === 0 ? 'text-content-secondary' : stats.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>
                         {decided > 0 ? `${stats.winRate.toFixed(1)}%` : '—'}
                       </p>
                     </div>
-                    <div className="bg-dark-bg border border-dark-border rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase">W / L</p>
-                      <p className="text-white text-xl font-bold">
-                        <span className="text-green-400">{stats.wins}</span>
-                        <span className="text-gray-500 mx-1">/</span>
-                        <span className="text-red-400">{stats.losses}</span>
+                    <div className="bg-surface-raised rounded-control p-3">
+                      <p className="text-[10px] text-content-muted uppercase">W / L</p>
+                      <p className="text-content-primary text-xl font-bold">
+                        <span className="text-profit">{stats.wins}</span>
+                        <span className="text-content-muted mx-1">/</span>
+                        <span className="text-loss">{stats.losses}</span>
                       </p>
                     </div>
-                    <div className="bg-dark-bg border border-dark-border rounded-lg p-3">
-                      <p className="text-[10px] text-gray-500 uppercase">Net P&L</p>
-                      <p className={`text-xl font-bold ${stats.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                    <div className="bg-surface-raised rounded-control p-3">
+                      <p className="text-[10px] text-content-muted uppercase">Net P&L</p>
+                      <p className={`text-xl font-bold ${stats.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                         {stats.totalPnl >= 0 ? '+' : '-'}${Math.abs(stats.totalPnl).toFixed(2)}
                       </p>
                     </div>
@@ -1054,7 +1059,7 @@ function Strategies() {
               {Array.isArray(activeStrategy.tags) && activeStrategy.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {activeStrategy.tags.map((tag) => (
-                    <span key={`${activeStrategy.id}-${tag}`} className="bg-blue-600/20 text-blue-300 px-2 py-1 rounded text-xs">
+                    <span key={`${activeStrategy.id}-${tag}`} className="bg-brand/20 text-brand-hover px-2 py-1 rounded text-xs">
                       {tag}
                     </span>
                   ))}
@@ -1063,14 +1068,14 @@ function Strategies() {
 
               {getImageUrls(activeStrategy).length > 0 && (
                 <div>
-                  <h4 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Reference Charts</h4>
+                  <h4 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Reference Charts</h4>
                   <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {getImageUrls(activeStrategy).map((url, index) => (
                       <button
                         key={`${activeStrategy.id}-image-${index}`}
                         type="button"
                         onClick={() => setExpandedImage({ url, title: activeStrategy.name || 'Strategy chart' })}
-                        className="border border-dark-border rounded-lg overflow-hidden hover:border-gray-500 transition-colors"
+                        className="border border-line-strong rounded-lg overflow-hidden hover:border-brand/50 transition-colors"
                       >
                         <img src={url} alt={`Strategy chart ${index + 1}`} className="w-full h-24 object-cover" />
                       </button>
@@ -1081,17 +1086,17 @@ function Strategies() {
 
               {activeStrategy.description && (
                 <div>
-                  <h4 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Description</h4>
-                  <div className="border border-dark-border rounded-lg bg-dark-bg p-4">
-                    <p className="text-gray-200 whitespace-pre-wrap text-sm leading-7">{activeStrategy.description}</p>
+                  <h4 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Description</h4>
+                  <div className="rounded-control bg-surface-raised p-4">
+                    <p className="text-content-secondary whitespace-pre-wrap text-sm leading-7">{activeStrategy.description}</p>
                   </div>
                 </div>
               )}
 
               {activeStrategy.whatWorked && (
                 <div>
-                  <h4 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">What Worked</h4>
-                  <div className="border border-green-700/30 rounded-lg bg-green-900/10 p-4">
+                  <h4 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">What Worked</h4>
+                  <div className="border border-profit/30 rounded-lg bg-profit/8 p-4">
                     <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                       {activeStrategy.whatWorked}
                     </ReactMarkdown>
@@ -1101,8 +1106,8 @@ function Strategies() {
 
               {activeStrategy.lessonsLearned && (
                 <div>
-                  <h4 className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Lessons Learned</h4>
-                  <div className="border border-yellow-700/30 rounded-lg bg-yellow-900/10 p-4">
+                  <h4 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Lessons Learned</h4>
+                  <div className="border border-warn/30 rounded-lg bg-warn/8 p-4">
                     <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                       {activeStrategy.lessonsLearned}
                     </ReactMarkdown>
@@ -1113,13 +1118,13 @@ function Strategies() {
               {/* Examples / Entries */}
               <div>
                 <div className="flex items-center justify-between mb-3">
-                  <h4 className="text-gray-500 text-xs font-semibold uppercase tracking-wider">
+                  <h4 className="text-content-muted text-xs font-semibold uppercase tracking-wider">
                     Examples / Setups ({activeStrategyEntries.length})
                   </h4>
                   <button
                     type="button"
                     onClick={openAddEntry}
-                    className="flex items-center gap-1 bg-blue-600 hover:bg-blue-700 text-white px-3 py-1.5 rounded-lg text-xs transition-colors"
+                    className="flex items-center gap-1 bg-brand hover:bg-brand-hover text-content-primary px-3 py-1.5 rounded-lg text-xs transition-colors"
                   >
                     <Plus size={12} />
                     Add Example
@@ -1127,7 +1132,7 @@ function Strategies() {
                 </div>
 
                 {activeStrategyEntries.length === 0 && (
-                  <div className="bg-dark-bg border border-dark-border rounded-lg p-6 text-center text-gray-400 text-sm">
+                  <div className="bg-surface-raised rounded-control p-6 text-center text-content-secondary text-sm">
                     No examples yet. Add one to document a specific setup.
                   </div>
                 )}
@@ -1136,17 +1141,17 @@ function Strategies() {
                   {activeStrategyEntries.map((entry) => {
                     const entryImagesUrls = getImageUrls(entry);
                     return (
-                      <div key={entry.id} className="bg-dark-bg border border-dark-border rounded-lg p-4 space-y-3">
+                      <div key={entry.id} className="bg-surface-raised rounded-control p-4 space-y-3">
                         <div className="flex items-start justify-between gap-2">
                           <div className="min-w-0">
-                            <h5 className="text-white font-semibold leading-tight truncate">{entry.title || 'Untitled example'}</h5>
-                            <p className="text-xs text-gray-500 mt-0.5">{formatDate(entry.createdAt)}</p>
+                            <h5 className="text-content-primary font-semibold leading-tight truncate">{entry.title || 'Untitled example'}</h5>
+                            <p className="text-xs text-content-muted mt-0.5">{formatDate(entry.createdAt)}</p>
                           </div>
                           <div className="flex items-center gap-1">
                             <button
                               type="button"
                               onClick={() => openEditEntry(entry)}
-                              className="text-gray-400 hover:text-blue-400 p-1.5 rounded hover:bg-dark-card transition-colors"
+                              className="text-content-secondary hover:text-brand-hover p-1.5 rounded hover:bg-surface transition-colors shadow-elev-1"
                               aria-label="Edit example"
                             >
                               <Pencil size={14} />
@@ -1154,7 +1159,7 @@ function Strategies() {
                             <button
                               type="button"
                               onClick={() => handleDeleteEntry(entry.id)}
-                              className="text-gray-400 hover:text-red-400 p-1.5 rounded hover:bg-dark-card transition-colors"
+                              className="text-content-secondary hover:text-loss p-1.5 rounded hover:bg-surface transition-colors shadow-elev-1"
                               aria-label="Delete example"
                             >
                               <Trash2 size={14} />
@@ -1169,7 +1174,7 @@ function Strategies() {
                                 key={`${entry.id}-img-${idx}`}
                                 type="button"
                                 onClick={() => setExpandedImage({ url, title: entry.title || 'Example chart' })}
-                                className="border border-dark-border rounded overflow-hidden hover:border-gray-500 transition-colors"
+                                className="border border-line-strong rounded overflow-hidden hover:border-brand/50 transition-colors"
                               >
                                 <img src={url} alt={`Example ${idx + 1}`} className="w-full h-24 object-cover" />
                               </button>
@@ -1178,7 +1183,7 @@ function Strategies() {
                         )}
 
                         {entry.content && (
-                          <div className="border border-dark-border rounded bg-dark-card p-3">
+                          <div className="rounded bg-surface p-3 shadow-elev-1">
                             <ReactMarkdown remarkPlugins={[remarkGfm]} components={markdownComponents}>
                               {entry.content}
                             </ReactMarkdown>
@@ -1194,18 +1199,18 @@ function Strategies() {
                 !activeStrategy.whatWorked &&
                 !activeStrategy.lessonsLearned &&
                 getImageUrls(activeStrategy).length === 0 && (
-                  <div className="text-gray-400 text-sm text-center py-6 border border-dashed border-dark-border rounded-lg">
-                    <BookOpen size={24} className="mx-auto mb-2 text-gray-600" />
+                  <div className="text-content-secondary text-sm text-center py-6 border border-dashed border-line-strong rounded-lg">
+                    <BookOpen size={24} className="mx-auto mb-2 text-content-muted" />
                     Add a description, lessons, or examples to start documenting this strategy.
                   </div>
                 )}
             </div>
 
-            <div className="p-4 border-t border-dark-border bg-dark-card flex flex-wrap gap-2">
+            <div className="p-4 border-t border-line bg-surface flex flex-wrap gap-2 shadow-elev-1">
               <button
                 type="button"
                 onClick={() => openEditStrategy(activeStrategy)}
-                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
+                className="inline-flex items-center gap-2 bg-brand hover:bg-brand-hover text-content-primary px-3 py-2 rounded-lg text-sm transition-colors"
               >
                 <Pencil size={14} />
                 Edit Strategy
@@ -1213,7 +1218,7 @@ function Strategies() {
               <button
                 type="button"
                 onClick={() => handleDeleteStrategy(activeStrategy.id)}
-                className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
+                className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-content-primary px-3 py-2 rounded-lg text-sm transition-colors"
               >
                 <Trash2 size={14} />
                 Delete
@@ -1230,32 +1235,32 @@ function Strategies() {
           onClick={closeEntryModal}
         >
           <div
-            className="bg-dark-card border border-dark-border rounded-lg w-full max-w-2xl max-h-[calc(100vh-1rem)] overflow-y-auto"
+            className="bg-surface rounded-card w-full max-w-2xl max-h-[calc(100vh-1rem)] overflow-y-auto shadow-elev-1"
             onClick={(event) => event.stopPropagation()}
           >
             <form onSubmit={handleSaveEntry} className="p-5 space-y-4">
-              <h3 className="text-lg font-bold text-white">
+              <h3 className="text-lg font-bold text-content-primary">
                 {editingEntry ? 'Edit Example' : 'New Example'}
-                {activeStrategy && <span className="text-gray-400 text-sm font-normal ml-2">in {activeStrategy.name}</span>}
+                {activeStrategy && <span className="text-content-secondary text-sm font-normal ml-2">in {activeStrategy.name}</span>}
               </h3>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Title</label>
+                <label className="block text-content-secondary text-sm mb-2">Title</label>
                 <input
                   type="text"
                   value={entryForm.title}
                   onChange={(e) => handleEntryInput('title', e.target.value)}
                   placeholder="e.g., June 12 BTC 1H sweep"
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Chart Images</label>
-                <label className="flex items-center justify-center w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 cursor-pointer hover:border-gray-500 transition-colors">
-                  <Upload size={18} className="mr-2 text-gray-400" />
-                  <span className="text-gray-400">Add Images</span>
+                <label className="block text-content-secondary text-sm mb-2">Chart Images</label>
+                <label className="flex items-center justify-center w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-3 cursor-pointer hover:border-brand/50 transition-colors">
+                  <Upload size={18} className="mr-2 text-content-secondary" />
+                  <span className="text-content-secondary">Add Images</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -1268,12 +1273,12 @@ function Strategies() {
                 {entryImages.length > 0 && (
                   <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {entryImages.map((item) => (
-                      <div key={item.id} className="relative border border-dark-border rounded-lg overflow-hidden">
+                      <div key={item.id} className="relative rounded-lg overflow-hidden">
                         <img src={item.url} alt="Example attachment" className="w-full h-24 object-cover" />
                         <button
                           type="button"
                           onClick={() => removeEntryImage(item.id)}
-                          className="absolute top-1 right-1 bg-black/70 hover:bg-black text-white p-1 rounded-full"
+                          className="absolute top-1 right-1 bg-black/70 hover:bg-black text-content-primary p-1 rounded-full"
                           aria-label="Remove image"
                         >
                           <X size={14} />
@@ -1285,30 +1290,30 @@ function Strategies() {
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Notes (Markdown)</label>
+                <label className="block text-content-secondary text-sm mb-2">Notes (Markdown)</label>
                 <textarea
                   rows="10"
                   value={entryForm.content}
                   onChange={(e) => handleEntryInput('content', e.target.value)}
                   placeholder="Setup details, what you saw, why this is a good example..."
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 text-white resize-y focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-3 text-content-primary resize-y focus:outline-none focus:border-brand"
                 />
               </div>
 
-              {formError && <p className="text-sm text-red-400">{formError}</p>}
+              {formError && <p className="text-sm text-loss">{formError}</p>}
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={closeEntryModal}
-                  className="flex-1 bg-dark-bg border border-dark-border rounded-lg py-3 text-gray-300 hover:border-gray-500 transition-colors"
+                  className="flex-1 bg-surface-raised border border-line-strong rounded-lg py-3 text-content-secondary hover:border-brand/50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg py-3 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-brand hover:bg-brand-hover rounded-lg py-3 text-content-primary font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Saving...' : editingEntry ? 'Save Changes' : 'Save Example'}
                 </button>
@@ -1327,7 +1332,7 @@ function Strategies() {
           <button
             type="button"
             onClick={() => setExpandedImage(null)}
-            className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors"
+            className="absolute top-4 right-4 text-content-secondary hover:text-content-primary transition-colors"
             aria-label="Close image viewer"
           >
             <X size={28} />
@@ -1335,7 +1340,7 @@ function Strategies() {
           <img
             src={expandedImage.url}
             alt={expandedImage.title}
-            className="max-w-full max-h-full object-contain rounded-lg border border-dark-border"
+            className="max-w-full max-h-full object-contain rounded-lg"
             onClick={(event) => event.stopPropagation()}
           />
         </div>

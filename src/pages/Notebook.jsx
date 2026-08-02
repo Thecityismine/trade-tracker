@@ -1,12 +1,13 @@
 import { useEffect, useMemo, useState } from 'react';
 import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { Plus, Search, X, Pencil, Trash2, Pin, PinOff, Copy, Upload } from 'lucide-react';
+import { Plus, Search, X, Pencil, Trash2, Pin, PinOff, Copy, Upload, StickyNote } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { db, storage } from '../config/firebase';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 import Page from '../components/ui/Page';
 import Button from '../components/ui/Button';
+import EmptyState from '../components/ui/EmptyState';
 
 const CATEGORY_OPTIONS = [
   { id: 'all', label: 'All' },
@@ -139,11 +140,11 @@ const getImageUrls = (note) => {
 };
 
 const categoryChipClasses = {
-  lesson: 'bg-green-900/30 text-green-300 border-green-700/40',
-  mistake: 'bg-red-900/30 text-red-300 border-red-700/40',
-  rule: 'bg-blue-900/30 text-blue-300 border-blue-700/40',
-  mindset: 'bg-purple-900/30 text-purple-300 border-purple-700/40',
-  'market-cipher': 'bg-yellow-900/30 text-yellow-300 border-yellow-700/40'
+  lesson: 'bg-profit/15 text-profit border-profit/40',
+  mistake: 'bg-loss/15 text-loss border-loss/40',
+  rule: 'bg-brand-muted text-brand-hover border-brand/40',
+  mindset: 'bg-brand/15 text-brand border-brand/40',
+  'market-cipher': 'bg-warn/15 text-warn border-warn/40'
 };
 
 function Notebook() {
@@ -509,34 +510,34 @@ function Notebook() {
       }
     >
       {statusMessage && (
-        <div className="bg-green-900/30 border border-green-700/40 text-green-300 rounded-lg px-4 py-3 text-sm">
+        <div className="bg-profit/15 border border-profit/40 text-profit rounded-lg px-4 py-3 text-sm">
           {statusMessage}
         </div>
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Total Notes</p>
-          <p className="text-white text-2xl font-bold mt-1">{stats.totalNotes}</p>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Total Notes</p>
+          <p className="text-content-primary text-2xl font-bold mt-1">{stats.totalNotes}</p>
         </div>
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Categories Logged</p>
-          <p className="text-blue-400 text-2xl font-bold mt-1">{stats.categoriesCount}</p>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Categories Logged</p>
+          <p className="text-brand text-2xl font-bold mt-1">{stats.categoriesCount}</p>
         </div>
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Recurring Mistakes</p>
-          <p className="text-red-400 text-2xl font-bold mt-1">{stats.recurringMistakes}</p>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Recurring Mistakes</p>
+          <p className="text-loss text-2xl font-bold mt-1">{stats.recurringMistakes}</p>
         </div>
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Notes This Week</p>
-          <p className="text-green-400 text-2xl font-bold mt-1">{stats.notesThisWeek}</p>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Notes This Week</p>
+          <p className="text-profit text-2xl font-bold mt-1">{stats.notesThisWeek}</p>
         </div>
       </div>
 
-      <div className="bg-dark-card border border-dark-border rounded-lg p-4">
+      <div className="bg-surface rounded-card p-4 shadow-elev-1">
         <div className="flex flex-wrap items-center gap-2">
-          <span className="text-sm text-gray-400">Recurring mistakes:</span>
-          {topMistakes.length === 0 && <span className="text-sm text-gray-500">No mistake types logged yet.</span>}
+          <span className="text-sm text-content-secondary">Recurring mistakes:</span>
+          {topMistakes.length === 0 && <span className="text-sm text-content-muted">No mistake types logged yet.</span>}
           {topMistakes.map((mistake) => (
             <button
               key={mistake.type}
@@ -544,8 +545,8 @@ function Notebook() {
               onClick={() => setMistakeTypeFilter(mistake.type)}
               className={`px-3 py-1 rounded-lg text-xs border transition-colors ${
                 mistakeTypeFilter.toLowerCase() === mistake.type.toLowerCase()
-                  ? 'bg-red-600 text-white border-red-600'
-                  : 'bg-dark-bg text-red-300 border-red-700/40 hover:border-red-500'
+                  ? 'bg-red-600 text-content-primary border-loss'
+                  : 'bg-surface-raised text-loss border-loss/40 hover:border-loss'
               }`}
             >
               {mistake.type} ({mistake.count})
@@ -555,7 +556,7 @@ function Notebook() {
             <button
               type="button"
               onClick={() => setMistakeTypeFilter('all')}
-              className="px-3 py-1 rounded-lg text-xs border border-dark-border text-gray-300 hover:border-gray-500"
+              className="px-3 py-1 rounded-lg text-xs border border-line-strong text-content-secondary hover:border-brand/50"
             >
               Clear
             </button>
@@ -563,17 +564,17 @@ function Notebook() {
         </div>
       </div>
 
-      <div className="bg-dark-card border border-dark-border rounded-lg p-4 sm:p-6">
+      <div className="bg-surface rounded-card p-4 sm:p-6 shadow-elev-1">
         <div className="flex flex-col gap-3 mb-4">
           <div className="flex flex-col lg:flex-row lg:items-center gap-3">
             <div className="relative w-full lg:max-w-md">
-              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+              <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" />
               <input
                 type="text"
                 placeholder="Search title, tags, content..."
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
-                className="w-full bg-dark-bg border border-dark-border rounded-lg pl-9 pr-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg pl-9 pr-3 py-2 text-content-primary text-sm focus:outline-none focus:border-brand"
               />
             </div>
 
@@ -581,7 +582,7 @@ function Notebook() {
               <select
                 value={sortBy}
                 onChange={(e) => setSortBy(e.target.value)}
-                className="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-sm text-white focus:outline-none focus:border-blue-500"
+                className="bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-sm text-content-primary focus:outline-none focus:border-brand"
               >
                 {SORT_OPTIONS.map((option) => (
                   <option key={option.id} value={option.id}>{option.label}</option>
@@ -598,8 +599,8 @@ function Notebook() {
                 onClick={() => setCategoryFilter(option.id)}
                 className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
                   categoryFilter === option.id
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-dark-bg text-gray-300 border-dark-border hover:border-gray-500'
+                    ? 'bg-brand text-content-primary border-brand'
+                    : 'bg-surface-raised text-content-secondary border-line-strong hover:border-brand/50'
                 }`}
               >
                 {option.label}
@@ -609,9 +610,15 @@ function Notebook() {
         </div>
 
         {filteredNotes.length === 0 && (
-          <div className="bg-dark-bg border border-dark-border rounded-lg p-8 text-center text-gray-400">
-            No notes found.
-          </div>
+          <EmptyState
+            icon={StickyNote}
+            title={notes.length === 0 ? 'Your notebook is empty' : 'No notes match your search'}
+            description={notes.length === 0
+              ? 'Write down setups, rules and the mistakes you keep repeating — the Notebook is what turns them into playbooks.'
+              : 'Try a different search term or clear the filter.'}
+            actionLabel={notes.length === 0 ? 'Write your first note' : undefined}
+            onAction={notes.length === 0 ? openAddModal : undefined}
+          />
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
@@ -624,17 +631,17 @@ function Notebook() {
               <div
                 key={note.id}
                 onClick={() => setActiveNote(note)}
-                className="bg-dark-bg border border-dark-border rounded-lg p-4 space-y-3 cursor-pointer hover:border-gray-500 transition-colors"
+                className="bg-surface-raised border border-line-strong rounded-lg p-4 space-y-3 cursor-pointer hover:border-brand/50 transition-colors"
               >
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-white text-lg font-semibold leading-tight truncate">{note.title || 'Untitled'}</h3>
+                  <h3 className="text-content-primary text-lg font-semibold leading-tight truncate">{note.title || 'Untitled'}</h3>
                   <button
                     type="button"
                     onClick={(event) => togglePinned(note, event)}
                     className={`p-2 rounded-lg border transition-colors ${
                       note.pinned
-                        ? 'bg-yellow-600/20 text-yellow-300 border-yellow-700/60 hover:border-yellow-500'
-                        : 'bg-dark-card text-gray-400 border-dark-border hover:border-gray-500'
+                        ? 'bg-warn/20 text-warn border-warn/60 hover:border-warn'
+                        : 'bg-surface text-content-secondary border-line-strong hover:border-brand/50'
                     }`}
                     aria-label={note.pinned ? 'Unpin note' : 'Pin note'}
                   >
@@ -642,27 +649,27 @@ function Notebook() {
                   </button>
                 </div>
 
-                <p className="text-sm text-gray-300 leading-relaxed min-h-[5.5rem] whitespace-pre-line">
+                <p className="text-sm text-content-secondary leading-relaxed min-h-[5.5rem] whitespace-pre-line">
                   {getPreviewSnippet(note.content)}
                 </p>
 
                 <div className="flex flex-wrap gap-2">
-                  <span className={`px-2 py-1 rounded text-xs border ${categoryChipClasses[note.category] || 'bg-gray-700/40 text-gray-300 border-gray-600/50'}`}>
+                  <span className={`px-2 py-1 rounded text-xs border ${categoryChipClasses[note.category] || 'bg-surface-hover text-content-secondary border-line-strong'}`}>
                     {getCategoryLabel(note.category)}
                   </span>
                   {visibleTags.map((tag) => (
-                    <span key={`${note.id}-${tag}`} className="bg-blue-600/20 text-blue-300 px-2 py-1 rounded text-xs">
+                    <span key={`${note.id}-${tag}`} className="bg-brand/20 text-brand-hover px-2 py-1 rounded text-xs">
                       {tag}
                     </span>
                   ))}
                   {remainingTags > 0 && (
-                    <span className="bg-dark-card text-gray-300 px-2 py-1 rounded text-xs border border-dark-border">
+                    <span className="bg-surface-hover text-content-secondary px-2 py-1 rounded-chip text-xs">
                       +{remainingTags}
                     </span>
                   )}
                 </div>
 
-                <div className="text-xs text-gray-500 space-y-1">
+                <div className="text-xs text-content-muted space-y-1">
                   <p>Created: {formatDate(note.createdAt)}</p>
                   <p>Updated: {formatDate(note.updatedAt || note.createdAt)}</p>
                 </div>
@@ -678,27 +685,27 @@ function Notebook() {
           onClick={closeModal}
         >
           <div
-            className="bg-dark-card border border-dark-border rounded-lg w-full max-w-3xl max-h-[calc(100vh-1rem)] overflow-y-auto"
+            className="bg-surface rounded-card w-full max-w-3xl max-h-[calc(100vh-1rem)] overflow-y-auto shadow-elev-1"
             onClick={(event) => event.stopPropagation()}
           >
             <form onSubmit={handleSaveNote} className="p-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Title</label>
+                  <label className="block text-content-secondary text-sm mb-2">Title</label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
-                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Category</label>
+                  <label className="block text-content-secondary text-sm mb-2">Category</label>
                   <select
                     value={formData.category}
                     onChange={(e) => handleInputChange('category', e.target.value)}
-                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   >
                     {EDITABLE_CATEGORIES.map((option) => (
                       <option key={option.id} value={option.id}>{option.label}</option>
@@ -709,33 +716,33 @@ function Notebook() {
 
               {formData.category === 'mistake' && (
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Mistake Type</label>
+                  <label className="block text-content-secondary text-sm mb-2">Mistake Type</label>
                   <input
                     type="text"
                     value={formData.mistakeType}
                     onChange={(e) => handleInputChange('mistakeType', e.target.value)}
                     placeholder="e.g., FOMO entry, ignored stop"
-                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   />
                 </div>
               )}
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Tags (comma separated)</label>
+                <label className="block text-content-secondary text-sm mb-2">Tags (comma separated)</label>
                 <input
                   type="text"
                   value={formData.tags}
                   onChange={(e) => handleInputChange('tags', e.target.value)}
                   placeholder="e.g., risk, patience, setup"
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Images</label>
-                <label className="flex items-center justify-center w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 cursor-pointer hover:border-gray-500 transition-colors">
-                  <Upload size={18} className="mr-2 text-gray-400" />
-                  <span className="text-gray-400">Add Images</span>
+                <label className="block text-content-secondary text-sm mb-2">Images</label>
+                <label className="flex items-center justify-center w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-3 cursor-pointer hover:border-brand/50 transition-colors">
+                  <Upload size={18} className="mr-2 text-content-secondary" />
+                  <span className="text-content-secondary">Add Images</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -748,7 +755,7 @@ function Notebook() {
                 {imageItems.length > 0 && (
                   <div className="mt-3 grid grid-cols-2 sm:grid-cols-3 gap-2">
                     {imageItems.map((item) => (
-                      <div key={item.id} className="relative border border-dark-border rounded-lg overflow-hidden">
+                      <div key={item.id} className="relative rounded-lg overflow-hidden">
                         <img
                           src={item.url}
                           alt="Note attachment"
@@ -757,7 +764,7 @@ function Notebook() {
                         <button
                           type="button"
                           onClick={() => removeImageItem(item.id)}
-                          className="absolute top-1 right-1 bg-black/70 hover:bg-black text-white p-1 rounded-full"
+                          className="absolute top-1 right-1 bg-black/70 hover:bg-black text-content-primary p-1 rounded-full"
                           aria-label="Remove image"
                         >
                           <X size={14} />
@@ -769,43 +776,43 @@ function Notebook() {
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Content (Markdown)</label>
+                <label className="block text-content-secondary text-sm mb-2">Content (Markdown)</label>
                 <textarea
                   rows="14"
                   value={formData.content}
                   onChange={(e) => handleInputChange('content', e.target.value)}
                   placeholder="Write your long-form note in Markdown..."
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 text-white resize-y focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-3 text-content-primary resize-y focus:outline-none focus:border-brand"
                   required
                 />
               </div>
 
-              <label className="flex items-center gap-2 text-sm text-gray-300">
+              <label className="flex items-center gap-2 text-sm text-content-secondary">
                 <input
                   type="checkbox"
                   checked={Boolean(formData.pinned)}
                   onChange={(e) => handleInputChange('pinned', e.target.checked)}
-                  className="accent-blue-600"
+                  className="accent-brand"
                 />
                 Pin this note
               </label>
 
               {formError && (
-                <p className="text-sm text-red-400">{formError}</p>
+                <p className="text-sm text-loss">{formError}</p>
               )}
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 bg-dark-bg border border-dark-border rounded-lg py-3 text-gray-300 hover:border-gray-500 transition-colors"
+                  className="flex-1 bg-surface-raised border border-line-strong rounded-lg py-3 text-content-secondary hover:border-brand/50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg py-3 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-brand hover:bg-brand-hover rounded-lg py-3 text-content-primary font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Saving...' : editingNote ? 'Save Changes' : 'Save Note'}
                 </button>
@@ -821,18 +828,18 @@ function Notebook() {
             className="absolute inset-0 bg-black/75"
             onClick={() => setActiveNote(null)}
           />
-          <aside className="absolute right-0 top-0 h-full w-full sm:w-[560px] md:w-[680px] bg-dark-card border-l border-dark-border flex flex-col">
-            <div className="flex items-start justify-between gap-3 p-5 border-b border-dark-border">
+          <aside className="absolute right-0 top-0 h-full w-full sm:w-[560px] md:w-[680px] bg-surface border-l border-line flex flex-col shadow-elev-1">
+            <div className="flex items-start justify-between gap-3 p-5 border-b border-line">
               <div>
-                <h3 className="text-xl text-white font-bold">{activeNote.title || 'Untitled'}</h3>
-                <p className="text-xs text-gray-400 mt-1">
+                <h3 className="text-xl text-content-primary font-bold">{activeNote.title || 'Untitled'}</h3>
+                <p className="text-xs text-content-secondary mt-1">
                   Created {formatDateTime(activeNote.createdAt)} | Updated {formatDateTime(activeNote.updatedAt || activeNote.createdAt)}
                 </p>
               </div>
               <button
                 type="button"
                 onClick={() => setActiveNote(null)}
-                className="text-gray-400 hover:text-white transition-colors"
+                className="text-content-secondary hover:text-content-primary transition-colors"
               >
                 <X size={22} />
               </button>
@@ -840,11 +847,11 @@ function Notebook() {
 
             <div className="p-5 overflow-y-auto space-y-4 flex-1">
               <div className="flex flex-wrap gap-2">
-                <span className={`px-2 py-1 rounded text-xs border ${categoryChipClasses[activeNote.category] || 'bg-gray-700/40 text-gray-300 border-gray-600/50'}`}>
+                <span className={`px-2 py-1 rounded text-xs border ${categoryChipClasses[activeNote.category] || 'bg-surface-hover text-content-secondary border-line-strong'}`}>
                   {getCategoryLabel(activeNote.category)}
                 </span>
                 {activeNote.mistakeType && (
-                  <span className="bg-red-900/20 border border-red-700/40 text-red-300 px-2 py-1 rounded text-xs">
+                  <span className="bg-loss/10 border border-loss/40 text-loss px-2 py-1 rounded text-xs">
                     {activeNote.mistakeType}
                   </span>
                 )}
@@ -853,7 +860,7 @@ function Notebook() {
               {Array.isArray(activeNote.tags) && activeNote.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2">
                   {activeNote.tags.map((tag) => (
-                    <span key={`${activeNote.id}-${tag}`} className="bg-blue-600/20 text-blue-300 px-2 py-1 rounded text-xs">
+                    <span key={`${activeNote.id}-${tag}`} className="bg-brand/20 text-brand-hover px-2 py-1 rounded text-xs">
                       {tag}
                     </span>
                   ))}
@@ -867,7 +874,7 @@ function Notebook() {
                       key={`${activeNote.id}-image-${index}`}
                       type="button"
                       onClick={() => setExpandedImage({ url, title: activeNote.title || 'Notebook image' })}
-                      className="border border-dark-border rounded-lg overflow-hidden hover:border-gray-500 transition-colors"
+                      className="border border-line-strong rounded-lg overflow-hidden hover:border-brand/50 transition-colors"
                     >
                       <img
                         src={url}
@@ -879,24 +886,24 @@ function Notebook() {
                 </div>
               )}
 
-              <div className="border border-dark-border rounded-lg bg-dark-bg p-4">
+              <div className="rounded-control bg-surface-raised p-4">
                 <ReactMarkdown
                   remarkPlugins={[remarkGfm]}
                   components={{
-                    h1: ({ node, ...props }) => <h1 className="text-2xl text-white font-bold mt-4 mb-2" {...props} />,
-                    h2: ({ node, ...props }) => <h2 className="text-xl text-white font-semibold mt-4 mb-2" {...props} />,
-                    h3: ({ node, ...props }) => <h3 className="text-lg text-white font-semibold mt-3 mb-2" {...props} />,
-                    p: ({ node, ...props }) => <p className="text-gray-200 leading-7 mb-3 whitespace-pre-wrap" {...props} />,
-                    ul: ({ node, ...props }) => <ul className="list-disc ml-5 mb-3 text-gray-200 space-y-1" {...props} />,
-                    ol: ({ node, ...props }) => <ol className="list-decimal ml-5 mb-3 text-gray-200 space-y-1" {...props} />,
-                    li: ({ node, ...props }) => <li className="text-gray-200" {...props} />,
-                    blockquote: ({ node, ...props }) => <blockquote className="border-l-2 border-gray-600 pl-3 text-gray-300 italic mb-3" {...props} />,
+                    h1: ({ node, ...props }) => <h1 className="text-2xl text-content-primary font-bold mt-4 mb-2" {...props} />,
+                    h2: ({ node, ...props }) => <h2 className="text-xl text-content-primary font-semibold mt-4 mb-2" {...props} />,
+                    h3: ({ node, ...props }) => <h3 className="text-lg text-content-primary font-semibold mt-3 mb-2" {...props} />,
+                    p: ({ node, ...props }) => <p className="text-content-secondary leading-7 mb-3 whitespace-pre-wrap" {...props} />,
+                    ul: ({ node, ...props }) => <ul className="list-disc ml-5 mb-3 text-content-secondary space-y-1" {...props} />,
+                    ol: ({ node, ...props }) => <ol className="list-decimal ml-5 mb-3 text-content-secondary space-y-1" {...props} />,
+                    li: ({ node, ...props }) => <li className="text-content-secondary" {...props} />,
+                    blockquote: ({ node, ...props }) => <blockquote className="border-l-2 border-line-strong pl-3 text-content-secondary italic mb-3" {...props} />,
                     code: ({ inline, node, ...props }) => (
                       inline
-                        ? <code className="bg-black/40 rounded px-1 py-0.5 text-blue-300 text-sm" {...props} />
-                        : <code className="block bg-black/50 border border-dark-border rounded p-3 text-blue-300 text-sm overflow-x-auto mb-3" {...props} />
+                        ? <code className="bg-black/40 rounded px-1 py-0.5 text-brand-hover text-sm" {...props} />
+                        : <code className="block bg-black/50 rounded p-3 text-brand-hover text-sm overflow-x-auto mb-3" {...props} />
                     ),
-                    a: ({ node, ...props }) => <a className="text-blue-400 underline" target="_blank" rel="noreferrer" {...props} />
+                    a: ({ node, ...props }) => <a className="text-brand underline" target="_blank" rel="noreferrer" {...props} />
                   }}
                 >
                   {activeNote.content || ''}
@@ -904,11 +911,11 @@ function Notebook() {
               </div>
             </div>
 
-            <div className="p-4 border-t border-dark-border bg-dark-card flex flex-wrap gap-2">
+            <div className="p-4 border-t border-line bg-surface flex flex-wrap gap-2 shadow-elev-1">
               <button
                 type="button"
                 onClick={() => openEditModal(activeNote)}
-                className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
+                className="inline-flex items-center gap-2 bg-brand hover:bg-brand-hover text-content-primary px-3 py-2 rounded-lg text-sm transition-colors"
               >
                 <Pencil size={14} />
                 Edit
@@ -916,7 +923,7 @@ function Notebook() {
               <button
                 type="button"
                 onClick={() => handleDuplicateNote(activeNote)}
-                className="inline-flex items-center gap-2 bg-dark-bg border border-dark-border text-gray-200 px-3 py-2 rounded-lg text-sm hover:border-gray-500 transition-colors"
+                className="inline-flex items-center gap-2 bg-surface-raised border border-line-strong text-content-secondary px-3 py-2 rounded-lg text-sm hover:border-brand/50 transition-colors"
               >
                 <Copy size={14} />
                 Duplicate
@@ -924,7 +931,7 @@ function Notebook() {
               <button
                 type="button"
                 onClick={() => handleDeleteNote(activeNote.id)}
-                className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-white px-3 py-2 rounded-lg text-sm transition-colors"
+                className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-content-primary px-3 py-2 rounded-lg text-sm transition-colors"
               >
                 <Trash2 size={14} />
                 Delete
@@ -942,7 +949,7 @@ function Notebook() {
           <button
             type="button"
             onClick={() => setExpandedImage(null)}
-            className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors"
+            className="absolute top-4 right-4 text-content-secondary hover:text-content-primary transition-colors"
             aria-label="Close image viewer"
           >
             <X size={28} />
@@ -950,7 +957,7 @@ function Notebook() {
           <img
             src={expandedImage.url}
             alt={expandedImage.title}
-            className="max-w-full max-h-full object-contain rounded-lg border border-dark-border"
+            className="max-w-full max-h-full object-contain rounded-lg"
             onClick={(event) => event.stopPropagation()}
           />
         </div>

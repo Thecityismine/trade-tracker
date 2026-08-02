@@ -1,11 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, X, Upload, Pencil, Trash2, ImageIcon, Check } from 'lucide-react';
+import { Plus, X, Upload, Pencil, Trash2, ImageIcon, Check, Target } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { db, storage } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 import Page from '../components/ui/Page';
 import Button from '../components/ui/Button';
+import EmptyState from '../components/ui/EmptyState';
 
 const TIMEFRAME_OPTIONS = [
   { value: '1min', label: '1min' },
@@ -24,9 +25,9 @@ const TIMEFRAME_OPTIONS = [
 ];
 
 const QUALITY_BADGE = {
-  'A+': 'bg-blue-500/20 text-blue-400 border border-blue-500/30',
-  'B': 'bg-yellow-500/20 text-yellow-400 border border-yellow-500/30',
-  'C': 'bg-gray-500/20 text-gray-400 border border-gray-500/30',
+  'A+': 'bg-brand/20 text-brand border border-brand/30',
+  'B': 'bg-warn/20 text-warn border border-warn/30',
+  'C': 'bg-surface-hover text-content-secondary border border-line-strong',
 };
 
 const withTimeout = (promise, ms, timeoutMessage) => {
@@ -336,13 +337,13 @@ function ChartPatterns() {
       }
     >
       {statusMessage && (
-        <div className="bg-green-900/30 border border-green-700/40 text-green-300 rounded-lg px-4 py-3 text-sm">
+        <div className="bg-profit/15 border border-profit/40 text-profit rounded-lg px-4 py-3 text-sm">
           {statusMessage}
         </div>
       )}
 
       {/* Filters */}
-      <div className="bg-dark-card border border-dark-border rounded-lg px-4 py-3 space-y-3">
+      <div className="bg-surface rounded-card px-4 py-3 space-y-3 shadow-elev-1">
         {/* Direction filter */}
         <div className="flex gap-2">
           {[{ value: 'all', label: 'All' }, { value: 'long', label: 'Long Trades' }, { value: 'short', label: 'Short Trades' }].map((opt) => (
@@ -352,8 +353,8 @@ function ChartPatterns() {
               onClick={() => setTradeFilter(opt.value)}
               className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                 tradeFilter === opt.value
-                  ? 'bg-blue-600 text-white border-blue-600'
-                  : 'bg-dark-bg text-gray-300 border-dark-border hover:border-gray-500'
+                  ? 'bg-brand text-content-primary border-brand'
+                  : 'bg-surface-raised text-content-secondary border-line-strong hover:border-brand/50'
               }`}
             >
               {opt.label}
@@ -366,7 +367,7 @@ function ChartPatterns() {
           <select
             value={timeframeFilter}
             onChange={(e) => setTimeframeFilter(e.target.value)}
-            className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+            className="flex-1 bg-surface-raised border border-line-strong rounded-lg px-3 py-1.5 text-sm text-content-primary focus:outline-none focus:border-brand"
           >
             <option value="all">All Timeframes</option>
             {TIMEFRAME_OPTIONS.map((opt) => (
@@ -376,7 +377,7 @@ function ChartPatterns() {
           <select
             value={qualityFilter}
             onChange={(e) => setQualityFilter(e.target.value)}
-            className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-1.5 text-sm text-white focus:outline-none focus:border-blue-500"
+            className="flex-1 bg-surface-raised border border-line-strong rounded-lg px-3 py-1.5 text-sm text-content-primary focus:outline-none focus:border-brand"
           >
             <option value="all">All Quality</option>
             <option value="A+">A+ Only</option>
@@ -402,12 +403,12 @@ function ChartPatterns() {
             return (
               <div
                 key={pattern.id}
-                className="group bg-dark-card border border-dark-border rounded-lg overflow-hidden hover:border-gray-600 transition-colors"
+                className="group bg-surface border border-line-strong rounded-lg overflow-hidden hover:border-brand/50 transition-colors"
               >
                 {/* Image */}
-                <div className="relative aspect-video bg-dark-bg">
+                <div className="relative aspect-video bg-surface-raised">
                   {brokenImages[pattern.id] ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 gap-2">
+                    <div className="w-full h-full flex flex-col items-center justify-center text-content-muted gap-2">
                       <ImageIcon size={30} />
                       <span className="text-xs">Image unavailable</span>
                     </div>
@@ -431,14 +432,14 @@ function ChartPatterns() {
                   <div className="absolute top-2 right-2 flex gap-1.5">
                     <button
                       onClick={(e) => { e.stopPropagation(); openEditModal(pattern); }}
-                      className="bg-dark-card/85 hover:bg-dark-card text-gray-400 hover:text-white p-1.5 rounded-lg transition-all backdrop-blur-sm border border-dark-border/50"
+                      className="bg-surface/85 hover:bg-surface text-content-secondary hover:text-content-primary p-1.5 rounded-card transition-all backdrop-blur-sm /50 shadow-elev-1"
                       aria-label="Edit pattern"
                     >
                       <Pencil size={13} />
                     </button>
                     <button
                       onClick={(e) => { e.stopPropagation(); handleDelete(pattern.id); }}
-                      className="bg-red-600/80 hover:bg-red-600 text-white p-1.5 rounded-lg transition-all backdrop-blur-sm"
+                      className="bg-loss/80 hover:bg-loss text-content-primary p-1.5 rounded-lg transition-all backdrop-blur-sm"
                       aria-label="Delete pattern"
                     >
                       <Trash2 size={13} />
@@ -454,14 +455,14 @@ function ChartPatterns() {
                       {displayTradeType !== 'both' && (
                         <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
                           displayTradeType === 'long'
-                            ? 'bg-green-500/15 text-green-400'
-                            : 'bg-red-500/15 text-red-400'
+                            ? 'bg-profit/15 text-profit'
+                            : 'bg-loss/15 text-loss'
                         }`}>
                           {displayTradeType === 'long' ? 'Long' : 'Short'}
                         </span>
                       )}
                       {displayTimeframe && (
-                        <span className="text-xs px-2 py-0.5 rounded-md bg-blue-900/30 text-blue-300 border border-blue-700/30">
+                        <span className="text-xs px-2 py-0.5 rounded-md bg-brand-muted text-brand-hover border border-brand/30">
                           {displayTimeframe}
                         </span>
                       )}
@@ -471,16 +472,16 @@ function ChartPatterns() {
                         </span>
                       )}
                     </div>
-                    <h3 className="text-white font-bold text-base leading-snug">{pattern.name}</h3>
+                    <h3 className="text-content-primary font-bold text-base leading-snug">{pattern.name}</h3>
                     {displaySummary && (
-                      <p className="text-gray-500 text-xs mt-0.5">{displaySummary}</p>
+                      <p className="text-content-muted text-xs mt-0.5">{displaySummary}</p>
                     )}
                   </div>
 
                   {/* Checklist */}
                   {displayChecklist.length > 0 && (
                     <div>
-                      <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Checklist</div>
+                      <div className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Checklist</div>
                       <div className="space-y-2">
                         {displayChecklist.map((item, i) => {
                           const checked = isChecked(pattern.id, i);
@@ -492,12 +493,12 @@ function ChartPatterns() {
                               className="w-full text-left flex items-start gap-2 group/check"
                             >
                               <span className={`flex-shrink-0 w-4 h-4 rounded border mt-0.5 flex items-center justify-center transition-colors ${
-                                checked ? 'bg-green-500 border-green-500' : 'border-gray-600 group-hover/check:border-gray-400'
+                                checked ? 'bg-profit border-profit' : 'border-line-strong group-hover/check:border-line-strong'
                               }`}>
-                                {checked && <Check size={10} className="text-white" />}
+                                {checked && <Check size={10} className="text-content-primary" />}
                               </span>
                               <span className={`text-sm leading-snug transition-colors ${
-                                checked ? 'line-through text-gray-600' : 'text-gray-300'
+                                checked ? 'line-through text-content-muted' : 'text-content-secondary'
                               }`}>
                                 {item}
                               </span>
@@ -506,7 +507,7 @@ function ChartPatterns() {
                         })}
                       </div>
                       {isAllChecked && (
-                        <div className="mt-2.5 text-center text-xs font-bold text-green-400 bg-green-500/10 border border-green-500/25 rounded-lg py-1.5 tracking-widest">
+                        <div className="mt-2.5 text-center text-xs font-bold text-profit bg-profit/10 border border-profit/25 rounded-lg py-1.5 tracking-widest">
                           VALID SETUP
                         </div>
                       )}
@@ -516,11 +517,11 @@ function ChartPatterns() {
                   {/* Avoid If */}
                   {displayAvoidIf.length > 0 && (
                     <div>
-                      <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Avoid If</div>
+                      <div className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Avoid If</div>
                       <div className="space-y-1">
                         {displayAvoidIf.map((item, i) => (
-                          <div key={i} className="flex items-start gap-2 text-xs text-gray-400">
-                            <span className="text-red-400/60 flex-shrink-0 mt-0.5">•</span>
+                          <div key={i} className="flex items-start gap-2 text-xs text-content-secondary">
+                            <span className="text-loss/60 flex-shrink-0 mt-0.5">•</span>
                             {item}
                           </div>
                         ))}
@@ -530,25 +531,25 @@ function ChartPatterns() {
 
                   {/* Fallback: plain description for patterns without checklist */}
                   {displayChecklist.length === 0 && pattern.description && (
-                    <p className="text-gray-400 text-sm whitespace-pre-wrap break-words">{pattern.description}</p>
+                    <p className="text-content-secondary text-sm whitespace-pre-wrap break-words">{pattern.description}</p>
                   )}
 
                   {/* Performance */}
                   {perf && perf.count > 0 && (
                     <div>
-                      <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Performance</div>
+                      <div className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Performance</div>
                       <div className="flex items-center gap-4">
-                        <span className="text-gray-400 text-xs">{perf.count} trade{perf.count !== 1 ? 's' : ''}</span>
-                        <span className={`text-xs font-semibold ${perf.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                        <span className="text-content-secondary text-xs">{perf.count} trade{perf.count !== 1 ? 's' : ''}</span>
+                        <span className={`text-xs font-semibold ${perf.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                           {perf.pnl >= 0 ? '+$' : '-$'}{Math.abs(perf.pnl).toFixed(2)}
                         </span>
-                        <span className="text-xs text-gray-400">{perf.winRate.toFixed(0)}% WR</span>
+                        <span className="text-xs text-content-secondary">{perf.winRate.toFixed(0)}% WR</span>
                       </div>
                     </div>
                   )}
 
                   {/* Footer */}
-                  <div className="flex items-center justify-between text-xs text-gray-600 pt-1 border-t border-dark-border/50">
+                  <div className="flex items-center justify-between text-xs text-content-muted pt-1 border-t border-line">
                     <span>Added {dateAdded.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                     {perf?.lastUsed && (
                       <span>Last used {perf.lastUsed.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}</span>
@@ -559,9 +560,14 @@ function ChartPatterns() {
             );
           })
         ) : (
-          <div className="col-span-full bg-dark-card border border-dark-border rounded-lg p-12 text-center">
-            <p className="text-gray-400">No chart patterns yet. Add your first pattern!</p>
-          </div>
+          <EmptyState
+            className="col-span-full"
+            icon={Target}
+            title="No chart patterns yet"
+            description="Save the setups you actually trade. Once patterns are linked to trades, you'll see which ones carry your edge."
+            actionLabel="Add your first pattern"
+            onAction={openAddModal}
+          />
         )}
       </div>
 
@@ -569,12 +575,12 @@ function ChartPatterns() {
       {isModalOpen && (
         <div className="fixed inset-0 bg-black bg-opacity-75 z-[60] overflow-y-auto">
           <div className="flex min-h-full items-start justify-center p-4 py-8">
-            <div className="bg-dark-card border border-dark-border rounded-lg w-full max-w-lg">
-              <div className="flex items-center justify-between p-6 border-b border-dark-border">
-                <h3 className="text-xl font-bold text-white">
+            <div className="bg-surface rounded-card w-full max-w-lg shadow-elev-1">
+              <div className="flex items-center justify-between p-6 border-b border-line">
+                <h3 className="text-xl font-bold text-content-primary">
                   {editingPattern ? 'Edit Pattern' : 'Add Pattern'}
                 </h3>
-                <button onClick={closeModal} className="text-gray-400 hover:text-white transition-colors">
+                <button onClick={closeModal} className="text-content-secondary hover:text-content-primary transition-colors">
                   <X size={24} />
                 </button>
               </div>
@@ -582,39 +588,39 @@ function ChartPatterns() {
               <form onSubmit={handleSubmit} className="p-6 space-y-4">
                 {/* Name */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Pattern Name</label>
+                  <label className="block text-content-secondary text-sm mb-2">Pattern Name</label>
                   <input
                     type="text"
                     value={formData.name}
                     onChange={(e) => setFormData((prev) => ({ ...prev, name: e.target.value }))}
                     placeholder="e.g., Bull Flag, 20MA Reclaim"
-                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                     required
                   />
                 </div>
 
                 {/* Summary */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">
-                    One-line Summary <span className="text-gray-600">(optional)</span>
+                  <label className="block text-content-secondary text-sm mb-2">
+                    One-line Summary <span className="text-content-muted">(optional)</span>
                   </label>
                   <input
                     type="text"
                     value={formData.summary}
                     onChange={(e) => setFormData((prev) => ({ ...prev, summary: e.target.value }))}
                     placeholder="e.g., Breakout + retest continuation"
-                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   />
                 </div>
 
                 {/* Trade side + Timeframe */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <label className="block text-gray-400 text-sm mb-2">Trade Side</label>
+                    <label className="block text-content-secondary text-sm mb-2">Trade Side</label>
                     <select
                       value={formData.tradeType}
                       onChange={(e) => setFormData((prev) => ({ ...prev, tradeType: e.target.value }))}
-                      className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                      className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
                     >
                       <option value="both">Both / General</option>
                       <option value="long">Long Trades</option>
@@ -622,11 +628,11 @@ function ChartPatterns() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-gray-400 text-sm mb-2">Timeframe</label>
+                    <label className="block text-content-secondary text-sm mb-2">Timeframe</label>
                     <select
                       value={formData.timeframe}
                       onChange={(e) => setFormData((prev) => ({ ...prev, timeframe: e.target.value }))}
-                      className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                      className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
                       required
                     >
                       <option value="">Select timeframe</option>
@@ -639,15 +645,15 @@ function ChartPatterns() {
 
                 {/* Setup Quality */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">
-                    Setup Quality <span className="text-gray-600">(optional)</span>
+                  <label className="block text-content-secondary text-sm mb-2">
+                    Setup Quality <span className="text-content-muted">(optional)</span>
                   </label>
                   <div className="flex gap-2">
                     {[
-                      { value: '', label: 'None', active: 'bg-dark-bg border-gray-500 text-gray-300' },
-                      { value: 'A+', label: 'A+', active: 'bg-blue-600 border-blue-600 text-white' },
-                      { value: 'B', label: 'B', active: 'bg-yellow-600 border-yellow-600 text-white' },
-                      { value: 'C', label: 'C', active: 'bg-gray-600 border-gray-600 text-white' },
+                      { value: '', label: 'None', active: 'bg-surface-raised border-line-strong text-content-secondary' },
+                      { value: 'A+', label: 'A+', active: 'bg-brand border-brand text-content-primary' },
+                      { value: 'B', label: 'B', active: 'bg-yellow-600 border-warn text-content-primary' },
+                      { value: 'C', label: 'C', active: 'bg-surface-hover border-line-strong text-content-primary' },
                     ].map((opt) => (
                       <button
                         key={opt.value}
@@ -656,7 +662,7 @@ function ChartPatterns() {
                         className={`px-3 py-1.5 rounded-lg text-sm border transition-colors ${
                           formData.setupQuality === opt.value
                             ? opt.active
-                            : 'bg-dark-bg text-gray-500 border-dark-border hover:border-gray-500'
+                            : 'bg-surface-raised text-content-muted border-line-strong hover:border-brand/50'
                         }`}
                       >
                         {opt.label}
@@ -667,25 +673,25 @@ function ChartPatterns() {
 
                 {/* Chart Image */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Chart Image</label>
-                  <label className="flex items-center justify-center w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 cursor-pointer hover:border-gray-500 transition-colors">
-                    <Upload size={18} className="mr-2 text-gray-400" />
-                    <span className="text-gray-400 text-sm">
+                  <label className="block text-content-secondary text-sm mb-2">Chart Image</label>
+                  <label className="flex items-center justify-center w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-3 cursor-pointer hover:border-brand/50 transition-colors">
+                    <Upload size={18} className="mr-2 text-content-secondary" />
+                    <span className="text-content-secondary text-sm">
                       {patternImage ? patternImage.name : (editingPattern ? 'Replace Chart (optional)' : 'Upload Chart')}
                     </span>
                     <input type="file" accept="image/*" onChange={handleImageUpload} className="hidden" />
                   </label>
                   {imagePreview && (
                     <div className="mt-2">
-                      <img src={imagePreview} alt="Preview" className="w-full rounded-lg border border-dark-border" />
+                      <img src={imagePreview} alt="Preview" className="w-full rounded-lg" />
                     </div>
                   )}
                 </div>
 
                 {/* Checklist Items */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">
-                    Entry Checklist <span className="text-gray-600">(one condition per field)</span>
+                  <label className="block text-content-secondary text-sm mb-2">
+                    Entry Checklist <span className="text-content-muted">(one condition per field)</span>
                   </label>
                   <div className="space-y-2">
                     {formData.checklistItems.map((item, i) => (
@@ -695,13 +701,13 @@ function ChartPatterns() {
                           value={item}
                           onChange={(e) => updateListItem('checklistItems', i, e.target.value)}
                           placeholder={`Condition ${i + 1}`}
-                          className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                          className="flex-1 bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary text-sm focus:outline-none focus:border-brand"
                         />
                         {formData.checklistItems.length > 1 && (
                           <button
                             type="button"
                             onClick={() => removeListItem('checklistItems', i)}
-                            className="text-gray-500 hover:text-red-400 transition-colors px-1"
+                            className="text-content-muted hover:text-loss transition-colors px-1"
                           >
                             <X size={15} />
                           </button>
@@ -711,7 +717,7 @@ function ChartPatterns() {
                     <button
                       type="button"
                       onClick={() => addListItem('checklistItems')}
-                      className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 transition-colors"
+                      className="text-brand hover:text-brand-hover text-xs flex items-center gap-1 transition-colors"
                     >
                       <Plus size={13} />
                       Add condition
@@ -721,8 +727,8 @@ function ChartPatterns() {
 
                 {/* Avoid If */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">
-                    Avoid If <span className="text-gray-600">(optional)</span>
+                  <label className="block text-content-secondary text-sm mb-2">
+                    Avoid If <span className="text-content-muted">(optional)</span>
                   </label>
                   <div className="space-y-2">
                     {formData.avoidIf.map((item, i) => (
@@ -732,13 +738,13 @@ function ChartPatterns() {
                           value={item}
                           onChange={(e) => updateListItem('avoidIf', i, e.target.value)}
                           placeholder="e.g., Choppy market, late entry"
-                          className="flex-1 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                          className="flex-1 bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary text-sm focus:outline-none focus:border-brand"
                         />
                         {formData.avoidIf.length > 1 && (
                           <button
                             type="button"
                             onClick={() => removeListItem('avoidIf', i)}
-                            className="text-gray-500 hover:text-red-400 transition-colors px-1"
+                            className="text-content-muted hover:text-loss transition-colors px-1"
                           >
                             <X size={15} />
                           </button>
@@ -748,7 +754,7 @@ function ChartPatterns() {
                     <button
                       type="button"
                       onClick={() => addListItem('avoidIf')}
-                      className="text-blue-400 hover:text-blue-300 text-xs flex items-center gap-1 transition-colors"
+                      className="text-brand hover:text-brand-hover text-xs flex items-center gap-1 transition-colors"
                     >
                       <Plus size={13} />
                       Add condition
@@ -758,32 +764,32 @@ function ChartPatterns() {
 
                 {/* Notes */}
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">
-                    Notes <span className="text-gray-600">(optional)</span>
+                  <label className="block text-content-secondary text-sm mb-2">
+                    Notes <span className="text-content-muted">(optional)</span>
                   </label>
                   <textarea
                     value={formData.description}
                     onChange={(e) => setFormData((prev) => ({ ...prev, description: e.target.value }))}
                     rows="3"
                     placeholder="Any additional context or background..."
-                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 resize-none text-sm"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand resize-none text-sm"
                   />
                 </div>
 
-                {formError && <p className="text-sm text-red-400">{formError}</p>}
+                {formError && <p className="text-sm text-loss">{formError}</p>}
 
                 <div className="flex gap-3 pt-2">
                   <button
                     type="button"
                     onClick={closeModal}
-                    className="flex-1 bg-dark-bg border border-dark-border rounded-lg py-3 text-gray-400 font-medium hover:border-gray-500 transition-colors"
+                    className="flex-1 bg-surface-raised border border-line-strong rounded-lg py-3 text-content-secondary font-medium hover:border-brand/50 transition-colors"
                   >
                     Cancel
                   </button>
                   <button
                     type="submit"
                     disabled={loading}
-                    className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg py-3 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    className="flex-1 bg-brand hover:bg-brand-hover rounded-lg py-3 text-content-primary font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {loading ? 'Saving...' : (editingPattern ? 'Save Changes' : 'Add Pattern')}
                   </button>
@@ -803,7 +809,7 @@ function ChartPatterns() {
           <button
             type="button"
             onClick={() => setExpandedImage(null)}
-            className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors"
+            className="absolute top-4 right-4 text-content-secondary hover:text-content-primary transition-colors"
             aria-label="Close image viewer"
           >
             <X size={28} />

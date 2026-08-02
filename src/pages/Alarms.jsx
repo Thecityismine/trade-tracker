@@ -108,9 +108,9 @@ function Alarms({ alarms = [], ringing }) {
       toolbar={<span className="tabular text-sm text-content-secondary">{currentTime}</span>}
     >
       {notificationsSupported && notifPermission !== 'granted' && (
-        <div className="bg-dark-card rounded-xl p-4 border border-dark-border flex items-center justify-between gap-3">
-          <div className="flex items-center gap-2 text-sm text-gray-400">
-            <BellRing size={16} className="text-blue-400 shrink-0" />
+        <div className="bg-surface rounded-card p-4 flex items-center justify-between gap-3 shadow-elev-1">
+          <div className="flex items-center gap-2 text-sm text-content-secondary">
+            <BellRing size={16} className="text-brand shrink-0" />
             {notifPermission === 'denied'
               ? 'System notifications are blocked — enable them in your browser settings to get alerts when this tab is in the background.'
               : 'Enable system notifications to still catch alarms when this tab is backgrounded.'}
@@ -118,7 +118,7 @@ function Alarms({ alarms = [], ringing }) {
           {notifPermission !== 'denied' && (
             <button
               onClick={requestNotifPermission}
-              className="shrink-0 px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-xs font-medium transition-colors"
+              className="shrink-0 px-3 py-1.5 bg-brand hover:bg-brand-hover text-content-primary rounded-lg text-xs font-medium transition-colors"
             >
               Enable
             </button>
@@ -134,28 +134,28 @@ function Alarms({ alarms = [], ringing }) {
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-gray-400 text-xs block mb-1">Time</label>
+              <label className="text-content-secondary text-xs block mb-1">Time</label>
               <input
                 type="time"
                 value={form.time}
                 onChange={e => setForm(f => ({ ...f, time: e.target.value }))}
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
               />
             </div>
             <div>
-              <label className="text-gray-400 text-xs block mb-1">Label</label>
+              <label className="text-content-secondary text-xs block mb-1">Label</label>
               <input
                 type="text"
                 value={form.label}
                 onChange={e => setForm(f => ({ ...f, label: e.target.value }))}
                 placeholder="e.g. Market Open"
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-gray-400 text-xs block mb-2">Sound</label>
+            <label className="text-content-secondary text-xs block mb-2">Sound</label>
             <div className="flex gap-2">
               {Object.entries(SOUNDS).map(([key, s]) => (
                 <button
@@ -163,8 +163,8 @@ function Alarms({ alarms = [], ringing }) {
                   onClick={() => setForm(f => ({ ...f, sound: key }))}
                   className={`flex-1 py-2 rounded-lg text-sm font-medium transition-colors border ${
                     form.sound === key
-                      ? 'bg-blue-600 border-blue-500 text-white'
-                      : 'bg-dark-bg border-dark-border text-gray-400 hover:text-white'
+                      ? 'bg-brand border-brand text-content-primary'
+                      : 'bg-surface-raised border-line text-content-secondary hover:text-content-primary'
                   }`}
                 >
                   {s.label}
@@ -252,10 +252,10 @@ function Alarms({ alarms = [], ringing }) {
                 key={alarm.id}
                 className={`rounded-xl border transition-all ${
                   ringing === alarm.id
-                    ? 'bg-blue-900/30 border-blue-500 shadow-[0_0_14px_rgba(59,130,246,0.35)]'
+                    ? 'bg-brand-muted border-brand shadow-[0_0_14px_rgba(59,130,246,0.35)]'
                     : editingId === alarm.id
-                    ? 'bg-dark-bg border-blue-500/50'
-                    : 'bg-dark-bg border-dark-border'
+                    ? 'bg-surface-raised border-brand/50'
+                    : 'bg-surface-raised border-line'
                 }`}
               >
                 {editingId === alarm.id ? (
@@ -263,27 +263,27 @@ function Alarms({ alarms = [], ringing }) {
                   <div className="p-4 space-y-3">
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <label className="text-gray-400 text-xs block mb-1">Time</label>
+                        <label className="text-content-secondary text-xs block mb-1">Time</label>
                         <input
                           type="time"
                           value={editForm.time}
                           onChange={e => setEditForm(f => ({ ...f, time: e.target.value }))}
-                          className="w-full bg-dark-card border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                          className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
                         />
                       </div>
                       <div>
-                        <label className="text-gray-400 text-xs block mb-1">Label</label>
+                        <label className="text-content-secondary text-xs block mb-1">Label</label>
                         <input
                           type="text"
                           value={editForm.label}
                           onChange={e => setEditForm(f => ({ ...f, label: e.target.value }))}
-                          className="w-full bg-dark-card border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                          className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
                         />
                       </div>
                     </div>
 
                     <div>
-                      <label className="text-gray-400 text-xs block mb-2">Sound</label>
+                      <label className="text-content-secondary text-xs block mb-2">Sound</label>
                       <div className="flex gap-2">
                         {Object.entries(SOUNDS).map(([key, s]) => (
                           <button
@@ -291,8 +291,8 @@ function Alarms({ alarms = [], ringing }) {
                             onClick={() => setEditForm(f => ({ ...f, sound: key }))}
                             className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors border ${
                               editForm.sound === key
-                                ? 'bg-blue-600 border-blue-500 text-white'
-                                : 'bg-dark-card border-dark-border text-gray-400 hover:text-white'
+                                ? 'bg-brand border-brand text-content-primary'
+                                : 'bg-surface border-line text-content-secondary hover:text-content-primary shadow-elev-1'
                             }`}
                           >
                             {s.label}
@@ -302,7 +302,7 @@ function Alarms({ alarms = [], ringing }) {
                     </div>
 
                     <div>
-                      <label className="text-gray-400 text-xs block mb-2">Repeat on days</label>
+                      <label className="text-content-secondary text-xs block mb-2">Repeat on days</label>
                       <div className="flex gap-1.5">
                         {DAYS.map((day, i) => (
                           <button
@@ -310,8 +310,8 @@ function Alarms({ alarms = [], ringing }) {
                             onClick={() => toggleDay(i, true)}
                             className={`flex-1 py-1.5 rounded-lg text-xs font-medium transition-colors ${
                               editForm.days.includes(i)
-                                ? 'bg-blue-600 text-white'
-                                : 'bg-dark-card text-gray-500 hover:text-gray-300 border border-dark-border'
+                                ? 'bg-brand text-content-primary'
+                                : 'bg-surface text-content-muted hover:text-content-primary shadow-elev-1'
                             }`}
                           >
                             {day}
@@ -324,13 +324,13 @@ function Alarms({ alarms = [], ringing }) {
                       <button
                         onClick={saveEdit}
                         disabled={!editForm.time || editForm.days.length === 0}
-                        className="flex-1 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
+                        className="flex-1 py-2 bg-brand hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed text-content-primary rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
                       >
                         <Check size={14} /> Save
                       </button>
                       <button
                         onClick={cancelEdit}
-                        className="flex-1 py-2 bg-dark-card border border-dark-border hover:border-gray-500 text-gray-400 hover:text-white rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
+                        className="flex-1 py-2 bg-surface border border-line-strong hover:border-brand/50 text-content-secondary hover:text-content-primary rounded-lg text-sm font-medium transition-colors flex items-center justify-center gap-1.5"
                       >
                         <X size={14} /> Cancel
                       </button>
@@ -340,10 +340,10 @@ function Alarms({ alarms = [], ringing }) {
                   /* ── View row ── */
                   <div className="flex items-center gap-4 p-4">
                     <div className="flex-1 min-w-0">
-                      <div className={`font-mono font-bold text-xl leading-none ${alarm.enabled ? 'text-white' : 'text-gray-600'}`}>
+                      <div className={`font-mono font-bold text-xl leading-none ${alarm.enabled ? 'text-content-primary' : 'text-content-muted'}`}>
                         {formatTime12(alarm.time)}
                       </div>
-                      <div className={`text-sm mt-0.5 ${alarm.enabled ? 'text-gray-300' : 'text-gray-600'}`}>
+                      <div className={`text-sm mt-0.5 ${alarm.enabled ? 'text-content-secondary' : 'text-content-muted'}`}>
                         {alarm.label}
                       </div>
                       <div className="flex gap-1 mt-2">
@@ -351,7 +351,7 @@ function Alarms({ alarms = [], ringing }) {
                           <span
                             key={d}
                             className={`text-[10px] font-medium ${
-                              alarm.days?.includes(i) && alarm.enabled ? 'text-blue-400' : 'text-gray-700'
+                              alarm.days?.includes(i) && alarm.enabled ? 'text-brand' : 'text-content-muted'
                             }`}
                           >
                             {d[0]}
@@ -361,27 +361,27 @@ function Alarms({ alarms = [], ringing }) {
                     </div>
 
                     <div className="flex items-center gap-3 shrink-0">
-                      <span className="text-xs text-gray-600 hidden sm:block">{SOUNDS[alarm.sound]?.label}</span>
+                      <span className="text-xs text-content-muted hidden sm:block">{SOUNDS[alarm.sound]?.label}</span>
                       {ringing === alarm.id && (
-                        <span className="text-blue-400 text-xs font-semibold animate-pulse">Ringing</span>
+                        <span className="text-brand text-xs font-semibold animate-pulse">Ringing</span>
                       )}
                       <button
                         onClick={() => startEdit(alarm)}
-                        className="text-gray-500 hover:text-yellow-400 transition-colors"
+                        className="text-content-muted hover:text-warn transition-colors"
                         title="Edit"
                       >
                         <Pencil size={15} />
                       </button>
                       <button
                         onClick={() => toggleAlarm(alarm)}
-                        className={`transition-colors ${alarm.enabled ? 'text-blue-400 hover:text-blue-300' : 'text-gray-600 hover:text-gray-400'}`}
+                        className={`transition-colors ${alarm.enabled ? 'text-brand hover:text-brand-hover' : 'text-content-muted hover:text-content-secondary'}`}
                         title={alarm.enabled ? 'Disable' : 'Enable'}
                       >
                         {alarm.enabled ? <Bell size={18} /> : <BellOff size={18} />}
                       </button>
                       <button
                         onClick={() => deleteAlarm(alarm.id)}
-                        className="text-gray-600 hover:text-red-400 transition-colors"
+                        className="text-content-muted hover:text-loss transition-colors"
                         title="Delete"
                       >
                         <Trash2 size={16} />

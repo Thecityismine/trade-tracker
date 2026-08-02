@@ -64,12 +64,12 @@ function EquityCurve({ trades, deposits = [] }) {
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
       return (
-        <div className="bg-dark-card border border-dark-border p-3 rounded-lg shadow-lg">
-          <p className="text-white font-medium">{payload[0].payload.date}</p>
-          <p className={`text-sm ${payload[0].value >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+        <div className="bg-surface p-3 rounded-card shadow-lg">
+          <p className="text-content-primary font-medium">{payload[0].payload.date}</p>
+          <p className={`text-sm ${payload[0].value >= 0 ? 'text-profit' : 'text-loss'}`}>
             P&L: ${payload[0].value.toFixed(2)}
           </p>
-          <p className="text-gray-400 text-xs">
+          <p className="text-content-secondary text-xs">
             {payload[0].payload.ticker} · {payload[0].payload.direction === 'long' ? 'Long' : 'Short'}
           </p>
         </div>
@@ -79,9 +79,9 @@ function EquityCurve({ trades, deposits = [] }) {
   };
 
   return (
-    <div className="bg-dark-card border border-dark-border rounded-lg p-4 md:p-6">
+    <div className="bg-surface rounded-card p-4 md:p-6 shadow-elev-1">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 space-y-3 md:space-y-0">
-        <h2 className="text-xl font-bold text-white">Equity Curve</h2>
+        <h2 className="text-xl font-bold text-content-primary">Equity Curve</h2>
         
         <div className="flex space-x-2 overflow-x-auto">
           {['daily', 'weekly', 'monthly', 'all'].map((tf) => (
@@ -90,8 +90,8 @@ function EquityCurve({ trades, deposits = [] }) {
               onClick={() => setTimeframe(tf)}
               className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
                 timeframe === tf
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-dark-bg text-gray-400 hover:text-white'
+                  ? 'bg-brand text-content-primary'
+                  : 'bg-surface-raised text-content-secondary hover:text-content-primary'
               }`}
             >
               {tf.charAt(0).toUpperCase() + tf.slice(1)}
@@ -134,7 +134,7 @@ function EquityCurve({ trades, deposits = [] }) {
             </AreaChart>
           </ResponsiveContainer>
         ) : (
-          <div className="flex items-center justify-center h-full text-gray-500">
+          <div className="flex items-center justify-center h-full text-content-muted">
             No trades to display
           </div>
         )}

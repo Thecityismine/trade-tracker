@@ -9,35 +9,35 @@ const FEEDS = [
     name: 'The Block',
     tag: 'Crypto',
     url: 'https://www.theblock.co/rss.xml',
-    dot: 'bg-orange-500',
+    dot: 'bg-content-muted',
   },
   {
     id: 'yahoo',
     name: 'Yahoo Finance',
     tag: 'Markets',
     url: 'https://finance.yahoo.com/news/rssindex',
-    dot: 'bg-purple-500',
+    dot: 'bg-content-muted',
   },
   {
     id: 'coindesk',
     name: 'CoinDesk',
     tag: 'Crypto',
     url: 'https://www.coindesk.com/arc/outboundfeeds/rss/',
-    dot: 'bg-blue-500',
+    dot: 'bg-content-muted',
   },
   {
     id: 'ct',
     name: 'Cointelegraph',
     tag: 'Crypto',
     url: 'https://cointelegraph.com/rss',
-    dot: 'bg-yellow-400',
+    dot: 'bg-content-muted',
   },
   {
     id: 'decrypt',
     name: 'Decrypt',
     tag: 'Crypto',
     url: 'https://decrypt.co/feed',
-    dot: 'bg-green-500',
+    dot: 'bg-content-muted',
   },
 ];
 
@@ -87,12 +87,12 @@ function timeAgo(dateStr) {
 
 function FeedSkeleton() {
   return (
-    <div className="divide-y divide-dark-border/50 animate-pulse">
+    <div className="divide-y divide-line animate-pulse">
       {[1, 2, 3, 4, 5].map((i) => (
         <div key={i} className="px-4 py-3 space-y-2">
-          <div className="h-3.5 bg-dark-border rounded w-full" />
-          <div className="h-3.5 bg-dark-border rounded w-4/5" />
-          <div className="h-2.5 bg-dark-border rounded w-1/3" />
+          <div className="h-3.5 bg-surface-raised rounded w-full" />
+          <div className="h-3.5 bg-surface-raised rounded w-4/5" />
+          <div className="h-2.5 bg-surface-raised rounded w-1/3" />
         </div>
       ))}
     </div>
@@ -101,24 +101,24 @@ function FeedSkeleton() {
 
 function FeedCard({ feed, items, error, loading }) {
   return (
-    <div className="bg-dark-card border border-dark-border rounded-lg overflow-hidden flex flex-col">
-      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-dark-border">
+    <div className="bg-surface rounded-card overflow-hidden flex flex-col shadow-elev-1">
+      <div className="flex items-center gap-2.5 px-4 py-3 border-b border-line">
         <div className={`w-2 h-2 rounded-full flex-shrink-0 ${feed.dot}`} />
-        <span className="text-white font-semibold text-sm">{feed.name}</span>
-        <span className="text-gray-600 text-xs ml-auto">{feed.tag}</span>
+        <span className="text-content-primary font-semibold text-sm">{feed.name}</span>
+        <span className="text-content-muted text-xs ml-auto">{feed.tag}</span>
       </div>
 
       {loading && items.length === 0 ? (
         <FeedSkeleton />
       ) : error ? (
         <div className="flex items-center gap-2 px-4 py-4 text-sm">
-          <AlertCircle size={14} className="text-red-400 flex-shrink-0" />
-          <span className="text-gray-500">{error}</span>
+          <AlertCircle size={14} className="text-loss flex-shrink-0" />
+          <span className="text-content-muted">{error}</span>
         </div>
       ) : items.length === 0 ? (
-        <div className="px-4 py-4 text-gray-600 text-sm">No articles found</div>
+        <div className="px-4 py-4 text-content-muted text-sm">No articles found</div>
       ) : (
-        <div className="divide-y divide-dark-border/40">
+        <div className="divide-y divide-line">
           {items.map((item, i) => {
             const snippet = stripHtml(item.description ?? '').slice(0, 140);
             return (
@@ -127,22 +127,22 @@ function FeedCard({ feed, items, error, loading }) {
                 href={item.link}
                 target="_blank"
                 rel="noopener noreferrer"
-                className="flex items-start gap-3 px-4 py-3.5 hover:bg-dark-bg transition-colors group"
+                className="flex items-start gap-3 px-4 py-3.5 hover:bg-surface-raised transition-colors group"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-white text-sm font-medium leading-snug group-hover:text-blue-400 transition-colors line-clamp-2">
+                  <p className="text-content-primary text-sm font-medium leading-snug group-hover:text-brand-hover transition-colors line-clamp-2">
                     {item.title}
                   </p>
                   {snippet && (
-                    <p className="text-gray-500 text-xs mt-1 line-clamp-2 leading-relaxed">
+                    <p className="text-content-muted text-xs mt-1 line-clamp-2 leading-relaxed">
                       {snippet}
                     </p>
                   )}
-                  <p className="text-gray-700 text-xs mt-1.5">{timeAgo(item.pubDate)}</p>
+                  <p className="text-content-muted text-xs mt-1.5">{timeAgo(item.pubDate)}</p>
                 </div>
                 <ExternalLink
                   size={12}
-                  className="text-gray-700 group-hover:text-blue-400 flex-shrink-0 mt-0.5 transition-colors"
+                  className="text-content-muted group-hover:text-brand-hover flex-shrink-0 mt-0.5 transition-colors"
                 />
               </a>
             );

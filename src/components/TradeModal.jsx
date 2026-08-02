@@ -312,17 +312,17 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   return (
     <div className="fixed inset-0 bg-black bg-opacity-75 z-[70] p-2 sm:p-4 overflow-y-auto">
       <div className="min-h-full flex items-start sm:items-center justify-center">
-        <div className="bg-dark-card border border-dark-border rounded-lg w-full max-w-lg my-2 sm:my-8 max-h-[calc(100vh-1rem)] overflow-y-auto">
+        <div className="bg-surface rounded-card w-full max-w-lg my-2 sm:my-8 max-h-[calc(100vh-1rem)] overflow-y-auto shadow-elev-1">
           <form onSubmit={handleSubmit} className="px-4 sm:px-6 pt-2 sm:pt-3 pb-4 sm:pb-6 space-y-4">
             <div>
-              <label className="block text-gray-400 text-sm mb-2">Ticker</label>
+              <label className="block text-content-secondary text-sm mb-2">Ticker</label>
               <div className="grid grid-cols-[minmax(0,1fr)_84px_84px] gap-2 items-center">
                 <input
                   type="text"
                   name="ticker"
                   value={formData.ticker}
                   onChange={handleInputChange}
-                  className="bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   required
                 />
                 <button
@@ -330,8 +330,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onClick={() => setFormData((prev) => ({ ...prev, result: 'win' }))}
                   className={`rounded-lg py-2 text-sm font-medium transition-colors ${
                     formData.result === 'win'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-dark-bg text-gray-400 border border-dark-border hover:border-gray-500'
+                      ? 'bg-green-600 text-content-primary'
+                      : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
                   }`}
                 >
                   Win
@@ -341,26 +341,26 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onClick={() => setFormData((prev) => ({ ...prev, result: 'loss' }))}
                   className={`rounded-lg py-2 text-sm font-medium transition-colors ${
                     formData.result === 'loss'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-dark-bg text-gray-400 border border-dark-border hover:border-gray-500'
+                      ? 'bg-red-600 text-content-primary'
+                      : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
                   }`}
                 >
                   Loss
                 </button>
               </div>
-              <p className="text-xs text-gray-500 mt-1">Last: {lastTicker}</p>
+              <p className="text-xs text-content-muted mt-1">Last: {lastTicker}</p>
             </div>
 
             <div>
-              <label className="block text-gray-400 text-sm mb-2">Direction</label>
+              <label className="block text-content-secondary text-sm mb-2">Direction</label>
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
                   onClick={() => setFormData((prev) => ({ ...prev, direction: 'long' }))}
                   className={`py-2 rounded-lg text-sm font-medium transition-colors ${
                     formData.direction === 'long'
-                      ? 'bg-green-600 text-white'
-                      : 'bg-dark-bg text-gray-400 border border-dark-border hover:border-gray-500'
+                      ? 'bg-green-600 text-content-primary'
+                      : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
                   }`}
                 >
                   LONG
@@ -370,8 +370,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onClick={() => setFormData((prev) => ({ ...prev, direction: 'short' }))}
                   className={`py-2 rounded-lg text-sm font-medium transition-colors ${
                     formData.direction === 'short'
-                      ? 'bg-red-600 text-white'
-                      : 'bg-dark-bg text-gray-400 border border-dark-border hover:border-gray-500'
+                      ? 'bg-red-600 text-content-primary'
+                      : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
                   }`}
                 >
                   SHORT
@@ -380,20 +380,20 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
             </div>
 
             <div>
-              <label className="block text-gray-400 text-sm mb-2">Trade Date</label>
+              <label className="block text-content-secondary text-sm mb-2">Trade Date</label>
               <input
                 type="date"
                 name="tradeDate"
                 value={formData.tradeDate}
                 onChange={handleInputChange}
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                 required
               />
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Entry Price</label>
+                <label className="block text-content-secondary text-sm mb-2">Entry Price</label>
                 <input
                   type="number"
                   name="entryPrice"
@@ -401,13 +401,13 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onChange={handleInputChange}
                   step="0.01"
                   placeholder="0.00"
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Exit Price</label>
+                <label className="block text-content-secondary text-sm mb-2">Exit Price</label>
                 <input
                   type="number"
                   name="exitPrice"
@@ -415,12 +415,12 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onChange={handleInputChange}
                   step="0.01"
                   placeholder="0.00"
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Stop Loss</label>
+                <label className="block text-content-secondary text-sm mb-2">Stop Loss</label>
                 <input
                   type="number"
                   name="stopLoss"
@@ -428,17 +428,17 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onChange={handleInputChange}
                   step="0.01"
                   placeholder="0.00"
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-gray-400 text-sm mb-2">% Gain</label>
+                <label className="block text-content-secondary text-sm mb-2">% Gain</label>
                 <div
-                  className={`w-full border border-dark-border rounded-lg px-4 py-2 h-[42px] flex items-center font-medium ${
-                    priceMovePercent >= 0 ? 'text-green-400' : 'text-red-400'
+                  className={`w-full border border-line-strong rounded-control px-4 py-2 h-[42px] flex items-center font-medium ${
+                    priceMovePercent >= 0 ? 'text-profit' : 'text-loss'
                   }`}
                 >
                   {Number.isFinite(priceMovePercent) ? `${priceMovePercent >= 0 ? '+' : ''}${priceMovePercent.toFixed(2)}%` : '--'}
@@ -446,10 +446,10 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">R:R Ratio</label>
+                <label className="block text-content-secondary text-sm mb-2">R:R Ratio</label>
                 <div
-                  className={`w-full border border-dark-border rounded-lg px-4 py-2 h-[42px] flex items-center font-medium ${
-                    riskReward === null ? 'text-gray-500' : riskReward >= 1 ? 'text-green-400' : 'text-red-400'
+                  className={`w-full border border-line-strong rounded-control px-4 py-2 h-[42px] flex items-center font-medium ${
+                    riskReward === null ? 'text-content-muted' : riskReward >= 1 ? 'text-profit' : 'text-loss'
                   }`}
                 >
                   {riskReward !== null ? `${riskReward.toFixed(2)}R` : '--'}
@@ -461,7 +461,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
 
             <div className="grid grid-cols-3 gap-3">
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Gain (USD)</label>
+                <label className="block text-content-secondary text-sm mb-2">Gain (USD)</label>
                 <input
                   type="number"
                   name="gainLoss"
@@ -469,13 +469,13 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onChange={handleInputChange}
                   step="0.01"
                   placeholder="0.00"
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   required
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Fee (USD)</label>
+                <label className="block text-content-secondary text-sm mb-2">Fee (USD)</label>
                 <input
                   type="number"
                   name="fee"
@@ -483,12 +483,12 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onChange={handleInputChange}
                   step="0.01"
                   placeholder="0.00"
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Leverage</label>
+                <label className="block text-content-secondary text-sm mb-2">Leverage</label>
                 <input
                   type="number"
                   name="leverage"
@@ -496,18 +496,18 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onChange={handleInputChange}
                   step="1"
                   placeholder="25"
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   required
                 />
               </div>
             </div>
 
             <div>
-              <label className="block text-gray-400 text-sm mb-2">Chart Image</label>
+              <label className="block text-content-secondary text-sm mb-2">Chart Image</label>
               <div className="space-y-2">
-                <label className="flex items-center justify-center w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 cursor-pointer hover:border-gray-500 transition-colors">
-                  <Upload size={18} className="mr-2 text-gray-400" />
-                  <span className="text-gray-400">
+                <label className="flex items-center justify-center w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-3 cursor-pointer hover:border-brand/50 transition-colors">
+                  <Upload size={18} className="mr-2 text-content-secondary" />
+                  <span className="text-content-secondary">
                     {chartImage ? chartImage.name : 'Upload Chart'}
                   </span>
                   <input
@@ -522,7 +522,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                     <img
                       src={chartPreview}
                       alt="Chart preview"
-                      className="w-full rounded-lg border border-dark-border"
+                      className="w-full rounded-lg"
                     />
                     <button
                       type="button"
@@ -533,7 +533,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                           setRemoveExistingChart(true);
                         }
                       }}
-                      className="absolute top-2 right-2 bg-red-600 text-white p-1 rounded-full hover:bg-red-700"
+                      className="absolute top-2 right-2 bg-red-600 text-content-primary p-1 rounded-full hover:bg-red-700"
                     >
                       <X size={16} />
                     </button>
@@ -543,7 +543,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
             </div>
 
             <div>
-              <label className="block text-gray-400 text-sm mb-2">Execution Score: {formData.executionScore}/10</label>
+              <label className="block text-content-secondary text-sm mb-2">Execution Score: {formData.executionScore}/10</label>
               <input
                 type="range"
                 name="executionScore"
@@ -553,30 +553,30 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                 onChange={handleInputChange}
                 className="w-full"
               />
-              <div className="flex justify-between text-xs text-gray-500 mt-1">
+              <div className="flex justify-between text-xs text-content-muted mt-1">
                 <span>Poor</span><span>Average</span><span>Perfect</span>
               </div>
             </div>
 
             <div>
-              <label className="block text-gray-400 text-sm mb-2">Pattern Used <span className="text-gray-600">(optional)</span></label>
+              <label className="block text-content-secondary text-sm mb-2">Pattern Used <span className="text-content-muted">(optional)</span></label>
               <input
                 type="text"
                 name="chartPattern"
                 value={formData.chartPattern}
                 onChange={handleInputChange}
                 placeholder="e.g. Bull Flag, Head & Shoulders"
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
               />
             </div>
 
             <div>
-              <label className="block text-gray-400 text-sm mb-2">Strategy <span className="text-gray-600">(optional)</span></label>
+              <label className="block text-content-secondary text-sm mb-2">Strategy <span className="text-content-muted">(optional)</span></label>
               <select
                 name="strategyId"
                 value={formData.strategyId}
                 onChange={handleInputChange}
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
               >
                 <option value="">— No strategy —</option>
                 {strategies.map((s) => (
@@ -584,38 +584,38 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                 ))}
               </select>
               {strategies.length === 0 && (
-                <p className="text-xs text-gray-500 mt-1">Create a strategy in the Strategies tab to link trades to it.</p>
+                <p className="text-xs text-content-muted mt-1">Create a strategy in the Strategies tab to link trades to it.</p>
               )}
             </div>
 
             <div>
-              <label className="block text-gray-400 text-sm mb-2">Comment</label>
+              <label className="block text-content-secondary text-sm mb-2">Comment</label>
               <textarea
                 name="comment"
                 value={formData.comment}
                 onChange={handleInputChange}
                 rows="3"
                 placeholder="Notes about the trade..."
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500 resize-none"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand resize-none"
               />
             </div>
 
             {formError && (
-              <p className="text-sm text-red-400 pt-2">{formError}</p>
+              <p className="text-sm text-loss pt-2">{formError}</p>
             )}
 
             <div className="flex gap-3 pt-2">
               <button
                 type="button"
                 onClick={onClose}
-                className="flex-1 bg-dark-bg border border-dark-border rounded-lg py-3 text-gray-400 font-medium hover:border-gray-500 transition-colors"
+                className="flex-1 bg-surface-raised border border-line-strong rounded-lg py-3 text-content-secondary font-medium hover:border-brand/50 transition-colors"
               >
                 Cancel
               </button>
               <button
                 type="submit"
                 disabled={loading}
-                className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg py-3 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className="flex-1 bg-brand hover:bg-brand-hover rounded-lg py-3 text-content-primary font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 {loading ? 'Saving...' : (editTrade ? 'Save Changes' : 'Save Trade')}
               </button>

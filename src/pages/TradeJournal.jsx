@@ -1,10 +1,11 @@
 import { useEffect, useMemo, useState } from 'react';
 import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { Plus, Search, X, Pencil, Trash2, ImageIcon, Upload } from 'lucide-react';
+import { Plus, Search, X, Pencil, Trash2, ImageIcon, Upload, FileText } from 'lucide-react';
 import { db, storage } from '../config/firebase';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 import Page from '../components/ui/Page';
 import Button from '../components/ui/Button';
+import EmptyState from '../components/ui/EmptyState';
 
 const withTimeout = (promise, ms, timeoutMessage) => {
   let timeoutId;
@@ -40,9 +41,9 @@ const formatDisplayDate = (value) => {
 };
 
 const resultStyles = {
-  win: 'bg-green-900/30 text-green-300 border-green-700/40',
-  loss: 'bg-red-900/30 text-red-300 border-red-700/40',
-  breakeven: 'bg-gray-700/40 text-gray-200 border-gray-600/50'
+  win: 'bg-profit/15 text-profit border-profit/40',
+  loss: 'bg-loss/15 text-loss border-loss/40',
+  breakeven: 'bg-surface-hover text-content-secondary border-line-strong'
 };
 
 const MISTAKE_TAGS = ['FOMO', 'Oversize', 'Early Exit', 'Revenge', 'No Setup', 'Chased Entry', 'Moved Stop', 'Other'];
@@ -325,40 +326,40 @@ function TradeJournal() {
       }
     >
       {statusMessage && (
-        <div className="bg-green-900/30 border border-green-700/40 text-green-300 rounded-lg px-4 py-3 text-sm">
+        <div className="bg-profit/15 border border-profit/40 text-profit rounded-lg px-4 py-3 text-sm">
           {statusMessage}
         </div>
       )}
 
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Total Entries</p>
-          <p className="text-white text-2xl font-bold mt-1">{stats.total}</p>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Total Entries</p>
+          <p className="text-content-primary text-2xl font-bold mt-1">{stats.total}</p>
         </div>
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Winning Trade Reviews</p>
-          <p className="text-green-400 text-2xl font-bold mt-1">{stats.winCount}</p>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Winning Trade Reviews</p>
+          <p className="text-profit text-2xl font-bold mt-1">{stats.winCount}</p>
         </div>
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Losing Trade Reviews</p>
-          <p className="text-red-400 text-2xl font-bold mt-1">{stats.lossCount}</p>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Losing Trade Reviews</p>
+          <p className="text-loss text-2xl font-bold mt-1">{stats.lossCount}</p>
         </div>
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Avg Execution Score</p>
-          <p className="text-blue-400 text-2xl font-bold mt-1">{stats.avgExecution.toFixed(1)}/10</p>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Avg Execution Score</p>
+          <p className="text-brand text-2xl font-bold mt-1">{stats.avgExecution.toFixed(1)}/10</p>
         </div>
       </div>
 
-      <div className="bg-dark-card border border-dark-border rounded-lg p-4 sm:p-6">
+      <div className="bg-surface rounded-card p-4 sm:p-6 shadow-elev-1">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-3 mb-4">
           <div className="relative w-full lg:w-80">
-            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+            <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" />
             <input
               type="text"
               placeholder="Search notes, tags, setups..."
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
-              className="w-full bg-dark-bg border border-dark-border rounded-lg pl-9 pr-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+              className="w-full bg-surface-raised border border-line-strong rounded-lg pl-9 pr-3 py-2 text-content-primary text-sm focus:outline-none focus:border-brand"
             />
           </div>
 
@@ -375,8 +376,8 @@ function TradeJournal() {
                 onClick={() => setResultFilter(option.id)}
                 className={`px-3 py-2 rounded-lg text-sm border transition-colors ${
                   resultFilter === option.id
-                    ? 'bg-blue-600 text-white border-blue-600'
-                    : 'bg-dark-bg text-gray-300 border-dark-border hover:border-gray-500'
+                    ? 'bg-brand text-content-primary border-brand'
+                    : 'bg-surface-raised text-content-secondary border-line-strong hover:border-brand/50'
                 }`}
               >
                 {option.label}
@@ -386,18 +387,24 @@ function TradeJournal() {
         </div>
 
         {filteredEntries.length === 0 && (
-          <div className="bg-dark-bg border border-dark-border rounded-lg p-8 text-center text-gray-400">
-            No journal entries found.
-          </div>
+          <EmptyState
+            icon={FileText}
+            title={entries.length === 0 ? 'No journal entries yet' : 'No entries match your search'}
+            description={entries.length === 0
+              ? 'Annotate a trade while it is still fresh — what you saw, what you did, and what you would change.'
+              : 'Try a different search term or clear the filter.'}
+            actionLabel={entries.length === 0 ? 'Write your first entry' : undefined}
+            onAction={entries.length === 0 ? openAddModal : undefined}
+          />
         )}
 
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           {filteredEntries.map((entry) => (
-            <div key={entry.id} className="bg-dark-bg border border-dark-border rounded-lg overflow-hidden">
+            <div key={entry.id} className="bg-surface-raised rounded-control overflow-hidden">
               <div className="relative aspect-[16/9] bg-black">
                 {entry.imageUrl ? (
                   brokenImages[entry.id] ? (
-                    <div className="w-full h-full flex flex-col items-center justify-center text-gray-500 gap-2">
+                    <div className="w-full h-full flex flex-col items-center justify-center text-content-muted gap-2">
                       <ImageIcon size={30} />
                       <span className="text-xs">Image unavailable</span>
                     </div>
@@ -416,20 +423,20 @@ function TradeJournal() {
                     </button>
                   )
                 ) : (
-                  <div className="w-full h-full flex items-center justify-center text-gray-600 text-sm">No screenshot</div>
+                  <div className="w-full h-full flex items-center justify-center text-content-muted text-sm">No screenshot</div>
                 )}
 
                 <div className="absolute bottom-2 right-2 flex items-center gap-2">
                   <button
                     onClick={() => openEditModal(entry)}
-                    className="bg-dark-card/90 hover:bg-dark-card text-white p-2 rounded-full border border-dark-border transition-colors"
+                    className="bg-surface/90 hover:bg-surface text-content-primary p-2 rounded-full transition-colors shadow-elev-1"
                     aria-label="Edit entry"
                   >
                     <Pencil size={14} />
                   </button>
                   <button
                     onClick={() => handleDelete(entry.id)}
-                    className="bg-red-600 hover:bg-red-700 text-white p-2 rounded-full transition-colors"
+                    className="bg-red-600 hover:bg-red-700 text-content-primary p-2 rounded-full transition-colors"
                     aria-label="Delete entry"
                   >
                     <Trash2 size={14} />
@@ -439,62 +446,62 @@ function TradeJournal() {
 
               <div className="p-4 space-y-3">
                 <div className="flex items-start justify-between gap-2">
-                  <h3 className="text-white text-lg font-bold">{entry.title}</h3>
+                  <h3 className="text-content-primary text-lg font-bold">{entry.title}</h3>
                   <span className={`px-2 py-1 rounded text-xs border ${resultStyles[entry.result] || resultStyles.breakeven}`}>
                     {entry.result}
                   </span>
                 </div>
 
-                <div className="text-xs text-gray-400">
+                <div className="text-xs text-content-secondary">
                   {entry.ticker || 'N/A'} | {formatDisplayDate(entry.tradeDate || entry.createdAt)}{entry.setupType ? ` | ${entry.setupType}` : ''}
                 </div>
 
                 {entry.whyGoodIdea && (
-                  <p className="text-sm text-gray-200 whitespace-pre-wrap break-words">
+                  <p className="text-sm text-content-secondary whitespace-pre-wrap break-words">
                     Why it made sense: {entry.whyGoodIdea}
                   </p>
                 )}
 
                 {entry.whatWentWrong && (
-                  <p className="text-sm text-red-300 whitespace-pre-wrap break-words">
+                  <p className="text-sm text-loss whitespace-pre-wrap break-words">
                     What went wrong: {entry.whatWentWrong}
                   </p>
                 )}
 
                 {entry.feedbackForFuture && (
-                  <p className="text-sm text-blue-300 whitespace-pre-wrap break-words">
+                  <p className="text-sm text-brand-hover whitespace-pre-wrap break-words">
                     Feedback: {entry.feedbackForFuture}
                   </p>
                 )}
 
                 {entry.nextAction && (
-                  <p className="text-sm text-green-300 whitespace-pre-wrap break-words">
+                  <p className="text-sm text-profit whitespace-pre-wrap break-words">
                     Next action: {entry.nextAction}
                   </p>
                 )}
 
                 <div className="grid grid-cols-3 gap-2 text-xs">
-                  <div className="bg-dark-card border border-dark-border rounded px-2 py-1 text-gray-300">
-                    Exec: <span className="text-white">{entry.executionScore || 0}/10</span>
+                  <div className="bg-surface-hover rounded-chip px-2 py-1 text-content-secondary">
+                    Exec: <span className="text-content-primary">{entry.executionScore || 0}/10</span>
                   </div>
-                  <div className="bg-dark-card border border-dark-border rounded px-2 py-1 text-gray-300">
-                    Conf: <span className="text-white">{entry.confidenceScore || 0}/10</span>
+                  <div className="bg-surface-hover rounded-chip px-2 py-1 text-content-secondary">
+                    Conf: <span className="text-content-primary">{entry.confidenceScore || 0}/10</span>
                   </div>
-                  <div className="bg-dark-card border border-dark-border rounded px-2 py-1 text-gray-300">
-                    Mind: <span className="text-white">{entry.mindsetRating || '–'}/5</span>
+                  <div className="bg-surface-hover rounded-chip px-2 py-1 text-content-secondary">
+                    Mind: <span className="text-content-primary">{entry.mindsetRating || '–'}/5</span>
                   </div>
                 </div>
                 {entry.mistakeTag && (
                   <div className="flex items-center gap-2 text-xs">
-                    <span className="bg-red-900/30 text-red-300 border border-red-700/40 px-2 py-1 rounded">{entry.mistakeTag}</span>
-                    {entry.ruleBroken && <span className="text-gray-500 truncate">{entry.ruleBroken}</span>}
+                    <span className="bg-loss/15 text-loss border border-loss/40 px-2 py-1 rounded">{entry.mistakeTag}</span>
+                    {entry.ruleBroken && <span className="text-content-muted truncate">{entry.ruleBroken}</span>}
                   </div>
                 )}
 
                 {entry.tags && entry.tags.length > 0 && (
                   <div className="flex flex-wrap gap-2">
                     {entry.tags.map((tag) => (
-                      <span key={`${entry.id}-${tag}`} className="bg-blue-600/20 text-blue-300 px-2 py-1 rounded text-xs">
+                      <span key={`${entry.id}-${tag}`} className="bg-brand/20 text-brand-hover px-2 py-1 rounded text-xs">
                         {tag}
                       </span>
                     ))}
@@ -508,10 +515,10 @@ function TradeJournal() {
 
       {isModalOpen && (
         <div className="fixed inset-0 bg-black/75 z-[70] p-2 sm:p-4 overflow-y-auto flex items-center justify-center">
-          <div className="bg-dark-card border border-dark-border rounded-lg w-full max-w-2xl max-h-[calc(100vh-1rem)] overflow-y-auto">
-            <div className="flex items-center justify-between p-5 border-b border-dark-border">
-              <h3 className="text-xl text-white font-bold">{editingEntry ? 'Edit Journal Entry' : 'New Journal Entry'}</h3>
-              <button onClick={closeModal} className="text-gray-400 hover:text-white transition-colors">
+          <div className="bg-surface rounded-card w-full max-w-2xl max-h-[calc(100vh-1rem)] overflow-y-auto shadow-elev-1">
+            <div className="flex items-center justify-between p-5 border-b border-line">
+              <h3 className="text-xl text-content-primary font-bold">{editingEntry ? 'Edit Journal Entry' : 'New Journal Entry'}</h3>
+              <button onClick={closeModal} className="text-content-secondary hover:text-content-primary transition-colors">
                 <X size={22} />
               </button>
             </div>
@@ -519,33 +526,33 @@ function TradeJournal() {
             <form onSubmit={handleSubmit} className="p-5 space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Title</label>
+                  <label className="block text-content-secondary text-sm mb-2">Title</label>
                   <input
                     type="text"
                     value={formData.title}
                     onChange={(e) => handleInputChange('title', e.target.value)}
-                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                     required
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Ticker</label>
+                  <label className="block text-content-secondary text-sm mb-2">Ticker</label>
                   <input
                     type="text"
                     value={formData.ticker}
                     onChange={(e) => handleInputChange('ticker', e.target.value)}
-                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Result</label>
+                  <label className="block text-content-secondary text-sm mb-2">Result</label>
                   <select
                     value={formData.result}
                     onChange={(e) => handleInputChange('result', e.target.value)}
-                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   >
                     <option value="win">Win</option>
                     <option value="loss">Loss</option>
@@ -553,73 +560,73 @@ function TradeJournal() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Setup Type</label>
+                  <label className="block text-content-secondary text-sm mb-2">Setup Type</label>
                   <input
                     type="text"
                     value={formData.setupType}
                     onChange={(e) => handleInputChange('setupType', e.target.value)}
                     placeholder="e.g., Breakout, Reversal"
-                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Trade Date</label>
+                  <label className="block text-content-secondary text-sm mb-2">Trade Date</label>
                   <input
                     type="date"
                     value={formData.tradeDate}
                     onChange={(e) => handleInputChange('tradeDate', e.target.value)}
-                    className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   />
                 </div>
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Why This Trade Was a Good Idea</label>
+                <label className="block text-content-secondary text-sm mb-2">Why This Trade Was a Good Idea</label>
                 <textarea
                   rows="3"
                   value={formData.whyGoodIdea}
                   onChange={(e) => handleInputChange('whyGoodIdea', e.target.value)}
                   placeholder="Context, setup quality, confirmation signals..."
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white resize-none focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary resize-none focus:outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">What Went Wrong (if anything)</label>
+                <label className="block text-content-secondary text-sm mb-2">What Went Wrong (if anything)</label>
                 <textarea
                   rows="3"
                   value={formData.whatWentWrong}
                   onChange={(e) => handleInputChange('whatWentWrong', e.target.value)}
                   placeholder="Execution mistakes, risk issues, emotional errors..."
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white resize-none focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary resize-none focus:outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Feedback for Future Setups</label>
+                <label className="block text-content-secondary text-sm mb-2">Feedback for Future Setups</label>
                 <textarea
                   rows="3"
                   value={formData.feedbackForFuture}
                   onChange={(e) => handleInputChange('feedbackForFuture', e.target.value)}
                   placeholder="Rules to keep, rules to remove, setup conditions..."
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white resize-none focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary resize-none focus:outline-none focus:border-brand"
                 />
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Next Action</label>
+                <label className="block text-content-secondary text-sm mb-2">Next Action</label>
                 <input
                   type="text"
                   value={formData.nextAction}
                   onChange={(e) => handleInputChange('nextAction', e.target.value)}
                   placeholder="One concrete thing to do next session"
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                 />
               </div>
 
               <div className="grid grid-cols-2 gap-3">
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Execution Score: {formData.executionScore}/10</label>
+                  <label className="block text-content-secondary text-sm mb-2">Execution Score: {formData.executionScore}/10</label>
                   <input
                     type="range"
                     min="1"
@@ -630,7 +637,7 @@ function TradeJournal() {
                   />
                 </div>
                 <div>
-                  <label className="block text-gray-400 text-sm mb-2">Confidence Score: {formData.confidenceScore}/10</label>
+                  <label className="block text-content-secondary text-sm mb-2">Confidence Score: {formData.confidenceScore}/10</label>
                   <input
                     type="range"
                     min="1"
@@ -643,7 +650,7 @@ function TradeJournal() {
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Mindset Rating: {formData.mindsetRating}/5</label>
+                <label className="block text-content-secondary text-sm mb-2">Mindset Rating: {formData.mindsetRating}/5</label>
                 <input
                   type="range"
                   min="1"
@@ -652,19 +659,19 @@ function TradeJournal() {
                   onChange={(e) => handleInputChange('mindsetRating', Number(e.target.value))}
                   className="w-full"
                 />
-                <div className="flex justify-between text-xs text-gray-500 mt-1">
+                <div className="flex justify-between text-xs text-content-muted mt-1">
                   <span>Distracted</span><span>Focused</span>
                 </div>
               </div>
 
               {formData.result === 'loss' && (
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-red-900/10 border border-red-800/30 rounded-lg p-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-loss/8 border border-loss/15 rounded-lg p-3">
                   <div>
-                    <label className="block text-gray-400 text-sm mb-2">Mistake Tag</label>
+                    <label className="block text-content-secondary text-sm mb-2">Mistake Tag</label>
                     <select
                       value={formData.mistakeTag}
                       onChange={(e) => handleInputChange('mistakeTag', e.target.value)}
-                      className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                      className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
                     >
                       <option value="">— Select —</option>
                       {MISTAKE_TAGS.map(tag => (
@@ -673,23 +680,23 @@ function TradeJournal() {
                     </select>
                   </div>
                   <div>
-                    <label className="block text-gray-400 text-sm mb-2">Rule Broken</label>
+                    <label className="block text-content-secondary text-sm mb-2">Rule Broken</label>
                     <input
                       type="text"
                       value={formData.ruleBroken}
                       onChange={(e) => handleInputChange('ruleBroken', e.target.value)}
                       placeholder="e.g. Never trade without confirmation"
-                      className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                      className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
                     />
                   </div>
                 </div>
               )}
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Screenshot (optional)</label>
-                <label className="flex items-center justify-center w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 cursor-pointer hover:border-gray-500 transition-colors">
-                  <Upload size={18} className="mr-2 text-gray-400" />
-                  <span className="text-gray-400">{journalImage ? journalImage.name : 'Upload Screenshot'}</span>
+                <label className="block text-content-secondary text-sm mb-2">Screenshot (optional)</label>
+                <label className="flex items-center justify-center w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-3 cursor-pointer hover:border-brand/50 transition-colors">
+                  <Upload size={18} className="mr-2 text-content-secondary" />
+                  <span className="text-content-secondary">{journalImage ? journalImage.name : 'Upload Screenshot'}</span>
                   <input
                     type="file"
                     accept="image/*"
@@ -698,37 +705,37 @@ function TradeJournal() {
                   />
                 </label>
                 {imagePreview && (
-                  <img src={imagePreview} alt="Preview" className="mt-2 w-full rounded-lg border border-dark-border" />
+                  <img src={imagePreview} alt="Preview" className="mt-2 w-full rounded-lg" />
                 )}
               </div>
 
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Tags (comma separated)</label>
+                <label className="block text-content-secondary text-sm mb-2">Tags (comma separated)</label>
                 <input
                   type="text"
                   value={formData.tags}
                   onChange={(e) => handleInputChange('tags', e.target.value)}
                   placeholder="e.g., patience, overtrading, trend-confirmation"
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                 />
               </div>
 
               {formError && (
-                <p className="text-sm text-red-400">{formError}</p>
+                <p className="text-sm text-loss">{formError}</p>
               )}
 
               <div className="flex gap-3 pt-2">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="flex-1 bg-dark-bg border border-dark-border rounded-lg py-3 text-gray-300 hover:border-gray-500 transition-colors"
+                  className="flex-1 bg-surface-raised border border-line-strong rounded-lg py-3 text-content-secondary hover:border-brand/50 transition-colors"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={loading}
-                  className="flex-1 bg-blue-600 hover:bg-blue-700 rounded-lg py-3 text-white font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="flex-1 bg-brand hover:bg-brand-hover rounded-lg py-3 text-content-primary font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {loading ? 'Saving...' : editingEntry ? 'Save Changes' : 'Save Entry'}
                 </button>
@@ -746,7 +753,7 @@ function TradeJournal() {
           <button
             type="button"
             onClick={() => setExpandedImage(null)}
-            className="absolute top-4 right-4 text-gray-300 hover:text-white transition-colors"
+            className="absolute top-4 right-4 text-content-secondary hover:text-content-primary transition-colors"
             aria-label="Close image viewer"
           >
             <X size={28} />
@@ -754,7 +761,7 @@ function TradeJournal() {
           <img
             src={expandedImage.url}
             alt={expandedImage.title}
-            className="max-w-full max-h-full object-contain rounded-lg border border-dark-border"
+            className="max-w-full max-h-full object-contain rounded-lg"
             onClick={(e) => e.stopPropagation()}
           />
         </div>

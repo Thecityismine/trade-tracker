@@ -38,37 +38,37 @@ function LoginScreen() {
 
   return (
     <div className="min-h-screen flex items-center justify-center px-4">
-      <div className="w-full max-w-sm bg-dark-card border border-dark-border rounded-lg p-6">
-        <h1 className="text-2xl font-bold text-white text-center mb-6">
-          <span className="text-blue-500">T</span>rade <span className="text-red-500">T</span>racker
+      <div className="w-full max-w-sm bg-surface rounded-card p-6 shadow-elev-1">
+        <h1 className="text-2xl font-bold text-content-primary text-center mb-6">
+          <span className="text-brand">T</span>rade <span className="text-loss">T</span>racker
         </h1>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Email</label>
+            <label className="block text-sm text-content-secondary mb-1">Email</label>
             <input
               type="email"
               required
               autoFocus
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
             />
           </div>
           <div>
-            <label className="block text-sm text-gray-400 mb-1">Password</label>
+            <label className="block text-sm text-content-secondary mb-1">Password</label>
             <input
               type="password"
               required
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
             />
           </div>
-          {error && <p className="text-sm text-red-400">{error}</p>}
+          {error && <p className="text-sm text-loss">{error}</p>}
           <button
             type="submit"
             disabled={loading}
-            className="w-full bg-blue-600 hover:bg-blue-500 disabled:opacity-50 text-white font-medium rounded-lg px-4 py-2 transition-colors"
+            className="w-full bg-brand hover:bg-brand disabled:opacity-50 text-content-primary font-medium rounded-lg px-4 py-2 transition-colors"
           >
             {loading ? 'Signing in…' : 'Sign In'}
           </button>

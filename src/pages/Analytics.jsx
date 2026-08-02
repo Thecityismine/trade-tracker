@@ -540,9 +540,9 @@ function Analytics() {
       ) : (
         <>
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div className="bg-dark-card border border-dark-border rounded-lg p-6">
-              <h3 className="text-lg font-bold text-white mb-1">Win Rate by Direction</h3>
-              <p className="text-gray-400 text-sm mb-4">Long vs short win-rate comparison.</p>
+            <div className="bg-surface rounded-card p-6 shadow-elev-1">
+              <h3 className="text-lg font-bold text-content-primary mb-1">Win Rate by Direction</h3>
+              <p className="text-content-secondary text-sm mb-4">Long vs short win-rate comparison.</p>
 
               <div className="w-full h-60">
                 <ResponsiveContainer width="100%" height="100%">
@@ -584,25 +584,25 @@ function Analytics() {
 
               <div className="grid grid-cols-2 gap-3 mt-4">
                 {directionStats.map((item) => (
-                  <div key={item.direction} className="bg-dark-bg border border-dark-border rounded-lg p-3">
-                    <p className="text-white font-medium">{item.direction}</p>
-                    <p className="text-gray-400 text-sm">{item.wins}W / {item.losses}L</p>
-                    <p className={`text-sm mt-1 ${item.totalPnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  <div key={item.direction} className="bg-surface-raised rounded-control p-3">
+                    <p className="text-content-primary font-medium">{item.direction}</p>
+                    <p className="text-content-secondary text-sm">{item.wins}W / {item.losses}L</p>
+                    <p className={`text-sm mt-1 ${item.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                       ${item.totalPnl.toFixed(2)} total
                     </p>
                   </div>
                 ))}
               </div>
               {directionInsight && (
-                <p className="text-xs text-blue-400 mt-3 bg-blue-900/20 border border-blue-800/30 rounded-lg px-3 py-2">
+                <p className="text-xs text-brand mt-3 bg-brand-muted border border-brand/30 rounded-lg px-3 py-2">
                   {directionInsight}
                 </p>
               )}
             </div>
 
-            <div className="bg-dark-card border border-dark-border rounded-lg p-6">
-              <h3 className="text-lg font-bold text-white mb-1">Performance by Time of Day</h3>
-              <p className="text-gray-400 text-sm mb-4">Total P&amp;L per trading session.</p>
+            <div className="bg-surface rounded-card p-6 shadow-elev-1">
+              <h3 className="text-lg font-bold text-content-primary mb-1">Performance by Time of Day</h3>
+              <p className="text-content-secondary text-sm mb-4">Total P&amp;L per trading session.</p>
 
               <div className="w-full h-60">
                 <ResponsiveContainer width="100%" height="100%">
@@ -645,17 +645,17 @@ function Analytics() {
 
               <div className="grid grid-cols-2 gap-3 mt-4">
                 {timeOfDayStats.map((item) => (
-                  <div key={item.name} className="bg-dark-bg border border-dark-border rounded-lg p-3">
-                    <p className="text-white text-sm font-medium">{item.name}</p>
-                    <p className="text-gray-400 text-xs">{item.trades} trades</p>
-                    <p className={`text-sm mt-1 ${item.totalPnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                  <div key={item.name} className="bg-surface-raised rounded-control p-3">
+                    <p className="text-content-primary text-sm font-medium">{item.name}</p>
+                    <p className="text-content-secondary text-xs">{item.trades} trades</p>
+                    <p className={`text-sm mt-1 ${item.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                       ${item.totalPnl.toFixed(2)} total
                     </p>
                   </div>
                 ))}
               </div>
               {timeInsight && (
-                <p className="text-xs text-blue-400 mt-3 bg-blue-900/20 border border-blue-800/30 rounded-lg px-3 py-2">
+                <p className="text-xs text-brand mt-3 bg-brand-muted border border-brand/30 rounded-lg px-3 py-2">
                   {timeInsight}
                 </p>
               )}
@@ -663,9 +663,9 @@ function Analytics() {
           </div>
 
           <div className="grid grid-cols-1 xl:grid-cols-2 gap-6">
-            <div className="bg-dark-card border border-dark-border rounded-lg p-6">
-              <h3 className="text-lg font-bold text-white mb-1">Average Win Size vs Average Loss Size</h3>
-              <p className="text-gray-400 text-sm mb-4">Average dollar size per winning vs losing trade.</p>
+            <div className="bg-surface rounded-card p-6 shadow-elev-1">
+              <h3 className="text-lg font-bold text-content-primary mb-1">Average Win Size vs Average Loss Size</h3>
+              <p className="text-content-secondary text-sm mb-4">Average dollar size per winning vs losing trade.</p>
 
               <div className="w-full h-60">
                 <ResponsiveContainer width="100%" height="100%">
@@ -700,43 +700,43 @@ function Analytics() {
               </div>
 
               <div className="grid grid-cols-2 gap-3 mt-4">
-                <div className="bg-dark-bg border border-dark-border rounded-lg p-3">
-                  <p className="text-xs text-gray-400">Avg Win</p>
-                  <p className="text-lg font-bold text-green-500">${avgWinLossStats.avgWinUsd.toFixed(2)}</p>
-                  <p className="text-xs text-gray-500">{avgWinLossStats.avgWinPercent.toFixed(2)}%</p>
+                <div className="bg-surface-raised rounded-control p-3">
+                  <p className="text-xs text-content-secondary">Avg Win</p>
+                  <p className="text-lg font-bold text-profit">${avgWinLossStats.avgWinUsd.toFixed(2)}</p>
+                  <p className="text-xs text-content-muted">{avgWinLossStats.avgWinPercent.toFixed(2)}%</p>
                 </div>
-                <div className="bg-dark-bg border border-dark-border rounded-lg p-3">
-                  <p className="text-xs text-gray-400">Avg Loss</p>
-                  <p className="text-lg font-bold text-red-500">-${avgWinLossStats.avgLossUsdAbs.toFixed(2)}</p>
-                  <p className="text-xs text-gray-500">-{avgWinLossStats.avgLossPercentAbs.toFixed(2)}%</p>
+                <div className="bg-surface-raised rounded-control p-3">
+                  <p className="text-xs text-content-secondary">Avg Loss</p>
+                  <p className="text-lg font-bold text-loss">-${avgWinLossStats.avgLossUsdAbs.toFixed(2)}</p>
+                  <p className="text-xs text-content-muted">-{avgWinLossStats.avgLossPercentAbs.toFixed(2)}%</p>
                 </div>
               </div>
               {avgWinLossInsight && (
-                <p className="text-xs text-blue-400 mt-3 bg-blue-900/20 border border-blue-800/30 rounded-lg px-3 py-2">
+                <p className="text-xs text-brand mt-3 bg-brand-muted border border-brand/30 rounded-lg px-3 py-2">
                   {avgWinLossInsight}
                 </p>
               )}
             </div>
 
-            <div className="bg-dark-card border border-dark-border rounded-lg p-6">
-              <h3 className="text-lg font-bold text-white mb-1">Consecutive Wins/Losses Streaks</h3>
-              <p className="text-gray-400 text-sm mb-4">Current, best, and worst streak tracking.</p>
+            <div className="bg-surface rounded-card p-6 shadow-elev-1">
+              <h3 className="text-lg font-bold text-content-primary mb-1">Consecutive Wins/Losses Streaks</h3>
+              <p className="text-content-secondary text-sm mb-4">Current, best, and worst streak tracking.</p>
 
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
-                  <p className="text-xs text-gray-400">Best Win Streak</p>
-                  <p className="text-3xl font-bold text-green-500 mt-1">{streakStats.maxWinStreak}</p>
+                <div className="bg-surface-raised rounded-control p-4">
+                  <p className="text-xs text-content-secondary">Best Win Streak</p>
+                  <p className="text-3xl font-bold text-profit mt-1">{streakStats.maxWinStreak}</p>
                 </div>
-                <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
-                  <p className="text-xs text-gray-400">Worst Loss Streak</p>
-                  <p className="text-3xl font-bold text-red-500 mt-1">{streakStats.maxLossStreak}</p>
+                <div className="bg-surface-raised rounded-control p-4">
+                  <p className="text-xs text-content-secondary">Worst Loss Streak</p>
+                  <p className="text-3xl font-bold text-loss mt-1">{streakStats.maxLossStreak}</p>
                 </div>
-                <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
-                  <p className="text-xs text-gray-400">Current Streak</p>
-                  <p className={`text-3xl font-bold mt-1 ${streakStats.currentType === 'win' ? 'text-green-500' : 'text-red-500'}`}>
+                <div className="bg-surface-raised rounded-control p-4">
+                  <p className="text-xs text-content-secondary">Current Streak</p>
+                  <p className={`text-3xl font-bold mt-1 ${streakStats.currentType === 'win' ? 'text-profit' : 'text-loss'}`}>
                     {streakStats.currentCount}
                   </p>
-                  <p className="text-xs text-gray-500 mt-1 capitalize">
+                  <p className="text-xs text-content-muted mt-1 capitalize">
                     {streakStats.currentType || 'none'}
                   </p>
                 </div>
@@ -745,13 +745,13 @@ function Analytics() {
           </div>
 
           {patternPerformance.length > 0 && (
-            <div className="bg-dark-card border border-dark-border rounded-lg p-6">
-              <h3 className="text-lg font-bold text-white mb-1">Pattern Performance</h3>
-              <p className="text-gray-400 text-sm mb-4">Win rate and P&amp;L grouped by chart pattern used.</p>
+            <div className="bg-surface rounded-card p-6 shadow-elev-1">
+              <h3 className="text-lg font-bold text-content-primary mb-1">Pattern Performance</h3>
+              <p className="text-content-secondary text-sm mb-4">Win rate and P&amp;L grouped by chart pattern used.</p>
               <div className="overflow-x-auto">
                 <table className="w-full text-sm">
                   <thead>
-                    <tr className="text-gray-400 border-b border-dark-border">
+                    <tr className="text-content-secondary border-b border-line">
                       <th className="text-left py-2 pr-4 font-medium">Pattern</th>
                       <th className="text-center py-2 px-2 font-medium">Trades</th>
                       <th className="text-center py-2 px-2 font-medium">W / L</th>
@@ -761,14 +761,14 @@ function Analytics() {
                   </thead>
                   <tbody>
                     {patternPerformance.map(p => (
-                      <tr key={p.name} className="border-t border-dark-border hover:bg-dark-bg transition-colors">
-                        <td className="py-2 pr-4 text-white font-medium">{p.name}</td>
-                        <td className="text-center py-2 px-2 text-gray-300">{p.trades}</td>
-                        <td className="text-center py-2 px-2 text-gray-300">{p.wins}W / {p.losses}L</td>
-                        <td className={`text-right py-2 px-2 font-medium ${p.winRate >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+                      <tr key={p.name} className="border-t border-line hover:bg-surface-raised transition-colors">
+                        <td className="py-2 pr-4 text-content-primary font-medium">{p.name}</td>
+                        <td className="text-center py-2 px-2 text-content-secondary">{p.trades}</td>
+                        <td className="text-center py-2 px-2 text-content-secondary">{p.wins}W / {p.losses}L</td>
+                        <td className={`text-right py-2 px-2 font-medium ${p.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>
                           {p.winRate.toFixed(1)}%
                         </td>
-                        <td className={`text-right py-2 pl-2 font-bold ${p.totalPnl >= 0 ? 'text-green-500' : 'text-red-500'}`}>
+                        <td className={`text-right py-2 pl-2 font-bold ${p.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                           {p.totalPnl >= 0 ? '+' : ''}${p.totalPnl.toFixed(2)}
                         </td>
                       </tr>
@@ -780,17 +780,17 @@ function Analytics() {
           )}
 
           {behavioralPatterns.length > 0 && (
-            <div className="bg-dark-card border border-dark-border rounded-lg p-6">
-              <h3 className="text-lg font-bold text-white mb-1">Behavioral Patterns</h3>
-              <p className="text-gray-400 text-sm mb-4">Detected tendencies from your trading history.</p>
+            <div className="bg-surface rounded-card p-6 shadow-elev-1">
+              <h3 className="text-lg font-bold text-content-primary mb-1">Behavioral Patterns</h3>
+              <p className="text-content-secondary text-sm mb-4">Detected tendencies from your trading history.</p>
               <div className="space-y-1.5">
                 {behavioralPatterns.map((insight, i) => (
                   <div
                     key={i}
                     className={`text-sm rounded-lg px-3 py-2 border ${
                       insight.type === 'positive'
-                        ? 'bg-green-900/20 border-green-800/30 text-green-300'
-                        : 'bg-red-900/20 border-orange-900/30 text-orange-300'
+                        ? 'bg-profit/10 border-profit/15 text-profit'
+                        : 'bg-loss/10 border-caution/15 text-caution'
                     }`}
                   >
                     {insight.text}
@@ -801,9 +801,9 @@ function Analytics() {
           )}
 
           <div className="grid grid-cols-1 xl:grid-cols-3 gap-6">
-            <div className="xl:col-span-2 bg-dark-card border border-dark-border rounded-lg p-6">
-              <h3 className="text-lg font-bold text-white mb-1">Monthly Comparison</h3>
-              <p className="text-gray-400 text-sm mb-4">Monthly total P&amp;L with win-rate trend (up to 12 months).</p>
+            <div className="xl:col-span-2 bg-surface rounded-card p-6 shadow-elev-1">
+              <h3 className="text-lg font-bold text-content-primary mb-1">Monthly Comparison</h3>
+              <p className="text-content-secondary text-sm mb-4">Monthly total P&amp;L with win-rate trend (up to 12 months).</p>
 
               <div className="w-full h-72">
                 <ResponsiveContainer width="100%" height="100%">
@@ -846,40 +846,40 @@ function Analytics() {
                 </ResponsiveContainer>
               </div>
               {monthlyInsight && (
-                <p className="text-xs text-blue-400 mt-4 bg-blue-900/20 border border-blue-800/30 rounded-lg px-3 py-2">
+                <p className="text-xs text-brand mt-4 bg-brand-muted border border-brand/30 rounded-lg px-3 py-2">
                   {monthlyInsight}
                 </p>
               )}
             </div>
 
-            <div className="bg-dark-card border border-dark-border rounded-lg p-6">
-              <h3 className="text-lg font-bold text-white mb-1">Best/Worst Performing Weeks</h3>
-              <p className="text-gray-400 text-sm mb-4">Weekly extremes by total P&amp;L.</p>
+            <div className="bg-surface rounded-card p-6 shadow-elev-1">
+              <h3 className="text-lg font-bold text-content-primary mb-1">Best/Worst Performing Weeks</h3>
+              <p className="text-content-secondary text-sm mb-4">Weekly extremes by total P&amp;L.</p>
 
               {bestWorstWeeks.bestWeek ? (
                 <div className="space-y-4">
-                  <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
-                    <p className="text-xs text-gray-400">Best Week</p>
-                    <p className="text-white font-medium mt-1">{bestWorstWeeks.bestWeek.label}</p>
-                    <p className="text-green-500 text-xl font-bold mt-1">${bestWorstWeeks.bestWeek.totalPnl.toFixed(2)}</p>
-                    <p className="text-xs text-gray-500 mt-1">{bestWorstWeeks.bestWeek.trades} trades · {bestWorstWeeks.bestWeek.wins}W / {bestWorstWeeks.bestWeek.losses}L</p>
-                    <p className="text-xs text-green-400/70 mt-2 italic">
+                  <div className="bg-surface-raised rounded-control p-4">
+                    <p className="text-xs text-content-secondary">Best Week</p>
+                    <p className="text-content-primary font-medium mt-1">{bestWorstWeeks.bestWeek.label}</p>
+                    <p className="text-profit text-xl font-bold mt-1">${bestWorstWeeks.bestWeek.totalPnl.toFixed(2)}</p>
+                    <p className="text-xs text-content-muted mt-1">{bestWorstWeeks.bestWeek.trades} trades · {bestWorstWeeks.bestWeek.wins}W / {bestWorstWeeks.bestWeek.losses}L</p>
+                    <p className="text-xs text-profit/70 mt-2 italic">
                       {bestWorstWeeks.bestWeek.trades >= 8 ? 'High-volume week — consistency drove results.' : `${bestWorstWeeks.bestWeek.trades} selective trades → quality over quantity.`}
                     </p>
                   </div>
 
-                  <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
-                    <p className="text-xs text-gray-400">Worst Week</p>
-                    <p className="text-white font-medium mt-1">{bestWorstWeeks.worstWeek.label}</p>
-                    <p className="text-red-500 text-xl font-bold mt-1">${bestWorstWeeks.worstWeek.totalPnl.toFixed(2)}</p>
-                    <p className="text-xs text-gray-500 mt-1">{bestWorstWeeks.worstWeek.trades} trades · {bestWorstWeeks.worstWeek.wins}W / {bestWorstWeeks.worstWeek.losses}L</p>
-                    <p className="text-xs text-red-400/70 mt-2 italic">
+                  <div className="bg-surface-raised rounded-control p-4">
+                    <p className="text-xs text-content-secondary">Worst Week</p>
+                    <p className="text-content-primary font-medium mt-1">{bestWorstWeeks.worstWeek.label}</p>
+                    <p className="text-loss text-xl font-bold mt-1">${bestWorstWeeks.worstWeek.totalPnl.toFixed(2)}</p>
+                    <p className="text-xs text-content-muted mt-1">{bestWorstWeeks.worstWeek.trades} trades · {bestWorstWeeks.worstWeek.wins}W / {bestWorstWeeks.worstWeek.losses}L</p>
+                    <p className="text-xs text-loss/70 mt-2 italic">
                       {bestWorstWeeks.worstWeek.trades <= 3 ? 'Low trade count — likely forced or low-quality entries.' : 'High-frequency losing week — reduce size and slow down.'}
                     </p>
                   </div>
                 </div>
               ) : (
-                <div className="text-gray-400">Not enough data yet.</div>
+                <div className="text-content-secondary">Not enough data yet.</div>
               )}
             </div>
           </div>
@@ -887,22 +887,22 @@ function Analytics() {
       )}
 
       {mistakeEngine.length > 0 && (
-        <div className="bg-dark-card border border-dark-border rounded-lg p-6">
-          <h3 className="text-lg font-bold text-white mb-1">Mistake Engine</h3>
-          <p className="text-gray-400 text-sm mb-4">Your most frequent loss patterns from the journal, ranked by occurrences.</p>
+        <div className="bg-surface rounded-card p-6 shadow-elev-1">
+          <h3 className="text-lg font-bold text-content-primary mb-1">Mistake Engine</h3>
+          <p className="text-content-secondary text-sm mb-4">Your most frequent loss patterns from the journal, ranked by occurrences.</p>
           <div className="space-y-2">
             {mistakeEngine.map((m, i) => (
-              <div key={m.tag} className="flex items-center gap-3 bg-dark-bg border border-dark-border rounded-lg p-3">
-                <span className="text-xl font-bold text-gray-600 w-7 flex-shrink-0">#{i + 1}</span>
+              <div key={m.tag} className="flex items-center gap-3 bg-surface-raised rounded-control p-3">
+                <span className="text-xl font-bold text-content-muted w-7 flex-shrink-0">#{i + 1}</span>
                 <div className="flex-1 min-w-0">
-                  <p className="text-red-300 font-semibold text-sm">{m.tag}</p>
+                  <p className="text-loss font-semibold text-sm">{m.tag}</p>
                   {m.rulesBreaks.length > 0 && (
-                    <p className="text-xs text-gray-500 truncate mt-0.5">&ldquo;{m.rulesBreaks[0]}&rdquo;</p>
+                    <p className="text-xs text-content-muted truncate mt-0.5">&ldquo;{m.rulesBreaks[0]}&rdquo;</p>
                   )}
                 </div>
                 <div className="text-right flex-shrink-0">
-                  <p className="text-white font-bold text-lg">{m.count}</p>
-                  <p className="text-xs text-gray-500">occurrence{m.count !== 1 ? 's' : ''}</p>
+                  <p className="text-content-primary font-bold text-lg">{m.count}</p>
+                  <p className="text-xs text-content-muted">occurrence{m.count !== 1 ? 's' : ''}</p>
                 </div>
               </div>
             ))}
@@ -911,9 +911,9 @@ function Analytics() {
       )}
 
       {mindsetTrend.length >= 2 && (
-        <div className="bg-dark-card border border-dark-border rounded-lg p-6">
-          <h3 className="text-lg font-bold text-white mb-1">Mindset Trend</h3>
-          <p className="text-gray-400 text-sm mb-4">Weekly average mindset rating from journal entries (1 = distracted · 5 = focused).</p>
+        <div className="bg-surface rounded-card p-6 shadow-elev-1">
+          <h3 className="text-lg font-bold text-content-primary mb-1">Mindset Trend</h3>
+          <p className="text-content-secondary text-sm mb-4">Weekly average mindset rating from journal entries (1 = distracted · 5 = focused).</p>
           <div className="w-full h-52">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={mindsetTrend}>
@@ -935,7 +935,7 @@ function Analytics() {
             </ResponsiveContainer>
           </div>
           {mindsetInsight && (
-            <p className="text-xs text-yellow-400 mt-3 bg-yellow-900/20 border border-yellow-800/30 rounded-lg px-3 py-2">
+            <p className="text-xs text-warn mt-3 bg-warn/10 border border-warn/15 rounded-lg px-3 py-2">
               {mindsetInsight}
             </p>
           )}

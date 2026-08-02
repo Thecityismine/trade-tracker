@@ -21,7 +21,7 @@ function SaveSettingsButton({ onClick, saving, saved }) {
     <button
       onClick={onClick}
       disabled={saving}
-      className={`w-full rounded-control py-2.5 font-medium text-white transition-colors disabled:opacity-40 ${
+      className={`w-full rounded-control py-2.5 font-medium text-content-primary transition-colors disabled:opacity-40 ${
         saved ? 'bg-profit/80' : 'bg-brand hover:bg-brand-hover'
       }`}
     >
@@ -157,9 +157,9 @@ function Settings() {
     const r = parseFloat(maxRisk);
     if (!r || r <= 0) return null;
     const violations = trades.filter(t => t.result === 'loss' && Math.abs(t.pnlPercent || 0) > r).length;
-    if (violations === 0) return { level: 'green', label: '🟢 Within Rules', violations, bg: 'bg-green-900/20 border-green-800/30', text: 'text-green-400' };
-    if (violations <= 3) return { level: 'yellow', label: '🟡 Warning', violations, bg: 'bg-yellow-900/20 border-yellow-800/30', text: 'text-yellow-400' };
-    return { level: 'red', label: '🔴 System Violation', violations, bg: 'bg-red-900/20 border-red-800/30', text: 'text-red-400' };
+    if (violations === 0) return { level: 'green', label: '🟢 Within Rules', violations, bg: 'bg-profit/10 border-profit/15', text: 'text-profit' };
+    if (violations <= 3) return { level: 'yellow', label: '🟡 Warning', violations, bg: 'bg-warn/10 border-warn/15', text: 'text-warn' };
+    return { level: 'red', label: '🔴 System Violation', violations, bg: 'bg-loss/10 border-loss/15', text: 'text-loss' };
   })();
 
   return (
@@ -206,51 +206,51 @@ function Settings() {
       </Card>
 
       {goalAmt > 0 && (
-        <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
-          <h3 className="text-white font-semibold mb-1 flex items-center gap-2">
-            <Target size={16} className="text-blue-400" />
+        <div className="bg-surface rounded-card p-6 shadow-elev-1">
+          <h3 className="text-content-primary font-semibold mb-1 flex items-center gap-2">
+            <Target size={16} className="text-brand" />
             Goal Progress
           </h3>
           <div className="flex items-baseline gap-2 mb-3">
-            <span className="text-2xl font-bold text-white">${currentBalance.toFixed(2)}</span>
-            <span className="text-gray-400 text-sm">/ ${goalAmt.toFixed(2)}</span>
+            <span className="text-2xl font-bold text-content-primary">${currentBalance.toFixed(2)}</span>
+            <span className="text-content-secondary text-sm">/ ${goalAmt.toFixed(2)}</span>
             {goalDate && (
-              <span className="text-gray-500 text-xs ml-auto">
+              <span className="text-content-muted text-xs ml-auto">
                 Target: {new Date(goalDate + 'T00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
               </span>
             )}
           </div>
-          <div className="w-full bg-dark-bg rounded-full h-3 overflow-hidden">
+          <div className="w-full bg-surface-raised rounded-full h-3 overflow-hidden">
             <div
-              className={`h-3 rounded-full transition-all duration-700 ${goalProgress >= 100 ? 'bg-green-500' : 'bg-blue-500'}`}
+              className={`h-3 rounded-full transition-all duration-700 ${goalProgress >= 100 ? 'bg-profit' : 'bg-brand'}`}
               style={{
                 width: `${goalProgress}%`,
                 boxShadow: goalProgress >= 100 ? '0 0 8px rgba(34,197,94,0.6)' : '0 0 8px rgba(59,130,246,0.6)'
               }}
             />
           </div>
-          <div className="flex justify-between text-xs text-gray-500 mt-1">
+          <div className="flex justify-between text-xs text-content-muted mt-1">
             <span>{goalProgress.toFixed(1)}% complete</span>
             {goalProgress >= 100
-              ? <span className="text-green-400 font-medium">Goal reached!</span>
+              ? <span className="text-profit font-medium">Goal reached!</span>
               : <span>${goalRemaining.toFixed(2)} remaining</span>
             }
           </div>
           {goalPace && (
-            <div className="mt-4 pt-3 border-t border-dark-border grid grid-cols-3 gap-3 text-center">
+            <div className="mt-4 pt-3 border-t border-line grid grid-cols-3 gap-3 text-center">
               <div>
-                <p className="text-gray-500 text-xs">Required pace</p>
-                <p className="text-white font-bold text-sm">${goalPace.requiredPerDay.toFixed(2)}/day</p>
+                <p className="text-content-muted text-xs">Required pace</p>
+                <p className="text-content-primary font-bold text-sm">${goalPace.requiredPerDay.toFixed(2)}/day</p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs">Your pace</p>
-                <p className={`font-bold text-sm ${goalPace.actualPerDay >= goalPace.requiredPerDay ? 'text-green-400' : 'text-red-400'}`}>
+                <p className="text-content-muted text-xs">Your pace</p>
+                <p className={`font-bold text-sm ${goalPace.actualPerDay >= goalPace.requiredPerDay ? 'text-profit' : 'text-loss'}`}>
                   ${goalPace.actualPerDay.toFixed(2)}/day
                 </p>
               </div>
               <div>
-                <p className="text-gray-500 text-xs">Status</p>
-                <p className={`font-bold text-xs ${goalPace.behind ? 'text-red-400' : 'text-green-400'}`}>
+                <p className="text-content-muted text-xs">Status</p>
+                <p className={`font-bold text-xs ${goalPace.behind ? 'text-loss' : 'text-profit'}`}>
                   {goalPace.behind ? 'Behind schedule' : 'On track'}
                 </p>
               </div>
@@ -292,19 +292,19 @@ function Settings() {
         <div className={`${riskStatus.bg} border rounded-xl p-4`}>
           <div className="flex items-center justify-between mb-1">
             <p className={`font-bold text-sm ${riskStatus.text}`}>{riskStatus.label}</p>
-            <span className="text-gray-500 text-xs">{riskStatus.violations} violation{riskStatus.violations !== 1 ? 's' : ''}</span>
+            <span className="text-content-muted text-xs">{riskStatus.violations} violation{riskStatus.violations !== 1 ? 's' : ''}</span>
           </div>
           {riskStatus.level === 'green' && (
-            <p className="text-green-300/70 text-xs">All trades are within your {parseFloat(maxRisk)}% risk rule. Keep it up.</p>
+            <p className="text-profit/70 text-xs">All trades are within your {parseFloat(maxRisk)}% risk rule. Keep it up.</p>
           )}
           {riskStatus.level === 'yellow' && (
-            <p className="text-yellow-300/70 text-xs">{riskStatus.violations} trades breached your limit. Reduce position size before this becomes a pattern.</p>
+            <p className="text-warn/70 text-xs">{riskStatus.violations} trades breached your limit. Reduce position size before this becomes a pattern.</p>
           )}
           {riskStatus.level === 'red' && (
             <div className="space-y-1">
-              <p className="text-red-300 text-xs font-semibold">You are violating your own system.</p>
-              <p className="text-red-300/70 text-xs">Reduce position size immediately. {riskStatus.violations} losses exceeded {parseFloat(maxRisk)}% risk.</p>
-              <p className="text-red-300/70 text-xs">Trading should be limited until behavior improves.</p>
+              <p className="text-loss text-xs font-semibold">You are violating your own system.</p>
+              <p className="text-loss/70 text-xs">Reduce position size immediately. {riskStatus.violations} losses exceeded {parseFloat(maxRisk)}% risk.</p>
+              <p className="text-loss/70 text-xs">Trading should be limited until behavior improves.</p>
             </div>
           )}
         </div>
@@ -312,18 +312,18 @@ function Settings() {
 
       {/* Add Deposit / Withdrawal */}
       {section === 'funding' && (
-      <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
-        <h3 className="text-white font-semibold mb-4">Log Deposit / Withdrawal</h3>
+      <div className="bg-surface rounded-card p-6 shadow-elev-1">
+        <h3 className="text-content-primary font-semibold mb-4">Log Deposit / Withdrawal</h3>
         <div className="grid grid-cols-2 sm:flex sm:flex-wrap gap-3 items-end">
 
           {/* Type toggle */}
           <div>
-            <label className="text-gray-400 text-xs block mb-1">Type</label>
-            <div className="flex rounded-lg overflow-hidden border border-dark-border">
+            <label className="text-content-secondary text-xs block mb-1">Type</label>
+            <div className="flex rounded-lg overflow-hidden">
               <button
                 onClick={() => setForm(f => ({ ...f, type: 'deposit' }))}
                 className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  form.type === 'deposit' ? 'bg-green-600 text-white' : 'bg-dark-bg text-gray-400 hover:text-white'
+                  form.type === 'deposit' ? 'bg-green-600 text-content-primary' : 'bg-surface-raised text-content-secondary hover:text-content-primary'
                 }`}
               >
                 Deposit
@@ -331,7 +331,7 @@ function Settings() {
               <button
                 onClick={() => setForm(f => ({ ...f, type: 'withdrawal' }))}
                 className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  form.type === 'withdrawal' ? 'bg-red-600 text-white' : 'bg-dark-bg text-gray-400 hover:text-white'
+                  form.type === 'withdrawal' ? 'bg-red-600 text-content-primary' : 'bg-surface-raised text-content-secondary hover:text-content-primary'
                 }`}
               >
                 Withdrawal
@@ -341,16 +341,16 @@ function Settings() {
 
           {/* Amount */}
           <div>
-            <label className="text-gray-400 text-xs block mb-1">Amount</label>
-            <div className="flex items-center bg-dark-bg border border-dark-border rounded-lg px-3 py-2 focus-within:border-blue-500">
-              <span className="text-gray-400 mr-1">$</span>
+            <label className="text-content-secondary text-xs block mb-1">Amount</label>
+            <div className="flex items-center bg-surface-raised border border-line-strong rounded-lg px-3 py-2 focus-within:border-brand">
+              <span className="text-content-secondary mr-1">$</span>
               <input
                 type="number"
                 min="0"
                 step="0.01"
                 value={form.amount}
                 onChange={e => setForm(f => ({ ...f, amount: e.target.value }))}
-                className="bg-transparent text-white w-28 focus:outline-none"
+                className="bg-transparent text-content-primary w-28 focus:outline-none"
                 placeholder="0.00"
               />
             </div>
@@ -358,23 +358,23 @@ function Settings() {
 
           {/* Date */}
           <div>
-            <label className="text-gray-400 text-xs block mb-1">Date</label>
+            <label className="text-content-secondary text-xs block mb-1">Date</label>
             <input
               type="date"
               value={form.date}
               onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-              className="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
             />
           </div>
 
           {/* Note */}
           <div className="col-span-2 sm:flex-1 sm:min-w-36">
-            <label className="text-gray-400 text-xs block mb-1">Note (optional)</label>
+            <label className="text-content-secondary text-xs block mb-1">Note (optional)</label>
             <input
               type="text"
               value={form.note}
               onChange={e => setForm(f => ({ ...f, note: e.target.value }))}
-              className="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white w-full focus:outline-none focus:border-blue-500"
+              className="bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary w-full focus:outline-none focus:border-brand"
               placeholder="e.g. Initial deposit"
             />
           </div>
@@ -382,7 +382,7 @@ function Settings() {
           <button
             onClick={handleAdd}
             disabled={!form.amount || parseFloat(form.amount) <= 0 || saving}
-            className="col-span-2 sm:col-span-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-40 disabled:cursor-not-allowed text-white px-5 py-2 rounded-lg font-medium transition-colors"
+            className="col-span-2 sm:col-span-1 bg-brand hover:bg-brand-hover disabled:opacity-40 disabled:cursor-not-allowed text-content-primary px-5 py-2 rounded-lg font-medium transition-colors"
           >
             {saving ? 'Adding...' : 'Add'}
           </button>
@@ -393,41 +393,41 @@ function Settings() {
 
       {/* Funding History */}
       {section === 'funding' && deposits.length > 0 && (
-        <div className="bg-dark-card rounded-xl p-6 border border-dark-border">
-          <h3 className="text-white font-semibold mb-4">Funding History</h3>
+        <div className="bg-surface rounded-card p-6 shadow-elev-1">
+          <h3 className="text-content-primary font-semibold mb-4">Funding History</h3>
           <div className="space-y-1">
             {deposits.map(d => (
               <div
                 key={d.id}
-                className="flex items-center justify-between py-3 border-b border-dark-border last:border-0 gap-3"
+                className="flex items-center justify-between py-3 border-b border-line last:border-0 gap-3"
               >
                 {/* Left: date + type + note stacked */}
                 <div className="flex flex-col gap-0.5 min-w-0">
                   <div className="flex items-center gap-2">
-                    <span className="text-gray-400 text-xs">
+                    <span className="text-content-secondary text-xs">
                       {d.date?.toDate?.().toLocaleDateString('en-US', {
                         month: 'short', day: 'numeric', year: 'numeric'
                       })}
                     </span>
                     <span className={`text-xs font-semibold capitalize ${
-                      d.type === 'deposit' ? 'text-green-400' : 'text-red-400'
+                      d.type === 'deposit' ? 'text-profit' : 'text-loss'
                     }`}>
                       {d.type}
                     </span>
                   </div>
                   {d.note && (
-                    <span className="text-gray-500 text-xs truncate">{d.note}</span>
+                    <span className="text-content-muted text-xs truncate">{d.note}</span>
                   )}
                 </div>
 
                 {/* Right: amount + delete */}
                 <div className="flex items-center gap-3 shrink-0">
-                  <span className={`font-semibold text-sm ${d.type === 'deposit' ? 'text-green-400' : 'text-red-400'}`}>
+                  <span className={`font-semibold text-sm ${d.type === 'deposit' ? 'text-profit' : 'text-loss'}`}>
                     {d.type === 'deposit' ? '+' : '-'}${d.amount.toFixed(2)}
                   </span>
                   <button
                     onClick={() => handleDelete(d.id)}
-                    className="text-gray-600 hover:text-red-400 transition-colors"
+                    className="text-content-muted hover:text-loss transition-colors"
                   >
                     <Trash2 size={14} />
                   </button>
@@ -445,40 +445,40 @@ function Settings() {
         <div className="space-y-4">
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-gray-400 text-xs block mb-1">Account Goal ($)</label>
+              <label className="text-content-secondary text-xs block mb-1">Account Goal ($)</label>
               <input
                 type="number"
                 min="0"
                 step="0.01"
                 value={goalAmount}
                 onChange={e => setGoalAmount(e.target.value)}
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
                 placeholder="e.g. 10000"
               />
             </div>
             <div>
-              <label className="text-gray-400 text-xs block mb-1">Goal Target Date</label>
+              <label className="text-content-secondary text-xs block mb-1">Goal Target Date</label>
               <input
                 type="date"
                 value={goalDate}
                 onChange={e => setGoalDate(e.target.value)}
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
               />
             </div>
           </div>
 
           <div>
-            <label className="text-gray-400 text-xs block mb-1">Daily P&amp;L Goal (%)</label>
+            <label className="text-content-secondary text-xs block mb-1">Daily P&amp;L Goal (%)</label>
             <input
               type="number"
               min="0"
               step="0.1"
               value={dailyPnlGoal}
               onChange={e => setDailyPnlGoal(e.target.value)}
-              className="w-full sm:w-40 bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+              className="w-full sm:w-40 bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
               placeholder="e.g. 25"
             />
-            <p className="text-gray-500 text-xs mt-1">Target % gain on your account per trading day. Dashboard tracks your progress toward this each day.</p>
+            <p className="text-content-muted text-xs mt-1">Target % gain on your account per trading day. Dashboard tracks your progress toward this each day.</p>
           </div>
 
           <SaveSettingsButton
@@ -496,7 +496,7 @@ function Settings() {
         <h3 className="mb-4 font-semibold text-content-primary">Risk Rules</h3>
         <div className="space-y-4">
           <div>
-            <label className="text-gray-400 text-xs block mb-1">Max Risk Per Trade (%)</label>
+            <label className="text-content-secondary text-xs block mb-1">Max Risk Per Trade (%)</label>
             <input
               type="number"
               min="0"
@@ -504,22 +504,22 @@ function Settings() {
               step="0.1"
               value={maxRisk}
               onChange={e => setMaxRisk(e.target.value)}
-              className={`w-full sm:w-40 bg-dark-bg border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500 ${riskEducation?.isHigh ? 'border-red-700' : 'border-dark-border'}`}
+              className={`w-full sm:w-40 bg-surface-raised border rounded-control px-3 py-2 text-content-primary focus:outline-none focus:border-brand ${riskEducation?.isHigh ? 'border-loss' : 'border-line'}`}
               placeholder="e.g. 2"
             />
-            <p className="text-gray-500 text-xs mt-1">Recommended: 1–3% per trade for sustainable trading.</p>
+            <p className="text-content-muted text-xs mt-1">Recommended: 1–3% per trade for sustainable trading.</p>
             {riskEducation && (
-              <div className={`mt-2 rounded-lg px-3 py-2 text-xs space-y-0.5 ${riskEducation.isHigh ? 'bg-red-900/20 border border-red-800/30' : 'bg-green-900/20 border border-green-800/30'}`}>
+              <div className={`mt-2 rounded-lg px-3 py-2 text-xs space-y-0.5 ${riskEducation.isHigh ? 'bg-loss/10 border border-loss/15' : 'bg-profit/10 border border-profit/15'}`}>
                 {riskEducation.isHigh ? (
                   <>
-                    <p className="text-red-300 font-semibold">⚠ {riskEducation.r}% is not risk management — it's gambling.</p>
-                    <p className="text-red-300/70">At {riskEducation.r}%, you need only {riskEducation.lossesToBlow} consecutive losses to blow up.</p>
-                    <p className="text-green-400/80">At 2%, you can survive 50+ losses in a row.</p>
+                    <p className="text-loss font-semibold">⚠ {riskEducation.r}% is not risk management — it's gambling.</p>
+                    <p className="text-loss/70">At {riskEducation.r}%, you need only {riskEducation.lossesToBlow} consecutive losses to blow up.</p>
+                    <p className="text-profit/80">At 2%, you can survive 50+ losses in a row.</p>
                   </>
                 ) : (
                   <>
-                    <p className="text-green-300 font-semibold">✓ {riskEducation.r}% is within professional range.</p>
-                    <p className="text-green-300/70">You can survive {riskEducation.lossesToBlow}+ consecutive losses before blowing up.</p>
+                    <p className="text-profit font-semibold">✓ {riskEducation.r}% is within professional range.</p>
+                    <p className="text-profit/70">You can survive {riskEducation.lossesToBlow}+ consecutive losses before blowing up.</p>
                   </>
                 )}
               </div>
@@ -528,30 +528,30 @@ function Settings() {
 
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
-              <label className="text-gray-400 text-xs block mb-1">Max Trades Per Day</label>
+              <label className="text-content-secondary text-xs block mb-1">Max Trades Per Day</label>
               <input
                 type="number"
                 min="1"
                 step="1"
                 value={maxTradesPerDay}
                 onChange={e => setMaxTradesPerDay(e.target.value)}
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
                 placeholder="e.g. 3"
               />
-              <p className="text-gray-500 text-xs mt-1">Soft limit — dashboard will flag when exceeded.</p>
+              <p className="text-content-muted text-xs mt-1">Soft limit — dashboard will flag when exceeded.</p>
             </div>
             <div>
-              <label className="text-gray-400 text-xs block mb-1">Max Daily Loss (%)</label>
+              <label className="text-content-secondary text-xs block mb-1">Max Daily Loss (%)</label>
               <input
                 type="number"
                 min="0"
                 step="0.1"
                 value={maxDailyLoss}
                 onChange={e => setMaxDailyLoss(e.target.value)}
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
                 placeholder="e.g. 5"
               />
-              <p className="text-gray-500 text-xs mt-1">Stop trading when daily loss hits this %.</p>
+              <p className="text-content-muted text-xs mt-1">Stop trading when daily loss hits this %.</p>
             </div>
           </div>
 

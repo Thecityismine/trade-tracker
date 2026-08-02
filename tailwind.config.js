@@ -47,13 +47,12 @@ export default {
           DEFAULT: '#FBBF24',
           soft: 'rgba(251,191,36,0.12)',
         },
-        // Legacy aliases — remapped to the new scale so the 400+ existing
-        // `bg-dark-card` / `border-dark-border` usages soften immediately.
-        // Removed page by page in Phase 3.
-        dark: {
-          bg: '#0B0B0D',
-          card: '#131316',
-          border: 'rgba(255,255,255,0.07)',
+        // The step between warn and loss. Grade scales (A–F) and severity
+        // ladders need five distinct rungs, so this stays in the palette even
+        // though nothing interactive is allowed to use it.
+        caution: {
+          DEFAULT: '#FB923C',
+          soft: 'rgba(251,146,60,0.12)',
         },
       },
       borderRadius: {

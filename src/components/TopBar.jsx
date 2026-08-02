@@ -31,7 +31,7 @@ function TopBar({ title, description, onOpenMobileNav, onAddTrade, hintG }) {
 
         <button
           onClick={onAddTrade}
-          className="flex items-center gap-1.5 rounded-control bg-brand px-3 py-2 text-sm font-medium text-white transition-colors hover:bg-brand-hover active:scale-95"
+          className="flex items-center gap-1.5 rounded-control bg-brand px-3 py-2 text-sm font-medium text-content-primary transition-colors hover:bg-brand-hover active:scale-95"
         >
           <Plus size={16} />
           <span className="hidden sm:inline">New Trade</span>

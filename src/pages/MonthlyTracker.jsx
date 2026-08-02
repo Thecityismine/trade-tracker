@@ -85,16 +85,16 @@ function getNextMonthFocus(month, topMistake) {
 }
 
 function verdictClasses(type) {
-  if (type === 'good') return 'bg-green-500/10 border border-green-500/15';
-  if (type === 'bad') return 'bg-red-500/10 border border-red-500/15';
-  if (type === 'warning') return 'bg-yellow-500/10 border border-yellow-500/15';
-  return 'bg-blue-500/10 border border-blue-500/15';
+  if (type === 'good') return 'bg-profit/10 border border-profit/15';
+  if (type === 'bad') return 'bg-loss/10 border border-loss/15';
+  if (type === 'warning') return 'bg-warn/10 border border-warn/15';
+  return 'bg-brand/10 border border-brand/15';
 }
 function verdictTextColor(type) {
-  if (type === 'good') return 'text-green-400';
-  if (type === 'bad') return 'text-red-400';
-  if (type === 'warning') return 'text-yellow-400';
-  return 'text-blue-400';
+  if (type === 'good') return 'text-profit';
+  if (type === 'bad') return 'text-loss';
+  if (type === 'warning') return 'text-warn';
+  return 'text-brand';
 }
 
 function MonthCalendar({ month }) {
@@ -118,29 +118,29 @@ function MonthCalendar({ month }) {
   while (cells.length % 7 !== 0) cells.push(null);
 
   return (
-    <div className="border border-dark-border rounded-lg overflow-hidden">
+    <div className="rounded-lg overflow-hidden">
       {/* Month header */}
-      <div className="flex items-center justify-between px-4 py-3 bg-dark-bg border-b border-dark-border">
+      <div className="flex items-center justify-between px-4 py-3 bg-surface-raised border-b border-line">
         <div>
-          <span className="text-white font-semibold">{month.monthLabel}</span>
-          <span className="text-gray-500 text-xs ml-2">
+          <span className="text-content-primary font-semibold">{month.monthLabel}</span>
+          <span className="text-content-muted text-xs ml-2">
             {month.totalTrades} trades · {month.wins}W {month.losses}L
           </span>
         </div>
         <div className="flex items-center gap-3">
-          <span className={`font-bold text-sm ${month.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+          <span className={`font-bold text-sm ${month.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
             {month.totalPnl >= 0 ? '+$' : '-$'}{Math.abs(month.totalPnl).toFixed(2)}
           </span>
-          <span className={`${month.color} text-white text-xs font-bold px-2 py-0.5 rounded`}>
+          <span className={`${month.color} text-content-primary text-xs font-bold px-2 py-0.5 rounded`}>
             {month.grade}
           </span>
         </div>
       </div>
 
       {/* Day-of-week headers */}
-      <div className="grid grid-cols-7 bg-dark-bg/50 border-b border-dark-border">
+      <div className="grid grid-cols-7 bg-surface-raised/50 border-b border-line">
         {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((d) => (
-          <div key={d} className="text-center text-gray-500 text-xs py-2 font-medium">
+          <div key={d} className="text-center text-content-muted text-xs py-2 font-medium">
             <span className="hidden sm:inline">{d}</span>
             <span className="sm:hidden">{d[0]}</span>
           </div>
@@ -155,7 +155,7 @@ function MonthCalendar({ month }) {
             return (
               <div
                 key={i}
-                className={`border-b border-dark-border/30 h-14 md:h-[72px] ${!isLastCol ? 'border-r border-dark-border/30' : ''}`}
+                className={`border-b border-line h-14 md:h-[72px] ${!isLastCol ? 'border-r border-line' : ''}`}
               />
             );
           }
@@ -166,21 +166,21 @@ function MonthCalendar({ month }) {
           return (
             <div
               key={i}
-              className={`border-b border-dark-border/30 h-14 md:h-[72px] p-1 flex flex-col ${
-                !isLastCol ? 'border-r border-dark-border/30' : ''
-              } ${isPositive ? 'bg-green-500/10' : isNegative ? 'bg-red-500/10' : ''}`}
+              className={`border-b border-line h-14 md:h-[72px] p-1 flex flex-col ${
+                !isLastCol ? 'border-r border-line' : ''
+              } ${isPositive ? 'bg-profit/10' : isNegative ? 'bg-loss/10' : ''}`}
             >
-              <span className={`text-[11px] leading-none font-medium ${data ? 'text-gray-300' : 'text-gray-600'}`}>
+              <span className={`text-[11px] leading-none font-medium ${data ? 'text-content-secondary' : 'text-content-muted'}`}>
                 {day}
               </span>
               {data && (
                 <div className="flex flex-col justify-end flex-1">
                   <span className={`text-[11px] md:text-xs font-bold leading-tight ${
-                    isPositive ? 'text-green-400' : isNegative ? 'text-red-400' : 'text-gray-400'
+                    isPositive ? 'text-profit' : isNegative ? 'text-loss' : 'text-content-secondary'
                   }`}>
                     {isPositive ? '+$' : '-$'}{Math.abs(data.pnl).toFixed(0)}
                   </span>
-                  <span className="hidden md:block text-[10px] text-gray-600 leading-none">
+                  <span className="hidden md:block text-[10px] text-content-muted leading-none">
                     {data.trades}t
                   </span>
                 </div>
@@ -279,7 +279,7 @@ function MonthlyTracker() {
     else if (score >= 35) grade = 'D';
     if (totalPnl < 0) grade = downgradeGrade(grade);
 
-    const colorMap = { A: 'bg-green-600', B: 'bg-blue-600', C: 'bg-yellow-600', D: 'bg-orange-600', F: 'bg-red-600' };
+    const colorMap = { A: 'bg-green-600', B: 'bg-brand', C: 'bg-yellow-600', D: 'bg-caution', F: 'bg-red-600' };
     return { grade, color: colorMap[grade] };
   };
 
@@ -357,7 +357,7 @@ function MonthlyTracker() {
             onClick={() => setViewMode('stats')}
             className={`flex items-center gap-1.5 rounded-chip px-3 py-1.5 text-sm font-medium transition-colors ${
               viewMode === 'stats'
-                ? 'bg-brand text-white'
+                ? 'bg-brand text-content-primary'
                 : 'text-content-secondary hover:text-content-primary'
             }`}
           >
@@ -368,7 +368,7 @@ function MonthlyTracker() {
             onClick={() => setViewMode('calendar')}
             className={`flex items-center gap-1.5 rounded-chip px-3 py-1.5 text-sm font-medium transition-colors ${
               viewMode === 'calendar'
-                ? 'bg-brand text-white'
+                ? 'bg-brand text-content-primary'
                 : 'text-content-secondary hover:text-content-primary'
             }`}
           >
@@ -386,7 +386,7 @@ function MonthlyTracker() {
               <MonthCalendar key={idx} month={month} />
             ))}
             {monthlyData.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-content-muted">
                 No trades yet. Start adding trades to see monthly statistics.
               </div>
             )}
@@ -397,8 +397,8 @@ function MonthlyTracker() {
         {viewMode === 'stats' && (
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-dark-bg">
-                <tr className="text-gray-400 text-sm">
+              <thead className="bg-surface-raised">
+                <tr className="text-content-secondary text-sm">
                   <th className="text-left py-3 px-4 font-medium">Month</th>
                   <th className="text-center py-3 px-2 font-medium">Trades</th>
                   <th className="text-center py-3 px-2 font-medium">Wins</th>
@@ -421,44 +421,44 @@ function MonthlyTracker() {
                   return (
                     <tr
                       key={idx}
-                      className={`border-t border-dark-border hover:bg-dark-bg transition-colors ${
-                        month.totalPnl < 0 ? 'bg-red-500/3' : ''
+                      className={`border-t border-line hover:bg-surface-raised transition-colors ${
+                        month.totalPnl < 0 ? 'bg-loss/3' : ''
                       }`}
                     >
                       <td className="py-3 px-4">
-                        <div className="text-white font-medium">{month.monthLabel}</div>
+                        <div className="text-content-primary font-medium">{month.monthLabel}</div>
                         {verdict && (
                           <div className={`text-xs mt-0.5 ${verdictTextColor(verdict.type)}`}>
                             {verdict.label}
                           </div>
                         )}
                         {contradiction && (
-                          <div className="text-xs text-orange-400/80 mt-0.5">⚠ {contradiction}</div>
+                          <div className="text-xs text-caution/80 mt-0.5">⚠ {contradiction}</div>
                         )}
                       </td>
-                      <td className="text-center py-3 px-2 text-white">{month.totalTrades}</td>
-                      <td className="text-center py-3 px-2 text-white font-medium">{month.wins}</td>
-                      <td className="text-center py-3 px-2 text-white font-medium">{month.losses}</td>
+                      <td className="text-center py-3 px-2 text-content-primary">{month.totalTrades}</td>
+                      <td className="text-center py-3 px-2 text-content-primary font-medium">{month.wins}</td>
+                      <td className="text-center py-3 px-2 text-content-primary font-medium">{month.losses}</td>
                       <td className="text-center py-3 px-2">
                         <span
-                          className={`${month.color} text-white px-3 py-1 rounded font-bold cursor-help`}
+                          className={`${month.color} text-content-primary px-3 py-1 rounded font-bold cursor-help`}
                           title={month.gradeExplanation}
                         >
                           {month.grade}
                         </span>
                       </td>
-                      <td className={`text-right py-3 px-3 font-bold ${month.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <td className={`text-right py-3 px-3 font-bold ${month.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                         {month.totalPnl >= 0 ? '+$' : '-$'}{Math.abs(month.totalPnl).toFixed(2)}
                       </td>
-                      <td className="text-right py-3 px-3 text-gray-300">${month.totalFees.toFixed(2)}</td>
-                      <td className={`text-right py-3 px-3 font-bold ${month.monthlyPnlPercent === null ? 'text-gray-500' : month.monthlyPnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <td className="text-right py-3 px-3 text-content-secondary">${month.totalFees.toFixed(2)}</td>
+                      <td className={`text-right py-3 px-3 font-bold ${month.monthlyPnlPercent === null ? 'text-content-muted' : month.monthlyPnlPercent >= 0 ? 'text-profit' : 'text-loss'}`}>
                         {month.monthlyPnlPercent === null ? '--' : `${month.monthlyPnlPercent >= 0 ? '+' : ''}${month.monthlyPnlPercent.toFixed(2)}%`}
                       </td>
-                      <td className="text-right py-3 px-3 text-white">{month.winRate.toFixed(2)}%</td>
-                      <td className="text-right py-3 px-3 text-white">{month.avgWin.toFixed(2)}%</td>
-                      <td className="text-right py-3 px-3 text-white">{month.avgLoss.toFixed(2)}%</td>
-                      <td className="text-right py-3 px-3 text-white">{month.expectancy.toFixed(2)}%</td>
-                      <td className="text-right py-3 px-3 text-white">{month.profitFactor.toFixed(2)}</td>
+                      <td className="text-right py-3 px-3 text-content-primary">{month.winRate.toFixed(2)}%</td>
+                      <td className="text-right py-3 px-3 text-content-primary">{month.avgWin.toFixed(2)}%</td>
+                      <td className="text-right py-3 px-3 text-content-primary">{month.avgLoss.toFixed(2)}%</td>
+                      <td className="text-right py-3 px-3 text-content-primary">{month.expectancy.toFixed(2)}%</td>
+                      <td className="text-right py-3 px-3 text-content-primary">{month.profitFactor.toFixed(2)}</td>
                     </tr>
                   );
                 })}
@@ -487,19 +487,19 @@ function MonthlyTracker() {
                 <div
                   key={idx}
                   className={`rounded-lg p-4 border ${
-                    month.totalPnl < 0 ? 'bg-red-500/5 border-red-500/15' : 'bg-dark-bg border-dark-border'
+                    month.totalPnl < 0 ? 'bg-loss/5 border-loss/15' : 'bg-surface-raised border-line'
                   }`}
                 >
                   {/* Header: month name + grade badge */}
                   <div className="flex items-start justify-between mb-2">
                     <div>
-                      <h3 className="text-white font-semibold text-base">{month.monthLabel}</h3>
-                      <div className="text-gray-500 text-xs mt-0.5">
+                      <h3 className="text-content-primary font-semibold text-base">{month.monthLabel}</h3>
+                      <div className="text-content-muted text-xs mt-0.5">
                         {month.totalTrades} trades · {month.wins}W {month.losses}L
                       </div>
                     </div>
                     <span
-                      className={`${month.color} text-white text-xl font-black px-3 py-1.5 rounded-lg min-w-[2.75rem] text-center cursor-help`}
+                      className={`${month.color} text-content-primary text-xl font-black px-3 py-1.5 rounded-lg min-w-[2.75rem] text-center cursor-help`}
                       title={month.gradeExplanation}
                     >
                       {month.grade}
@@ -507,7 +507,7 @@ function MonthlyTracker() {
                   </div>
 
                   {/* P&L headline */}
-                  <div className={`text-3xl font-bold mb-3 ${month.totalPnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  <div className={`text-3xl font-bold mb-3 ${month.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                     {month.totalPnl >= 0 ? '+$' : '-$'}{Math.abs(month.totalPnl).toFixed(2)}
                   </div>
 
@@ -517,30 +517,30 @@ function MonthlyTracker() {
                       <div className={`text-xs font-bold mb-0.5 ${verdictTextColor(verdict.type)}`}>
                         {verdict.label}
                       </div>
-                      <div className="text-gray-400 text-xs">{verdict.text}</div>
+                      <div className="text-content-secondary text-xs">{verdict.text}</div>
                     </div>
                   )}
 
                   {/* Core metrics */}
                   <div className="grid grid-cols-3 gap-x-2 gap-y-3 mb-3">
                     <div>
-                      <div className="text-gray-500 text-xs">Win Rate</div>
-                      <div className="text-white font-semibold text-sm">{month.winRate.toFixed(1)}%</div>
+                      <div className="text-content-muted text-xs">Win Rate</div>
+                      <div className="text-content-primary font-semibold text-sm">{month.winRate.toFixed(1)}%</div>
                     </div>
                     <div>
-                      <div className="text-gray-500 text-xs">P&L%</div>
+                      <div className="text-content-muted text-xs">P&L%</div>
                       <div className={`font-bold text-sm ${
-                        month.monthlyPnlPercent === null ? 'text-gray-500' :
-                        month.monthlyPnlPercent >= 0 ? 'text-green-400' : 'text-red-400'
+                        month.monthlyPnlPercent === null ? 'text-content-muted' :
+                        month.monthlyPnlPercent >= 0 ? 'text-profit' : 'text-loss'
                       }`}>
                         {month.monthlyPnlPercent === null ? '--' : `${month.monthlyPnlPercent >= 0 ? '+' : ''}${month.monthlyPnlPercent.toFixed(1)}%`}
                       </div>
                     </div>
                     <div>
-                      <div className="text-gray-500 text-xs">Prof. Factor</div>
+                      <div className="text-content-muted text-xs">Prof. Factor</div>
                       <div className={`font-semibold text-sm ${
-                        month.profitFactor >= 1.5 ? 'text-green-400' :
-                        month.profitFactor >= 1 ? 'text-yellow-400' : 'text-red-400'
+                        month.profitFactor >= 1.5 ? 'text-profit' :
+                        month.profitFactor >= 1 ? 'text-warn' : 'text-loss'
                       }`}>
                         {month.profitFactor.toFixed(2)}
                       </div>
@@ -549,7 +549,7 @@ function MonthlyTracker() {
 
                   {/* Contradiction */}
                   {contradiction && (
-                    <div className="text-xs text-orange-400 bg-orange-500/10 border border-orange-500/15 rounded-lg px-3 py-2 mb-3">
+                    <div className="text-xs text-caution bg-caution/10 border border-caution/15 rounded-lg px-3 py-2 mb-3">
                       ⚠ {contradiction}
                     </div>
                   )}
@@ -557,7 +557,7 @@ function MonthlyTracker() {
                   {/* Advanced toggle */}
                   <button
                     onClick={() => toggleAdvanced(idx)}
-                    className="text-xs text-gray-500 hover:text-gray-400 flex items-center gap-1 mb-3 transition-colors"
+                    className="text-xs text-content-muted hover:text-content-secondary flex items-center gap-1 mb-3 transition-colors"
                   >
                     {isAdvancedOpen ? 'Hide advanced' : 'Show advanced'}
                     {isAdvancedOpen ? <ChevronUp size={12} /> : <ChevronDown size={12} />}
@@ -565,33 +565,33 @@ function MonthlyTracker() {
 
                   {/* Advanced metrics */}
                   {isAdvancedOpen && (
-                    <div className="grid grid-cols-2 gap-3 mb-3 pt-3 border-t border-dark-border">
+                    <div className="grid grid-cols-2 gap-3 mb-3 pt-3 border-t border-line">
                       <div>
-                        <div className="text-gray-500 text-xs">Expectancy</div>
-                        <div className={`font-semibold text-sm ${month.expectancy >= 0 ? 'text-white' : 'text-red-400'}`}>
+                        <div className="text-content-muted text-xs">Expectancy</div>
+                        <div className={`font-semibold text-sm ${month.expectancy >= 0 ? 'text-content-primary' : 'text-loss'}`}>
                           {month.expectancy.toFixed(2)}%
                         </div>
                       </div>
                       <div>
-                        <div className="text-gray-500 text-xs">Avg Win</div>
-                        <div className="text-green-400 font-semibold text-sm">{month.avgWin.toFixed(2)}%</div>
+                        <div className="text-content-muted text-xs">Avg Win</div>
+                        <div className="text-profit font-semibold text-sm">{month.avgWin.toFixed(2)}%</div>
                       </div>
                       <div>
-                        <div className="text-gray-500 text-xs">Avg Loss</div>
-                        <div className="text-red-400 font-semibold text-sm">{month.avgLoss.toFixed(2)}%</div>
+                        <div className="text-content-muted text-xs">Avg Loss</div>
+                        <div className="text-loss font-semibold text-sm">{month.avgLoss.toFixed(2)}%</div>
                       </div>
                       <div>
-                        <div className="text-gray-500 text-xs">Fees</div>
-                        <div className="text-gray-300 font-semibold text-sm">${month.totalFees.toFixed(2)}</div>
+                        <div className="text-content-muted text-xs">Fees</div>
+                        <div className="text-content-secondary font-semibold text-sm">${month.totalFees.toFixed(2)}</div>
                       </div>
                     </div>
                   )}
 
                   {/* Top mistake */}
                   {topMistake && (
-                    <div className="mb-3 bg-red-500/5 border border-red-500/15 rounded-lg px-3 py-2">
-                      <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-1">Top Mistake</div>
-                      <div className="text-red-400 text-xs">
+                    <div className="mb-3 bg-loss/5 border border-loss/15 rounded-lg px-3 py-2">
+                      <div className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-1">Top Mistake</div>
+                      <div className="text-loss text-xs">
                         {topMistake.label} — tagged {topMistake.count} time{topMistake.count !== 1 ? 's' : ''}
                       </div>
                     </div>
@@ -600,23 +600,23 @@ function MonthlyTracker() {
                   {/* vs Previous month */}
                   {comparison && (
                     <div className="mb-3">
-                      <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">vs Previous Month</div>
+                      <div className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">vs Previous Month</div>
                       <div className="flex gap-5">
                         <div>
-                          <div className="text-gray-500 text-xs">Win Rate</div>
-                          <div className={`text-xs font-semibold ${comparison.winRateDelta >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          <div className="text-content-muted text-xs">Win Rate</div>
+                          <div className={`text-xs font-semibold ${comparison.winRateDelta >= 0 ? 'text-profit' : 'text-loss'}`}>
                             {comparison.winRateDelta >= 0 ? '+' : ''}{comparison.winRateDelta.toFixed(1)}%
                           </div>
                         </div>
                         <div>
-                          <div className="text-gray-500 text-xs">Profit Factor</div>
-                          <div className={`text-xs font-semibold ${comparison.pfDelta >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          <div className="text-content-muted text-xs">Profit Factor</div>
+                          <div className={`text-xs font-semibold ${comparison.pfDelta >= 0 ? 'text-profit' : 'text-loss'}`}>
                             {comparison.pfDelta >= 0 ? '+' : ''}{comparison.pfDelta.toFixed(2)}
                           </div>
                         </div>
                         <div>
-                          <div className="text-gray-500 text-xs">P&L</div>
-                          <div className={`text-xs font-semibold ${comparison.pnlDelta >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          <div className="text-content-muted text-xs">P&L</div>
+                          <div className={`text-xs font-semibold ${comparison.pnlDelta >= 0 ? 'text-profit' : 'text-loss'}`}>
                             {comparison.pnlDelta >= 0 ? '+$' : '-$'}{Math.abs(comparison.pnlDelta).toFixed(2)}
                           </div>
                         </div>
@@ -626,11 +626,11 @@ function MonthlyTracker() {
 
                   {/* Next month focus */}
                   <div>
-                    <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Next Month Focus</div>
-                    <div className="bg-blue-500/5 border border-blue-500/15 rounded-lg px-3 py-2 space-y-1">
+                    <div className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Next Month Focus</div>
+                    <div className="bg-brand/5 border border-brand/15 rounded-lg px-3 py-2 space-y-1">
                       {nextFocuses.map((f, i) => (
-                        <div key={i} className="text-xs text-gray-300 flex items-start gap-1.5">
-                          <span className="text-blue-400 flex-shrink-0 mt-0.5">•</span>
+                        <div key={i} className="text-xs text-content-secondary flex items-start gap-1.5">
+                          <span className="text-brand flex-shrink-0 mt-0.5">•</span>
                           {f}
                         </div>
                       ))}
@@ -641,7 +641,7 @@ function MonthlyTracker() {
             })}
 
             {monthlyData.length === 0 && (
-              <div className="text-center py-8 text-gray-500">
+              <div className="text-center py-8 text-content-muted">
                 No trades yet. Start adding trades to see monthly statistics.
               </div>
             )}

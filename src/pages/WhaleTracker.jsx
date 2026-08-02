@@ -188,15 +188,15 @@ function WhaleTracker() {
       }
     >
       {/* Watchlist manager */}
-      <div className="bg-dark-card border border-dark-border rounded-lg p-5">
-        <h3 className="text-white font-semibold text-sm mb-1">Watchlist</h3>
-        <p className="text-gray-500 text-xs mb-4">
+      <div className="bg-surface rounded-card p-5 shadow-elev-1">
+        <h3 className="text-content-primary font-semibold text-sm mb-1">Watchlist</h3>
+        <p className="text-content-muted text-xs mb-4">
           Add wallet addresses to track. Find top traders on the{' '}
           <a
             href="https://app.hyperliquid.xyz/leaderboard"
             target="_blank"
             rel="noopener noreferrer"
-            className="text-blue-400 hover:text-blue-300 underline"
+            className="text-brand hover:text-brand-hover underline"
           >
             Hyperliquid leaderboard
           </a>
@@ -211,17 +211,17 @@ function WhaleTracker() {
             onChange={(e) => { setNewAddr(e.target.value); setAddrError(''); }}
             onKeyDown={(e) => e.key === 'Enter' && handleAddAddress()}
             placeholder="0x… wallet address"
-            className="flex-1 bg-dark-bg border border-dark-border text-white text-sm rounded-lg px-3 py-2 placeholder-gray-600 focus:outline-none focus:border-blue-500 font-mono"
+            className="flex-1 bg-surface-raised border border-line-strong text-content-primary text-sm rounded-lg px-3 py-2 placeholder-content-muted focus:outline-none focus:border-brand font-mono"
           />
           <button
             onClick={handleAddAddress}
-            className="flex items-center gap-1.5 bg-blue-600 hover:bg-blue-700 text-white px-3 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0"
+            className="flex items-center gap-1.5 bg-brand hover:bg-brand-hover text-content-primary px-3 py-2 rounded-lg text-sm font-medium transition-colors flex-shrink-0"
           >
             <Plus size={14} />
             Add
           </button>
         </div>
-        {addrError && <p className="text-red-400 text-xs mb-3 -mt-2">{addrError}</p>}
+        {addrError && <p className="text-loss text-xs mb-3 -mt-2">{addrError}</p>}
 
         {/* Address tags */}
         {addresses.length > 0 ? (
@@ -229,12 +229,12 @@ function WhaleTracker() {
             {addresses.map((addr) => (
               <div
                 key={addr}
-                className="flex items-center gap-2 bg-dark-bg border border-dark-border rounded-lg px-3 py-1.5"
+                className="flex items-center gap-2 bg-surface-raised rounded-control px-3 py-1.5"
               >
-                <span className="font-mono text-xs text-gray-300">{shortenAddr(addr)}</span>
+                <span className="font-mono text-xs text-content-secondary">{shortenAddr(addr)}</span>
                 <button
                   onClick={() => handleRemoveAddress(addr)}
-                  className="text-gray-600 hover:text-red-400 transition-colors"
+                  className="text-content-muted hover:text-loss transition-colors"
                 >
                   <X size={12} />
                 </button>
@@ -242,7 +242,7 @@ function WhaleTracker() {
             ))}
           </div>
         ) : (
-          <div className="text-center py-6 text-gray-600 text-sm border border-dashed border-dark-border rounded-lg">
+          <div className="text-center py-6 text-content-muted text-sm border border-dashed border-line-strong rounded-lg">
             No addresses yet — add one above to start tracking
           </div>
         )}
@@ -250,24 +250,24 @@ function WhaleTracker() {
 
       {/* Error */}
       {error && (
-        <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-4 flex items-start gap-3">
-          <AlertCircle size={18} className="text-red-400 flex-shrink-0 mt-0.5" />
+        <div className="bg-loss/10 border border-loss/20 rounded-lg p-4 flex items-start gap-3">
+          <AlertCircle size={18} className="text-loss flex-shrink-0 mt-0.5" />
           <div>
-            <div className="text-red-400 font-medium text-sm">Failed to load</div>
-            <div className="text-gray-400 text-xs mt-1">{error}</div>
+            <div className="text-loss font-medium text-sm">Failed to load</div>
+            <div className="text-content-secondary text-xs mt-1">{error}</div>
           </div>
         </div>
       )}
 
       {/* Empty / not loaded */}
       {addresses.length > 0 && !data && !loading && !error && (
-        <div className="bg-dark-card border border-dark-border rounded-lg p-10 text-center">
-          <Eye size={36} className="text-gray-600 mx-auto mb-3" />
-          <p className="text-gray-300 font-medium">Ready to scan</p>
-          <p className="text-gray-600 text-sm mt-1">{addresses.length} address{addresses.length !== 1 ? 'es' : ''} in watchlist</p>
+        <div className="bg-surface rounded-card p-10 text-center shadow-elev-1">
+          <Eye size={36} className="text-content-muted mx-auto mb-3" />
+          <p className="text-content-secondary font-medium">Ready to scan</p>
+          <p className="text-content-muted text-sm mt-1">{addresses.length} address{addresses.length !== 1 ? 'es' : ''} in watchlist</p>
           <button
             onClick={handleRefresh}
-            className="mt-5 bg-blue-600 hover:bg-blue-700 text-white px-6 py-2.5 rounded-lg text-sm font-medium transition-colors"
+            className="mt-5 bg-brand hover:bg-brand-hover text-content-primary px-6 py-2.5 rounded-lg text-sm font-medium transition-colors"
           >
             Load Positions
           </button>
@@ -278,9 +278,9 @@ function WhaleTracker() {
       {loading && !data && (
         <div className="space-y-3">
           {[1, 2].map((i) => (
-            <div key={i} className="bg-dark-card border border-dark-border rounded-lg p-6 animate-pulse">
-              <div className="h-4 bg-dark-border rounded w-1/3 mb-3" />
-              <div className="h-3 bg-dark-border rounded w-1/2" />
+            <div key={i} className="bg-surface rounded-card p-6 animate-pulse shadow-elev-1">
+              <div className="h-4 bg-surface-raised rounded w-1/3 mb-3" />
+              <div className="h-3 bg-surface-raised rounded w-1/2" />
             </div>
           ))}
         </div>
@@ -291,13 +291,13 @@ function WhaleTracker() {
           {/* Summary stats */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
             {[
-              { label: 'Wallets Tracked', value: data.whales.length, color: 'text-white' },
-              { label: 'With Open Positions', value: data.withPositions, color: 'text-blue-400' },
-              { label: 'Assets in Play', value: data.coins.length, color: 'text-white' },
-              { label: 'Total Value Tracked', value: fmtUsd(data.totalValue), color: 'text-white' },
+              { label: 'Wallets Tracked', value: data.whales.length, color: 'text-content-primary' },
+              { label: 'With Open Positions', value: data.withPositions, color: 'text-brand' },
+              { label: 'Assets in Play', value: data.coins.length, color: 'text-content-primary' },
+              { label: 'Total Value Tracked', value: fmtUsd(data.totalValue), color: 'text-content-primary' },
             ].map((s) => (
-              <div key={s.label} className="bg-dark-card border border-dark-border rounded-lg p-4">
-                <div className="text-gray-500 text-sm mb-1">{s.label}</div>
+              <div key={s.label} className="bg-surface rounded-card p-4 shadow-elev-1">
+                <div className="text-content-muted text-sm mb-1">{s.label}</div>
                 <div className={`text-2xl font-bold ${s.color}`}>{s.value}</div>
               </div>
             ))}
@@ -307,21 +307,21 @@ function WhaleTracker() {
           {(crowdedLongs.length > 0 || crowdedShorts.length > 0) && (
             <div className="grid md:grid-cols-2 gap-4">
               {[
-                { items: crowdedLongs, label: 'Crowded Longs', iconColor: 'text-green-400', barColor: 'bg-green-500', textColor: 'text-green-400', getCount: (c) => c.longs, getValue: (c) => c.longValue, getPct: (c) => c.longPct },
-                { items: crowdedShorts, label: 'Crowded Shorts', iconColor: 'text-red-400', barColor: 'bg-red-500', textColor: 'text-red-400', getCount: (c) => c.shorts, getValue: (c) => c.shortValue, getPct: (c) => 100 - c.longPct },
+                { items: crowdedLongs, label: 'Crowded Longs', iconColor: 'text-profit', barColor: 'bg-profit', textColor: 'text-profit', getCount: (c) => c.longs, getValue: (c) => c.longValue, getPct: (c) => c.longPct },
+                { items: crowdedShorts, label: 'Crowded Shorts', iconColor: 'text-loss', barColor: 'bg-loss', textColor: 'text-loss', getCount: (c) => c.shorts, getValue: (c) => c.shortValue, getPct: (c) => 100 - c.longPct },
               ].map(({ items, label, iconColor, barColor, textColor, getCount, getValue, getPct }) =>
                 items.length > 0 ? (
-                  <div key={label} className="bg-dark-card border border-dark-border rounded-lg p-5">
+                  <div key={label} className="bg-surface rounded-card p-5 shadow-elev-1">
                     <h3 className={`font-semibold text-base mb-4 ${iconColor}`}>{label}</h3>
                     <div className="space-y-3">
                       {items.map((c) => (
                         <div key={c.coin} className="flex items-center justify-between gap-3">
                           <div className="flex items-center gap-3 min-w-0">
-                            <span className="text-white font-bold text-base w-14 flex-shrink-0">{c.coin}</span>
-                            <span className="text-gray-500 text-sm">{getCount(c)} wallets</span>
+                            <span className="text-content-primary font-bold text-base w-14 flex-shrink-0">{c.coin}</span>
+                            <span className="text-content-muted text-sm">{getCount(c)} wallets</span>
                           </div>
                           <div className="flex items-center gap-2 flex-shrink-0">
-                            <div className="w-20 h-1.5 bg-dark-bg rounded-full overflow-hidden">
+                            <div className="w-20 h-1.5 bg-surface-raised rounded-full overflow-hidden">
                               <div className={`h-full ${barColor} rounded-full`} style={{ width: `${getPct(c)}%` }} />
                             </div>
                             <span className={`text-sm font-medium w-16 text-right ${textColor}`}>
@@ -338,15 +338,15 @@ function WhaleTracker() {
           )}
 
           {/* Aggregate exposure table */}
-          <div className="bg-dark-card border border-dark-border rounded-lg overflow-hidden">
-            <div className="px-5 py-4 border-b border-dark-border">
-              <h3 className="text-white font-semibold">Aggregate Exposure by Asset</h3>
-              <p className="text-gray-500 text-xs mt-0.5">Combined position value across all tracked wallets</p>
+          <div className="bg-surface rounded-card overflow-hidden shadow-elev-1">
+            <div className="px-5 py-4 border-b border-line">
+              <h3 className="text-content-primary font-semibold">Aggregate Exposure by Asset</h3>
+              <p className="text-content-muted text-xs mt-0.5">Combined position value across all tracked wallets</p>
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-dark-bg">
-                  <tr className="text-gray-400 text-xs">
+                <thead className="bg-surface-raised">
+                  <tr className="text-content-secondary text-xs">
                     <th className="text-left py-2.5 px-4 font-medium">Asset</th>
                     <th className="text-center py-2.5 px-3 font-medium">Longs</th>
                     <th className="text-center py-2.5 px-3 font-medium">Shorts</th>
@@ -364,36 +364,36 @@ function WhaleTracker() {
                         <tr
                           key={c.coin}
                           onClick={() => setExpandedCoin(isOpen ? null : c.coin)}
-                          className="border-t border-dark-border hover:bg-dark-bg transition-colors cursor-pointer"
+                          className="border-t border-line hover:bg-surface-raised transition-colors cursor-pointer"
                         >
                           <td className="py-3 px-4">
                             <div className="flex items-center gap-2">
-                              <span className="text-white font-bold text-sm">{c.coin}</span>
-                              {isOpen ? <ChevronUp size={12} className="text-gray-500" /> : <ChevronDown size={12} className="text-gray-500" />}
+                              <span className="text-content-primary font-bold text-sm">{c.coin}</span>
+                              {isOpen ? <ChevronUp size={12} className="text-content-muted" /> : <ChevronDown size={12} className="text-content-muted" />}
                             </div>
                           </td>
-                          <td className="py-3 px-3 text-center text-green-400 font-medium text-sm">{c.longs}</td>
-                          <td className="py-3 px-3 text-center text-red-400 font-medium text-sm">{c.shorts}</td>
-                          <td className="py-3 px-3 text-right text-green-400 text-sm">{fmtUsd(c.longValue)}</td>
-                          <td className="py-3 px-3 text-right text-red-400 text-sm">{fmtUsd(c.shortValue)}</td>
+                          <td className="py-3 px-3 text-center text-profit font-medium text-sm">{c.longs}</td>
+                          <td className="py-3 px-3 text-center text-loss font-medium text-sm">{c.shorts}</td>
+                          <td className="py-3 px-3 text-right text-profit text-sm">{fmtUsd(c.longValue)}</td>
+                          <td className="py-3 px-3 text-right text-loss text-sm">{fmtUsd(c.shortValue)}</td>
                           <td className="py-3 px-4">
                             <div className="flex items-center justify-end gap-2">
-                              <div className="w-16 h-1.5 bg-dark-bg rounded-full overflow-hidden flex">
-                                <div className="h-full bg-green-500" style={{ width: `${c.longPct}%` }} />
-                                <div className="h-full bg-red-500 flex-1" />
+                              <div className="w-16 h-1.5 bg-surface-raised rounded-full overflow-hidden flex">
+                                <div className="h-full bg-profit" style={{ width: `${c.longPct}%` }} />
+                                <div className="h-full bg-loss flex-1" />
                               </div>
-                              <span className={`text-xs font-semibold w-12 text-right ${c.bias === 'long' ? 'text-green-400' : 'text-red-400'}`}>
+                              <span className={`text-xs font-semibold w-12 text-right ${c.bias === 'long' ? 'text-profit' : 'text-loss'}`}>
                                 {c.bias === 'long' ? `${c.longPct.toFixed(0)}%L` : `${(100 - c.longPct).toFixed(0)}%S`}
                               </span>
                             </div>
                           </td>
                         </tr>
                         {isOpen && (
-                          <tr key={`${c.coin}-detail`} className="border-t border-dark-border/40">
-                            <td colSpan={6} className="px-4 py-3 bg-dark-bg">
+                          <tr key={`${c.coin}-detail`} className="border-t border-line">
+                            <td colSpan={6} className="px-4 py-3 bg-surface-raised">
                               <table className="w-full">
                                 <thead>
-                                  <tr className="text-gray-600 text-xs">
+                                  <tr className="text-content-muted text-xs">
                                     <th className="text-left pb-2 font-medium">Wallet</th>
                                     <th className="text-center pb-2 font-medium">Side</th>
                                     <th className="text-right pb-2 font-medium">Entry Price</th>
@@ -402,23 +402,23 @@ function WhaleTracker() {
                                     <th className="text-right pb-2 font-medium">uPnL</th>
                                   </tr>
                                 </thead>
-                                <tbody className="divide-y divide-dark-border/30">
+                                <tbody className="divide-y divide-line">
                                   {entries.map((e, idx) => {
                                     const isLong = e.sz > 0;
                                     return (
                                       <tr key={idx}>
-                                        <td className="py-1.5 font-mono text-xs text-gray-400">{shortenAddr(e.address)}</td>
+                                        <td className="py-1.5 font-mono text-xs text-content-secondary">{shortenAddr(e.address)}</td>
                                         <td className="py-1.5 text-center">
-                                          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${isLong ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
+                                          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${isLong ? 'bg-profit/15 text-profit' : 'bg-loss/15 text-loss'}`}>
                                             {isLong ? 'LONG' : 'SHORT'}
                                           </span>
                                         </td>
-                                        <td className="py-1.5 text-right text-white text-xs font-medium">
+                                        <td className="py-1.5 text-right text-content-primary text-xs font-medium">
                                           ${e.entryPx.toLocaleString(undefined, { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                                         </td>
-                                        <td className="py-1.5 text-right text-gray-300 text-xs">{Math.abs(e.sz).toFixed(4)}</td>
-                                        <td className="py-1.5 text-right text-gray-300 text-xs">{fmtUsd(e.value)}</td>
-                                        <td className={`py-1.5 text-right text-xs font-medium ${e.upnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                        <td className="py-1.5 text-right text-content-secondary text-xs">{Math.abs(e.sz).toFixed(4)}</td>
+                                        <td className="py-1.5 text-right text-content-secondary text-xs">{fmtUsd(e.value)}</td>
+                                        <td className={`py-1.5 text-right text-xs font-medium ${e.upnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                                           {signedUsd(e.upnl)}
                                         </td>
                                       </tr>
@@ -434,7 +434,7 @@ function WhaleTracker() {
                   })}
                   {data.coins.length === 0 && (
                     <tr>
-                      <td colSpan={6} className="text-center py-8 text-gray-600 text-sm">
+                      <td colSpan={6} className="text-center py-8 text-content-muted text-sm">
                         No open positions found across tracked wallets
                       </td>
                     </tr>
@@ -445,12 +445,12 @@ function WhaleTracker() {
           </div>
 
           {/* Individual wallet positions */}
-          <div className="bg-dark-card border border-dark-border rounded-lg overflow-hidden">
-            <div className="px-5 py-4 border-b border-dark-border">
-              <h3 className="text-white font-semibold">Wallet Positions</h3>
-              <p className="text-gray-500 text-xs mt-0.5">Sorted by account value — tap to expand</p>
+          <div className="bg-surface rounded-card overflow-hidden shadow-elev-1">
+            <div className="px-5 py-4 border-b border-line">
+              <h3 className="text-content-primary font-semibold">Wallet Positions</h3>
+              <p className="text-content-muted text-xs mt-0.5">Sorted by account value — tap to expand</p>
             </div>
-            <div className="divide-y divide-dark-border">
+            <div className="divide-y divide-line">
               {data.whales.map((whale, i) => {
                 const isExpanded = expandedWhale === i;
                 const hasPositions = whale.openPositions.length > 0;
@@ -459,14 +459,14 @@ function WhaleTracker() {
                     <button
                       onClick={() => hasPositions && setExpandedWhale(isExpanded ? null : i)}
                       className={`w-full flex items-center justify-between px-5 py-3.5 transition-colors text-left ${
-                        hasPositions ? 'hover:bg-dark-bg cursor-pointer' : 'cursor-default'
+                        hasPositions ? 'hover:bg-surface-raised cursor-pointer' : 'cursor-default'
                       }`}
                     >
                       <div className="flex items-center gap-3 min-w-0">
-                        <span className="text-gray-600 text-sm w-5 flex-shrink-0">{i + 1}</span>
+                        <span className="text-content-muted text-sm w-5 flex-shrink-0">{i + 1}</span>
                         <div className="min-w-0">
-                          <div className="text-gray-300 font-mono text-sm">{shortenAddr(whale.address)}</div>
-                          <div className="text-gray-500 text-sm mt-0.5">
+                          <div className="text-content-secondary font-mono text-sm">{shortenAddr(whale.address)}</div>
+                          <div className="text-content-muted text-sm mt-0.5">
                             {whale.fetchFailed
                               ? 'Fetch failed'
                               : hasPositions
@@ -477,11 +477,11 @@ function WhaleTracker() {
                       </div>
                       <div className="flex items-center gap-4 md:gap-6 flex-shrink-0">
                         <div className="text-right">
-                          <div className="text-gray-500 text-sm">Account Value</div>
-                          <div className="text-white text-base font-semibold">{fmtUsd(whale.accountValue)}</div>
+                          <div className="text-content-muted text-sm">Account Value</div>
+                          <div className="text-content-primary text-base font-semibold">{fmtUsd(whale.accountValue)}</div>
                         </div>
                         {hasPositions ? (
-                          isExpanded ? <ChevronUp size={14} className="text-gray-500" /> : <ChevronDown size={14} className="text-gray-500" />
+                          isExpanded ? <ChevronUp size={14} className="text-content-muted" /> : <ChevronDown size={14} className="text-content-muted" />
                         ) : (
                           <div className="w-[14px]" />
                         )}
@@ -489,7 +489,7 @@ function WhaleTracker() {
                     </button>
 
                     {isExpanded && hasPositions && (
-                      <div className="px-5 pb-4 pt-2 bg-dark-bg">
+                      <div className="px-5 pb-4 pt-2 bg-surface-raised">
                         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2">
                           {whale.openPositions.map((pos, j) => {
                             const sz = parseFloat(pos.szi);
@@ -501,15 +501,15 @@ function WhaleTracker() {
                               <div
                                 key={j}
                                 className={`rounded-lg p-4 border ${
-                                  isLong ? 'bg-green-500/5 border-green-500/15' : 'bg-red-500/5 border-red-500/15'
+                                  isLong ? 'bg-profit/5 border-profit/15' : 'bg-loss/5 border-loss/15'
                                 }`}
                               >
                                 <div className="flex items-center justify-between mb-3">
-                                  <span className="text-white font-bold text-lg">{pos.coin}</span>
+                                  <span className="text-content-primary font-bold text-lg">{pos.coin}</span>
                                   <div className="flex items-center gap-2">
-                                    {lev && <span className="text-gray-400 text-sm">{lev}x</span>}
+                                    {lev && <span className="text-content-secondary text-sm">{lev}x</span>}
                                     <span className={`text-sm font-semibold px-2 py-0.5 rounded ${
-                                      isLong ? 'bg-green-500/20 text-green-400' : 'bg-red-500/20 text-red-400'
+                                      isLong ? 'bg-profit/20 text-profit' : 'bg-loss/20 text-loss'
                                     }`}>
                                       {isLong ? 'LONG' : 'SHORT'}
                                     </span>
@@ -517,22 +517,22 @@ function WhaleTracker() {
                                 </div>
                                 <div className="grid grid-cols-2 gap-x-3 gap-y-2 text-sm">
                                   <div>
-                                    <div className="text-gray-500">Size</div>
-                                    <div className="text-gray-200 font-medium">{Math.abs(sz).toFixed(4)}</div>
+                                    <div className="text-content-muted">Size</div>
+                                    <div className="text-content-secondary font-medium">{Math.abs(sz).toFixed(4)}</div>
                                   </div>
                                   <div>
-                                    <div className="text-gray-500">Value</div>
-                                    <div className="text-gray-200 font-medium">{fmtUsd(val)}</div>
+                                    <div className="text-content-muted">Value</div>
+                                    <div className="text-content-secondary font-medium">{fmtUsd(val)}</div>
                                   </div>
                                   <div>
-                                    <div className="text-gray-500">Entry</div>
-                                    <div className="text-gray-200 font-medium">
+                                    <div className="text-content-muted">Entry</div>
+                                    <div className="text-content-secondary font-medium">
                                       ${parseFloat(pos.entryPx ?? 0).toLocaleString(undefined, { maximumFractionDigits: 2 })}
                                     </div>
                                   </div>
                                   <div>
-                                    <div className="text-gray-500">uPnL</div>
-                                    <div className={`font-medium ${upnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>{signedUsd(upnl)}</div>
+                                    <div className="text-content-muted">uPnL</div>
+                                    <div className={`font-medium ${upnl >= 0 ? 'text-profit' : 'text-loss'}`}>{signedUsd(upnl)}</div>
                                   </div>
                                 </div>
                               </div>

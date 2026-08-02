@@ -93,10 +93,10 @@ function groupByDay(trades) {
 }
 
 function verdictClasses(type) {
-  if (type === 'good') return 'bg-green-500/10 border border-green-500/15 text-green-400';
-  if (type === 'bad') return 'bg-red-500/10 border border-red-500/15 text-red-400';
-  if (type === 'warning') return 'bg-yellow-500/10 border border-yellow-500/15 text-yellow-400';
-  return 'bg-blue-500/10 border border-blue-500/15 text-blue-400';
+  if (type === 'good') return 'bg-profit/10 border border-profit/15 text-profit';
+  if (type === 'bad') return 'bg-loss/10 border border-loss/15 text-loss';
+  if (type === 'warning') return 'bg-warn/10 border border-warn/15 text-warn';
+  return 'bg-brand/10 border border-brand/15 text-brand';
 }
 
 function WeeklyTracker() {
@@ -317,8 +317,8 @@ function WeeklyTracker() {
         {/* Desktop Table */}
         <div className="hidden lg:block overflow-x-auto">
           <table className="w-full">
-            <thead className="bg-dark-bg">
-              <tr className="text-gray-400 text-sm">
+            <thead className="bg-surface-raised">
+              <tr className="text-content-secondary text-sm">
                 <th className="text-left py-3 px-4 font-medium">Week</th>
                 <th className="text-center py-3 px-2 font-medium">Wins</th>
                 <th className="text-center py-3 px-2 font-medium">Losses</th>
@@ -340,45 +340,45 @@ function WeeklyTracker() {
                   <>
                     <tr
                       key={idx}
-                      className={`border-t border-dark-border cursor-pointer transition-colors ${
-                        week.pnl < 0 ? 'hover:bg-red-500/5' : 'hover:bg-dark-bg'
+                      className={`border-t border-line cursor-pointer transition-colors ${
+                        week.pnl < 0 ? 'hover:bg-loss/5' : 'hover:bg-surface-raised'
                       }`}
                       onClick={() => setExpandedWeek(expandedWeek === idx ? null : idx)}
                     >
                       <td className="py-3 px-4">
-                        <div className="text-white font-medium">{week.weekLabel}</div>
+                        <div className="text-content-primary font-medium">{week.weekLabel}</div>
                         {verdict && (
                           <div className={`text-xs mt-0.5 ${
-                            verdict.type === 'good' ? 'text-green-500/70' :
-                            verdict.type === 'bad' ? 'text-red-500/70' :
-                            verdict.type === 'warning' ? 'text-yellow-500/70' : 'text-blue-500/70'
+                            verdict.type === 'good' ? 'text-profit/70' :
+                            verdict.type === 'bad' ? 'text-loss/70' :
+                            verdict.type === 'warning' ? 'text-warn/70' : 'text-brand/70'
                           }`}>
                             {verdict.icon} {verdict.text}
                           </div>
                         )}
                       </td>
-                      <td className="text-center py-3 px-2 text-white font-medium">{week.wins}</td>
-                      <td className="text-center py-3 px-2 text-white font-medium">{week.losses}</td>
-                      <td className={`text-right py-3 px-3 font-semibold ${week.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <td className="text-center py-3 px-2 text-content-primary font-medium">{week.wins}</td>
+                      <td className="text-center py-3 px-2 text-content-primary font-medium">{week.losses}</td>
+                      <td className={`text-right py-3 px-3 font-semibold ${week.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                         {week.pnl >= 0 ? '+$' : '-$'}{Math.abs(week.pnl).toFixed(2)}
                       </td>
-                      <td className="text-right py-3 px-3 text-gray-300">${week.fees.toFixed(2)}</td>
-                      <td className={`text-right py-3 px-3 font-bold ${week.pnlPercent === null ? 'text-gray-500' : week.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                      <td className="text-right py-3 px-3 text-content-secondary">${week.fees.toFixed(2)}</td>
+                      <td className={`text-right py-3 px-3 font-bold ${week.pnlPercent === null ? 'text-content-muted' : week.pnlPercent >= 0 ? 'text-profit' : 'text-loss'}`}>
                         {week.pnlPercent === null ? '--' : `${week.pnlPercent.toFixed(2)}%`}
                       </td>
-                      <td className="text-right py-3 px-3 text-white">{week.winRate.toFixed(2)}%</td>
-                      <td className="text-right py-3 px-3 text-white">{week.avgWin.toFixed(2)}%</td>
-                      <td className="text-right py-3 px-3 text-white">{week.avgLoss.toFixed(2)}%</td>
-                      <td className="text-right py-3 px-3 text-white">{week.expectancy.toFixed(2)}%</td>
-                      <td className="text-right py-3 px-3 text-white">{week.profitFactor.toFixed(2)}</td>
+                      <td className="text-right py-3 px-3 text-content-primary">{week.winRate.toFixed(2)}%</td>
+                      <td className="text-right py-3 px-3 text-content-primary">{week.avgWin.toFixed(2)}%</td>
+                      <td className="text-right py-3 px-3 text-content-primary">{week.avgLoss.toFixed(2)}%</td>
+                      <td className="text-right py-3 px-3 text-content-primary">{week.expectancy.toFixed(2)}%</td>
+                      <td className="text-right py-3 px-3 text-content-primary">{week.profitFactor.toFixed(2)}</td>
                       <td className="text-center py-3 px-2">
                         {expandedWeek === idx
-                          ? <ChevronUp size={18} className="text-gray-400" />
-                          : <ChevronDown size={18} className="text-gray-400" />}
+                          ? <ChevronUp size={18} className="text-content-secondary" />
+                          : <ChevronDown size={18} className="text-content-secondary" />}
                       </td>
                     </tr>
                     {expandedWeek === idx && (
-                      <tr className="bg-dark-bg">
+                      <tr className="bg-surface-raised">
                         <td colSpan="12" className="p-4">
                           <div className="mb-5">
                             {renderReport(week)}
@@ -387,22 +387,22 @@ function WeeklyTracker() {
                             {groupByDay(week.trades).map((day) => (
                               <div key={day.label}>
                                 <div className="flex items-center justify-between mb-2">
-                                  <span className="text-gray-400 text-sm font-semibold">{day.label}</span>
-                                  <span className={`text-sm font-semibold ${day.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                  <span className="text-content-secondary text-sm font-semibold">{day.label}</span>
+                                  <span className={`text-sm font-semibold ${day.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                                     Day total: {day.pnl >= 0 ? '+$' : '-$'}{Math.abs(day.pnl).toFixed(2)}
                                   </span>
                                 </div>
                                 {day.trades.map((trade) => (
-                                  <div key={trade.id} className="flex items-center justify-between bg-dark-card border border-dark-border rounded px-3 py-2 mb-1">
+                                  <div key={trade.id} className="flex items-center justify-between bg-surface-hover rounded-chip px-3 py-2 mb-1">
                                     <div className="flex items-center gap-3">
-                                      <span className={`w-2.5 h-2.5 rounded-full ${trade.direction === 'long' ? 'bg-green-500' : 'bg-red-500'}`} />
-                                      <span className="text-white text-sm">{trade.ticker || 'BTC'}</span>
+                                      <span className={`w-2.5 h-2.5 rounded-full ${trade.direction === 'long' ? 'bg-profit' : 'bg-loss'}`} />
+                                      <span className="text-content-primary text-sm">{trade.ticker || 'BTC'}</span>
                                     </div>
                                     <div className="flex items-center gap-4">
-                                      <span className={`text-sm font-medium ${trade.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                      <span className={`text-sm font-medium ${trade.pnlPercent >= 0 ? 'text-profit' : 'text-loss'}`}>
                                         {trade.pnlPercent?.toFixed(2)}%
                                       </span>
-                                      <span className={`text-sm font-semibold ${trade.gainLoss >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                                      <span className={`text-sm font-semibold ${trade.gainLoss >= 0 ? 'text-profit' : 'text-loss'}`}>
                                         {trade.gainLoss >= 0 ? '+$' : '-$'}{Math.abs(trade.gainLoss || 0).toFixed(2)}
                                       </span>
                                     </div>
@@ -437,19 +437,19 @@ function WeeklyTracker() {
               <div
                 key={idx}
                 className={`rounded-lg p-4 border ${
-                  week.pnl < 0 ? 'bg-red-500/5 border-red-500/15' : 'bg-dark-bg border-dark-border'
+                  week.pnl < 0 ? 'bg-loss/5 border-loss/15' : 'bg-surface-raised border-line'
                 }`}
               >
                 {/* Header row: date range + W/L */}
                 <div className="flex items-center justify-between mb-2">
-                  <span className="text-gray-400 text-sm">{week.weekLabel}</span>
-                  <span className="text-gray-500 text-xs font-medium">
+                  <span className="text-content-secondary text-sm">{week.weekLabel}</span>
+                  <span className="text-content-muted text-xs font-medium">
                     {week.wins}W · {week.losses}L
                   </span>
                 </div>
 
                 {/* P&L headline */}
-                <div className={`text-3xl font-bold mb-3 ${week.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                <div className={`text-3xl font-bold mb-3 ${week.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                   {gainPrefix}{absGain}
                 </div>
 
@@ -464,53 +464,53 @@ function WeeklyTracker() {
                 {/* Core stats */}
                 <div className="grid grid-cols-3 gap-x-2 gap-y-3 mb-3">
                   <div>
-                    <div className="text-gray-500 text-xs">Win Rate</div>
-                    <div className="text-white font-semibold text-sm">{week.winRate.toFixed(1)}%</div>
+                    <div className="text-content-muted text-xs">Win Rate</div>
+                    <div className="text-content-primary font-semibold text-sm">{week.winRate.toFixed(1)}%</div>
                   </div>
                   <div>
-                    <div className="text-gray-500 text-xs">P&L%</div>
+                    <div className="text-content-muted text-xs">P&L%</div>
                     <div className={`font-bold text-sm ${
-                      week.pnlPercent === null ? 'text-gray-500' :
-                      week.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'
+                      week.pnlPercent === null ? 'text-content-muted' :
+                      week.pnlPercent >= 0 ? 'text-profit' : 'text-loss'
                     }`}>
                       {week.pnlPercent === null ? '--' : `${week.pnlPercent.toFixed(1)}%`}
                     </div>
                   </div>
                   <div>
-                    <div className="text-gray-500 text-xs">Prof. Factor</div>
+                    <div className="text-content-muted text-xs">Prof. Factor</div>
                     <div className={`font-semibold text-sm ${
-                      week.profitFactor >= 1.5 ? 'text-green-400' :
-                      week.profitFactor >= 1 ? 'text-yellow-400' : 'text-red-400'
+                      week.profitFactor >= 1.5 ? 'text-profit' :
+                      week.profitFactor >= 1 ? 'text-warn' : 'text-loss'
                     }`}>
                       {week.profitFactor.toFixed(2)}
                     </div>
                   </div>
                   <div>
-                    <div className="text-gray-500 text-xs">Expectancy</div>
-                    <div className={`font-semibold text-sm ${week.expectancy >= 0 ? 'text-white' : 'text-red-400'}`}>
+                    <div className="text-content-muted text-xs">Expectancy</div>
+                    <div className={`font-semibold text-sm ${week.expectancy >= 0 ? 'text-content-primary' : 'text-loss'}`}>
                       {week.expectancy.toFixed(2)}%
                     </div>
                   </div>
                   <div>
-                    <div className="text-gray-500 text-xs">Avg Win</div>
-                    <div className="text-green-400 font-semibold text-sm">{week.avgWin.toFixed(1)}%</div>
+                    <div className="text-content-muted text-xs">Avg Win</div>
+                    <div className="text-profit font-semibold text-sm">{week.avgWin.toFixed(1)}%</div>
                   </div>
                   <div>
-                    <div className="text-gray-500 text-xs">Avg Loss</div>
-                    <div className="text-red-400 font-semibold text-sm">{week.avgLoss.toFixed(1)}%</div>
+                    <div className="text-content-muted text-xs">Avg Loss</div>
+                    <div className="text-loss font-semibold text-sm">{week.avgLoss.toFixed(1)}%</div>
                   </div>
                 </div>
 
                 {/* Contradiction callout */}
                 {contradiction && (
-                  <div className="text-xs text-orange-400 bg-orange-500/10 border border-orange-500/15 rounded-lg px-3 py-2 mb-3">
+                  <div className="text-xs text-caution bg-caution/10 border border-caution/15 rounded-lg px-3 py-2 mb-3">
                     ⚠ {contradiction}
                   </div>
                 )}
 
                 {/* Streak note */}
                 {streakNote && (
-                  <div className="text-xs text-red-400 bg-red-500/10 border border-red-500/15 rounded-lg px-3 py-2 mb-3">
+                  <div className="text-xs text-loss bg-loss/10 border border-loss/15 rounded-lg px-3 py-2 mb-3">
                     • {streakNote}
                   </div>
                 )}
@@ -522,11 +522,11 @@ function WeeklyTracker() {
                     renderReport(week)
                   ) : (
                     <>
-                      <div className="text-gray-500 text-xs font-semibold uppercase tracking-wider mb-2">Next Week Focus</div>
-                      <div className="bg-blue-500/5 border border-blue-500/15 rounded-lg px-3 py-2 space-y-1 mb-3">
+                      <div className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Next Week Focus</div>
+                      <div className="bg-brand/5 border border-brand/15 rounded-lg px-3 py-2 space-y-1 mb-3">
                         {nextFocus.map((f, i) => (
-                          <div key={i} className="text-xs text-gray-300 flex items-start gap-1.5">
-                            <span className="text-blue-400 flex-shrink-0 mt-0.5">•</span>
+                          <div key={i} className="text-xs text-content-secondary flex items-start gap-1.5">
+                            <span className="text-brand flex-shrink-0 mt-0.5">•</span>
                             {f}
                           </div>
                         ))}
@@ -539,7 +539,7 @@ function WeeklyTracker() {
                 {/* Expand toggle */}
                 <button
                   onClick={() => setExpandedWeek(expandedWeek === idx ? null : idx)}
-                  className="w-full text-gray-500 text-xs flex items-center justify-center gap-1.5 hover:text-gray-400 transition-colors py-1"
+                  className="w-full text-content-muted text-xs flex items-center justify-center gap-1.5 hover:text-content-secondary transition-colors py-1"
                 >
                   {expandedWeek === idx
                     ? <>Hide trades <ChevronUp size={13} /></>
@@ -548,12 +548,12 @@ function WeeklyTracker() {
 
                 {/* Expanded: grouped by day */}
                 {expandedWeek === idx && (
-                  <div className="mt-3 pt-3 border-t border-dark-border space-y-4">
+                  <div className="mt-3 pt-3 border-t border-line space-y-4">
                     {dayGroups.map((day) => (
                       <div key={day.label}>
                         <div className="flex items-center justify-between mb-2">
-                          <span className="text-gray-400 text-xs font-semibold uppercase tracking-wide">{day.label}</span>
-                          <span className={`text-xs font-semibold ${day.pnl >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                          <span className="text-content-secondary text-xs font-semibold uppercase tracking-wide">{day.label}</span>
+                          <span className={`text-xs font-semibold ${day.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
                             {day.pnl >= 0 ? '+$' : '-$'}{Math.abs(day.pnl).toFixed(2)}
                             <span className="ml-1 opacity-70">{day.pnl >= 0 ? '✓' : '✗'}</span>
                           </span>
@@ -562,16 +562,16 @@ function WeeklyTracker() {
                           <div key={trade.id} className="flex items-center justify-between py-1.5">
                             <div className="flex items-center gap-2">
                               <span className={`w-2 h-2 rounded-full flex-shrink-0 ${
-                                trade.direction === 'long' ? 'bg-green-500' : 'bg-red-500'
+                                trade.direction === 'long' ? 'bg-profit' : 'bg-loss'
                               }`} />
-                              <span className="text-gray-500 text-xs">{trade.ticker || 'BTC'}</span>
+                              <span className="text-content-muted text-xs">{trade.ticker || 'BTC'}</span>
                             </div>
                             <div className="flex items-center gap-3">
-                              <span className={`text-xs font-medium ${trade.pnlPercent >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                              <span className={`text-xs font-medium ${trade.pnlPercent >= 0 ? 'text-profit' : 'text-loss'}`}>
                                 {trade.pnlPercent?.toFixed(2)}%
                               </span>
                               <span className={`text-xs font-semibold min-w-[60px] text-right ${
-                                trade.gainLoss >= 0 ? 'text-green-400' : 'text-red-400'
+                                trade.gainLoss >= 0 ? 'text-profit' : 'text-loss'
                               }`}>
                                 {trade.gainLoss >= 0 ? '+$' : '-$'}{Math.abs(trade.gainLoss || 0).toFixed(2)}
                               </span>
@@ -587,7 +587,7 @@ function WeeklyTracker() {
           })}
 
           {weeklyData.length === 0 && (
-            <div className="text-center py-8 text-gray-500">
+            <div className="text-center py-8 text-content-muted">
               No trades yet. Start adding trades to see weekly statistics.
             </div>
           )}

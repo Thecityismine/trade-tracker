@@ -39,11 +39,11 @@ const sessions = [
 ];
 
 const moodMeta = {
-  '-2': { label: 'Frustrated', color: 'text-red-400' },
-  '-1': { label: 'Cautious', color: 'text-orange-400' },
-  '0': { label: 'Neutral', color: 'text-gray-300' },
-  '1': { label: 'Focused', color: 'text-blue-400' },
-  '2': { label: 'Confident', color: 'text-green-400' }
+  '-2': { label: 'Frustrated', color: 'text-loss' },
+  '-1': { label: 'Cautious', color: 'text-caution' },
+  '0': { label: 'Neutral', color: 'text-content-secondary' },
+  '1': { label: 'Focused', color: 'text-brand' },
+  '2': { label: 'Confident', color: 'text-profit' }
 };
 
 const formatDateTime = (value) => {
@@ -210,51 +210,51 @@ function TradingMindset() {
   return (
     <Page>
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Total Entries</p>
-          <p className="text-2xl font-bold text-white mt-1">{metrics.total}</p>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Total Entries</p>
+          <p className="text-2xl font-bold text-content-primary mt-1">{metrics.total}</p>
         </div>
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Last 7 Days</p>
-          <p className="text-2xl font-bold text-white mt-1">{metrics.thisWeek}</p>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Last 7 Days</p>
+          <p className="text-2xl font-bold text-content-primary mt-1">{metrics.thisWeek}</p>
         </div>
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Avg Confidence</p>
-          <p className="text-2xl font-bold text-blue-400 mt-1">{metrics.avgConfidence.toFixed(1)}/10</p>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Avg Confidence</p>
+          <p className="text-2xl font-bold text-brand mt-1">{metrics.avgConfidence.toFixed(1)}/10</p>
         </div>
-        <div className="bg-dark-card border border-dark-border rounded-lg p-4">
-          <p className="text-gray-400 text-sm">Avg Discipline</p>
-          <p className="text-2xl font-bold text-green-400 mt-1">{metrics.avgDiscipline.toFixed(1)}/10</p>
+        <div className="bg-surface rounded-card p-4 shadow-elev-1">
+          <p className="text-content-secondary text-sm">Avg Discipline</p>
+          <p className="text-2xl font-bold text-profit mt-1">{metrics.avgDiscipline.toFixed(1)}/10</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 xl:grid-cols-5 gap-6">
-        <div className="xl:col-span-2 bg-dark-card border border-dark-border rounded-lg p-6">
+        <div className="xl:col-span-2 bg-surface rounded-card p-6 shadow-elev-1">
           <div className="flex items-center gap-2 mb-4">
-            <Brain className="text-blue-400" size={18} />
-            <h3 className="text-white text-lg font-semibold">New Mindset Entry</h3>
+            <Brain className="text-brand" size={18} />
+            <h3 className="text-content-primary text-lg font-semibold">New Mindset Entry</h3>
           </div>
 
           <form onSubmit={handleSaveEntry} className="space-y-4">
             <div>
-              <label className="block text-gray-400 text-sm mb-2">Title</label>
+              <label className="block text-content-secondary text-sm mb-2">Title</label>
               <input
                 type="text"
                 value={formData.title}
                 onChange={(e) => handleFieldChange('title', e.target.value)}
                 placeholder="What happened or what are you planning?"
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                 required
               />
             </div>
 
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Entry Type</label>
+                <label className="block text-content-secondary text-sm mb-2">Entry Type</label>
                 <select
                   value={formData.type}
                   onChange={(e) => handleFieldChange('type', e.target.value)}
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                 >
                   {entryTypes.map((type) => (
                     <option key={type.value} value={type.value}>{type.label}</option>
@@ -262,11 +262,11 @@ function TradingMindset() {
                 </select>
               </div>
               <div>
-                <label className="block text-gray-400 text-sm mb-2">Session</label>
+                <label className="block text-content-secondary text-sm mb-2">Session</label>
                 <select
                   value={formData.session}
                   onChange={(e) => handleFieldChange('session', e.target.value)}
-                  className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                 >
                   {sessions.map((session) => (
                     <option key={session.value} value={session.value}>{session.label}</option>
@@ -276,8 +276,8 @@ function TradingMindset() {
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-              <div className="bg-dark-bg border border-dark-border rounded-lg p-3">
-                <p className="text-gray-400 text-sm">Mood</p>
+              <div className="bg-surface-raised rounded-control p-3">
+                <p className="text-content-secondary text-sm">Mood</p>
                 <input
                   type="range"
                   min="-2"
@@ -287,12 +287,12 @@ function TradingMindset() {
                   onChange={(e) => handleFieldChange('mood', Number(e.target.value))}
                   className="w-full mt-2"
                 />
-                <p className={`text-sm font-medium mt-2 ${moodMeta[formData.mood]?.color || 'text-gray-300'}`}>
+                <p className={`text-sm font-medium mt-2 ${moodMeta[formData.mood]?.color || 'text-content-secondary'}`}>
                   {moodMeta[formData.mood]?.label || 'Neutral'}
                 </p>
               </div>
-              <div className="bg-dark-bg border border-dark-border rounded-lg p-3">
-                <p className="text-gray-400 text-sm">Confidence</p>
+              <div className="bg-surface-raised rounded-control p-3">
+                <p className="text-content-secondary text-sm">Confidence</p>
                 <input
                   type="range"
                   min="1"
@@ -301,10 +301,10 @@ function TradingMindset() {
                   onChange={(e) => handleFieldChange('confidence', Number(e.target.value))}
                   className="w-full mt-2"
                 />
-                <p className="text-blue-400 text-sm font-medium mt-2">{formData.confidence}/10</p>
+                <p className="text-brand text-sm font-medium mt-2">{formData.confidence}/10</p>
               </div>
-              <div className="bg-dark-bg border border-dark-border rounded-lg p-3">
-                <p className="text-gray-400 text-sm">Discipline</p>
+              <div className="bg-surface-raised rounded-control p-3">
+                <p className="text-content-secondary text-sm">Discipline</p>
                 <input
                   type="range"
                   min="1"
@@ -313,14 +313,14 @@ function TradingMindset() {
                   onChange={(e) => handleFieldChange('discipline', Number(e.target.value))}
                   className="w-full mt-2"
                 />
-                <p className="text-green-400 text-sm font-medium mt-2">{formData.discipline}/10</p>
+                <p className="text-profit text-sm font-medium mt-2">{formData.discipline}/10</p>
               </div>
             </div>
 
-            <div className="bg-dark-bg border border-dark-border rounded-lg p-4">
+            <div className="bg-surface-raised rounded-control p-4">
               <div className="flex items-center gap-2 mb-3">
-                <CheckSquare className="text-gray-400" size={16} />
-                <p className="text-white text-sm font-medium">Execution Checklist</p>
+                <CheckSquare className="text-content-secondary" size={16} />
+                <p className="text-content-primary text-sm font-medium">Execution Checklist</p>
               </div>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {Object.entries(checklistLabelMap).map(([key, label]) => (
@@ -330,8 +330,8 @@ function TradingMindset() {
                     onClick={() => handleChecklistToggle(key)}
                     className={`text-left border rounded-lg px-3 py-2 text-sm transition-colors ${
                       formData.checklist[key]
-                        ? 'border-green-600 bg-green-900/20 text-green-300'
-                        : 'border-dark-border bg-dark-card text-gray-300 hover:border-gray-500'
+                        ? 'border-profit bg-profit/10 text-profit'
+                        : 'border-line-strong bg-surface text-content-secondary hover:border-brand/50'
                     }`}
                   >
                     {formData.checklist[key] ? 'x ' : ''}{label}
@@ -341,73 +341,73 @@ function TradingMindset() {
             </div>
 
             <div>
-              <label className="block text-gray-400 text-sm mb-2">Reflection</label>
+              <label className="block text-content-secondary text-sm mb-2">Reflection</label>
               <textarea
                 value={formData.reflection}
                 onChange={(e) => handleFieldChange('reflection', e.target.value)}
                 rows="5"
                 placeholder="What did you do well? What was off? What should change next time?"
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-3 text-white focus:outline-none focus:border-blue-500 resize-none"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-3 text-content-primary focus:outline-none focus:border-brand resize-none"
                 required
               />
             </div>
 
             <div>
-              <label className="block text-gray-400 text-sm mb-2">Next Action</label>
+              <label className="block text-content-secondary text-sm mb-2">Next Action</label>
               <input
                 type="text"
                 value={formData.actionItem}
                 onChange={(e) => handleFieldChange('actionItem', e.target.value)}
                 placeholder="One concrete action for next session"
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
               />
             </div>
 
             <div>
-              <label className="block text-gray-400 text-sm mb-2">Tags (comma separated)</label>
+              <label className="block text-content-secondary text-sm mb-2">Tags (comma separated)</label>
               <input
                 type="text"
                 value={formData.tags}
                 onChange={(e) => handleFieldChange('tags', e.target.value)}
                 placeholder="e.g., revenge-trading, patience, risk-control"
-                className="w-full bg-dark-bg border border-dark-border rounded-lg px-4 py-2 text-white focus:outline-none focus:border-blue-500"
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
               />
             </div>
 
-            {errorMessage && <p className="text-red-400 text-sm">{errorMessage}</p>}
+            {errorMessage && <p className="text-loss text-sm">{errorMessage}</p>}
 
             <button
               type="submit"
               disabled={saving}
-              className="w-full bg-blue-600 hover:bg-blue-700 rounded-lg py-3 text-white font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
+              className="w-full bg-brand hover:bg-brand-hover rounded-lg py-3 text-content-primary font-medium transition-colors disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {saving ? 'Saving...' : 'Save Mindset Entry'}
             </button>
           </form>
         </div>
 
-        <div className="xl:col-span-3 bg-dark-card border border-dark-border rounded-lg p-6">
+        <div className="xl:col-span-3 bg-surface rounded-card p-6 shadow-elev-1">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-3 mb-4">
             <div className="flex items-center gap-2">
-              <Lightbulb className="text-yellow-400" size={18} />
-              <h3 className="text-white text-lg font-semibold">Mindset Log</h3>
+              <Lightbulb className="text-warn" size={18} />
+              <h3 className="text-content-primary text-lg font-semibold">Mindset Log</h3>
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 w-full md:w-auto">
               <div className="relative">
-                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500" />
+                <Search size={16} className="absolute left-3 top-1/2 -translate-y-1/2 text-content-muted" />
                 <input
                   type="text"
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   placeholder="Search entries..."
-                  className="w-full sm:w-56 bg-dark-bg border border-dark-border rounded-lg pl-9 pr-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                  className="w-full sm:w-56 bg-surface-raised border border-line-strong rounded-lg pl-9 pr-3 py-2 text-content-primary text-sm focus:outline-none focus:border-brand"
                 />
               </div>
               <select
                 value={filterType}
                 onChange={(e) => setFilterType(e.target.value)}
-                className="bg-dark-bg border border-dark-border rounded-lg px-3 py-2 text-white text-sm focus:outline-none focus:border-blue-500"
+                className="bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary text-sm focus:outline-none focus:border-brand"
               >
                 <option value="all">All Types</option>
                 {entryTypes.map((type) => (
@@ -419,8 +419,8 @@ function TradingMindset() {
 
           <div className="space-y-3 max-h-[1000px] overflow-y-auto pr-1">
             {filteredEntries.length === 0 && (
-              <div className="bg-dark-bg border border-dark-border rounded-lg p-6 text-center">
-                <p className="text-gray-400">No mindset entries yet. Add your first reflection.</p>
+              <div className="bg-surface-raised rounded-control p-6 text-center">
+                <p className="text-content-secondary">No mindset entries yet. Add your first reflection.</p>
               </div>
             )}
 
@@ -428,16 +428,16 @@ function TradingMindset() {
               const checklist = entry.checklist || defaultChecklist;
               const checklistScore = Object.values(checklist).filter(Boolean).length;
               return (
-                <div key={entry.id} className="bg-dark-bg border border-dark-border rounded-lg p-4">
+                <div key={entry.id} className="bg-surface-raised rounded-control p-4">
                   <div className="flex items-start justify-between gap-3">
                     <div>
-                      <h4 className="text-white font-semibold">{entry.title}</h4>
-                      <p className="text-gray-500 text-xs mt-1">{formatDateTime(entry.createdAt)}</p>
+                      <h4 className="text-content-primary font-semibold">{entry.title}</h4>
+                      <p className="text-content-muted text-xs mt-1">{formatDateTime(entry.createdAt)}</p>
                     </div>
                     <button
                       type="button"
                       onClick={() => handleDeleteEntry(entry.id)}
-                      className="text-gray-500 hover:text-red-400 transition-colors"
+                      className="text-content-muted hover:text-loss transition-colors"
                       aria-label="Delete entry"
                     >
                       <Trash2 size={16} />
@@ -445,44 +445,44 @@ function TradingMindset() {
                   </div>
 
                   <div className="flex flex-wrap gap-2 mt-3">
-                    <span className="text-xs bg-blue-900/30 text-blue-300 border border-blue-700/40 px-2 py-1 rounded">
+                    <span className="text-xs bg-brand-muted text-brand-hover border border-brand/40 px-2 py-1 rounded">
                       {entryTypes.find((type) => type.value === entry.type)?.label || entry.type}
                     </span>
-                    <span className="text-xs bg-dark-card text-gray-300 border border-dark-border px-2 py-1 rounded">
+                    <span className="text-xs bg-surface text-content-secondary px-2 py-1 rounded shadow-elev-1">
                       {sessions.find((session) => session.value === entry.session)?.label || entry.session}
                     </span>
-                    <span className={`text-xs px-2 py-1 rounded border border-dark-border ${moodMeta[entry.mood]?.color || 'text-gray-300'}`}>
+                    <span className={`text-xs px-2 py-1 rounded-chip border border-line-strong ${moodMeta[entry.mood]?.color || 'text-content-secondary'}`}>
                       Mood: {moodMeta[entry.mood]?.label || 'Neutral'}
                     </span>
                   </div>
 
-                  <p className="text-gray-200 text-sm mt-3 whitespace-pre-wrap">{entry.reflection}</p>
+                  <p className="text-content-secondary text-sm mt-3 whitespace-pre-wrap">{entry.reflection}</p>
 
                   {entry.actionItem && (
-                    <p className="text-green-300 text-sm mt-3">
+                    <p className="text-profit text-sm mt-3">
                       Next: {entry.actionItem}
                     </p>
                   )}
 
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-3 text-xs">
-                    <div className="bg-dark-card border border-dark-border rounded px-2 py-1 text-gray-300">
-                      Confidence: <span className="text-white">{entry.confidence}/10</span>
+                    <div className="bg-surface-hover rounded-chip px-2 py-1 text-content-secondary">
+                      Confidence: <span className="text-content-primary">{entry.confidence}/10</span>
                     </div>
-                    <div className="bg-dark-card border border-dark-border rounded px-2 py-1 text-gray-300">
-                      Discipline: <span className="text-white">{entry.discipline}/10</span>
+                    <div className="bg-surface-hover rounded-chip px-2 py-1 text-content-secondary">
+                      Discipline: <span className="text-content-primary">{entry.discipline}/10</span>
                     </div>
-                    <div className="bg-dark-card border border-dark-border rounded px-2 py-1 text-gray-300">
-                      Checklist: <span className="text-white">{checklistScore}/4</span>
+                    <div className="bg-surface-hover rounded-chip px-2 py-1 text-content-secondary">
+                      Checklist: <span className="text-content-primary">{checklistScore}/4</span>
                     </div>
-                    <div className="bg-dark-card border border-dark-border rounded px-2 py-1 text-gray-300">
-                      Notes: <span className="text-white">{(entry.tags || []).length}</span>
+                    <div className="bg-surface-hover rounded-chip px-2 py-1 text-content-secondary">
+                      Notes: <span className="text-content-primary">{(entry.tags || []).length}</span>
                     </div>
                   </div>
 
                   {entry.tags && entry.tags.length > 0 && (
                     <div className="flex flex-wrap gap-2 mt-3">
                       {entry.tags.map((tag) => (
-                        <span key={`${entry.id}-${tag}`} className="text-xs bg-dark-card border border-dark-border text-gray-300 px-2 py-1 rounded">
+                        <span key={`${entry.id}-${tag}`} className="text-xs bg-surface text-content-secondary px-2 py-1 rounded shadow-elev-1">
                           #{tag}
                         </span>
                       ))}
