@@ -5,6 +5,7 @@ import { db } from '../config/firebase';
 import { ChevronDown, ChevronUp } from 'lucide-react';
 import WeeklyReport from '../components/WeeklyReport';
 import Page from '../components/ui/Page';
+import ColumnPicker, { useVisibleColumns } from '../components/ui/ColumnPicker';
 import { Card } from '../components/ui/Surface';
 import {
   buildChartPayload,
@@ -99,7 +100,23 @@ function verdictClasses(type) {
   return 'bg-brand/10 border border-brand/15 text-brand';
 }
 
+const WEEKLY_COLUMNS = [
+  { id: 'wins', label: 'Wins' },
+  { id: 'losses', label: 'Losses' },
+  { id: 'gain', label: 'Weekly Gain' },
+  { id: 'fees', label: 'Fees' },
+  { id: 'pnlPct', label: 'Weekly P&L%' },
+  { id: 'winRate', label: 'Win Rate' },
+  { id: 'avgWin', label: 'Avg Win %' },
+  { id: 'avgLoss', label: 'Avg Loss %' },
+  { id: 'expectancy', label: 'Expectancy %' },
+  { id: 'profitFactor', label: 'Profit Factor' },
+];
+
 function WeeklyTracker() {
+  const { hidden, isVisible, toggle, reset } = useVisibleColumns('tt:weekly-cols', WEEKLY_COLUMNS);
+  // Week label + chevron are always present, plus whatever is toggled on.
+  const visibleColSpan = 2 + WEEKLY_COLUMNS.filter((c) => isVisible(c.id)).length;
   const { trades, deposits } = useTrades();
   const [weeklyData, setWeeklyData] = useState([]);
   const [expandedWeek, setExpandedWeek] = useState(null);
@@ -312,25 +329,32 @@ function WeeklyTracker() {
   };
 
   return (
-    <Page>
+    <Page
+      actions={
+        <div className="hidden lg:block">
+          <ColumnPicker columns={WEEKLY_COLUMNS} hidden={hidden} onToggle={toggle} onReset={reset} />
+        </div>
+      }
+    >
       <Card padded={false} className="overflow-hidden">
-        {/* Desktop Table */}
-        <div className="hidden lg:block overflow-x-auto">
+        {/* Desktop Table — sticky header needs its own scroll box, so the
+            wrapper caps height rather than growing the page. */}
+        <div className="hidden lg:block max-h-[70vh] overflow-auto">
           <table className="w-full">
-            <thead className="bg-surface-raised">
+            <thead className="sticky top-0 z-10 bg-surface-raised">
               <tr className="text-content-secondary text-sm">
-                <th className="text-left py-3 px-4 font-medium">Week</th>
-                <th className="text-center py-3 px-2 font-medium">Wins</th>
-                <th className="text-center py-3 px-2 font-medium">Losses</th>
-                <th className="text-right py-3 px-3 font-medium">Weekly Gain</th>
-                <th className="text-right py-3 px-3 font-medium">Fees</th>
-                <th className="text-right py-3 px-3 font-medium">Weekly P&L%</th>
-                <th className="text-right py-3 px-3 font-medium">Win Rate</th>
-                <th className="text-right py-3 px-3 font-medium">Avg Win %</th>
-                <th className="text-right py-3 px-3 font-medium">Avg Loss %</th>
-                <th className="text-right py-3 px-3 font-medium">Expectancy %</th>
-                <th className="text-right py-3 px-3 font-medium">Profit Factor</th>
-                <th className="text-center py-3 px-2 font-medium"></th>
+                <th className="text-left py-3.5 px-4 font-medium">Week</th>
+                {isVisible('wins') && <th className="text-right py-3.5 px-2 font-medium">Wins</th>}
+                {isVisible('losses') && <th className="text-right py-3.5 px-2 font-medium">Losses</th>}
+                {isVisible('gain') && <th className="text-right py-3.5 px-3 font-medium">Weekly Gain</th>}
+                {isVisible('fees') && <th className="text-right py-3.5 px-3 font-medium">Fees</th>}
+                {isVisible('pnlPct') && <th className="text-right py-3.5 px-3 font-medium">Weekly P&L%</th>}
+                {isVisible('winRate') && <th className="text-right py-3.5 px-3 font-medium">Win Rate</th>}
+                {isVisible('avgWin') && <th className="text-right py-3.5 px-3 font-medium">Avg Win %</th>}
+                {isVisible('avgLoss') && <th className="text-right py-3.5 px-3 font-medium">Avg Loss %</th>}
+                {isVisible('expectancy') && <th className="text-right py-3.5 px-3 font-medium">Expectancy %</th>}
+                {isVisible('profitFactor') && <th className="text-right py-3.5 px-3 font-medium">Profit Factor</th>}
+                <th className="text-center py-3.5 px-2 font-medium"></th>
               </tr>
             </thead>
             <tbody>
@@ -357,21 +381,25 @@ function WeeklyTracker() {
                           </div>
                         )}
                       </td>
-                      <td className="text-center py-3 px-2 text-content-primary font-medium">{week.wins}</td>
-                      <td className="text-center py-3 px-2 text-content-primary font-medium">{week.losses}</td>
-                      <td className={`text-right py-3 px-3 font-semibold ${week.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                        {week.pnl >= 0 ? '+$' : '-$'}{Math.abs(week.pnl).toFixed(2)}
-                      </td>
-                      <td className="text-right py-3 px-3 text-content-secondary">${week.fees.toFixed(2)}</td>
-                      <td className={`text-right py-3 px-3 font-bold ${week.pnlPercent === null ? 'text-content-muted' : week.pnlPercent >= 0 ? 'text-profit' : 'text-loss'}`}>
-                        {week.pnlPercent === null ? '--' : `${week.pnlPercent.toFixed(2)}%`}
-                      </td>
-                      <td className="text-right py-3 px-3 text-content-primary">{week.winRate.toFixed(2)}%</td>
-                      <td className="text-right py-3 px-3 text-content-primary">{week.avgWin.toFixed(2)}%</td>
-                      <td className="text-right py-3 px-3 text-content-primary">{week.avgLoss.toFixed(2)}%</td>
-                      <td className="text-right py-3 px-3 text-content-primary">{week.expectancy.toFixed(2)}%</td>
-                      <td className="text-right py-3 px-3 text-content-primary">{week.profitFactor.toFixed(2)}</td>
-                      <td className="text-center py-3 px-2">
+                      {isVisible('wins') && <td className="text-right py-3.5 px-2 text-content-primary font-medium">{week.wins}</td>}
+                      {isVisible('losses') && <td className="text-right py-3.5 px-2 text-content-primary font-medium">{week.losses}</td>}
+                      {isVisible('gain') && (
+                        <td className={`text-right py-3.5 px-3 font-semibold ${week.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                          {week.pnl >= 0 ? '+$' : '-$'}{Math.abs(week.pnl).toFixed(2)}
+                        </td>
+                      )}
+                      {isVisible('fees') && <td className="text-right py-3.5 px-3 text-content-secondary">${week.fees.toFixed(2)}</td>}
+                      {isVisible('pnlPct') && (
+                        <td className={`text-right py-3.5 px-3 font-bold ${week.pnlPercent === null ? 'text-content-muted' : week.pnlPercent >= 0 ? 'text-profit' : 'text-loss'}`}>
+                          {week.pnlPercent === null ? '--' : `${week.pnlPercent.toFixed(2)}%`}
+                        </td>
+                      )}
+                      {isVisible('winRate') && <td className="text-right py-3.5 px-3 text-content-primary">{week.winRate.toFixed(2)}%</td>}
+                      {isVisible('avgWin') && <td className="text-right py-3.5 px-3 text-content-primary">{week.avgWin.toFixed(2)}%</td>}
+                      {isVisible('avgLoss') && <td className="text-right py-3.5 px-3 text-content-primary">{week.avgLoss.toFixed(2)}%</td>}
+                      {isVisible('expectancy') && <td className="text-right py-3.5 px-3 text-content-primary">{week.expectancy.toFixed(2)}%</td>}
+                      {isVisible('profitFactor') && <td className="text-right py-3.5 px-3 text-content-primary">{week.profitFactor.toFixed(2)}</td>}
+                      <td className="text-center py-3.5 px-2">
                         {expandedWeek === idx
                           ? <ChevronUp size={18} className="text-content-secondary" />
                           : <ChevronDown size={18} className="text-content-secondary" />}
@@ -379,7 +407,7 @@ function WeeklyTracker() {
                     </tr>
                     {expandedWeek === idx && (
                       <tr className="bg-surface-raised">
-                        <td colSpan="12" className="p-4">
+                        <td colSpan={visibleColSpan} className="p-4">
                           <div className="mb-5">
                             {renderReport(week)}
                           </div>

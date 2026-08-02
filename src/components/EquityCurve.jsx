@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
+import { CHART, gridProps, xAxisProps, yAxisProps, tooltipProps, lineProps, usdTick } from './ui/chartTheme';
 
 function EquityCurve({ trades, deposits = [] }) {
   const [timeframe, setTimeframe] = useState('weekly');
@@ -106,30 +107,21 @@ function EquityCurve({ trades, deposits = [] }) {
             <AreaChart data={data}>
               <defs>
                 <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.25} />
-                  <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
+                  <stop offset="5%" stopColor={CHART.brand} stopOpacity={0.18} />
+                  <stop offset="95%" stopColor={CHART.brand} stopOpacity={0} />
                 </linearGradient>
               </defs>
-              <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-              <XAxis
-                dataKey="date"
-                stroke="#6b7280"
-                style={{ fontSize: '12px' }}
-              />
-              <YAxis
-                stroke="#6b7280"
-                style={{ fontSize: '12px' }}
-                tickFormatter={(value) => `$${value.toFixed(0)}`}
-              />
-              <Tooltip content={<CustomTooltip />} />
+              <CartesianGrid {...gridProps} />
+              <XAxis dataKey="date" {...xAxisProps} />
+              <YAxis {...yAxisProps} tickFormatter={usdTick} />
+              <Tooltip content={<CustomTooltip />} cursor={tooltipProps.cursor} />
               <Area
                 type="monotone"
                 dataKey="pnl"
-                stroke="#3b82f6"
-                strokeWidth={2}
+                stroke={CHART.brand}
                 fill="url(#equityGradient)"
-                dot={{ fill: '#3b82f6', r: 3 }}
-                activeDot={{ r: 5 }}
+                activeDot={{ r: 4, fill: CHART.brand }}
+                {...lineProps}
               />
             </AreaChart>
           </ResponsiveContainer>

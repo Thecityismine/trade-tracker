@@ -5,6 +5,7 @@ import { TrendingUp as TrendingUpIcon } from 'lucide-react';
 import Page from '../components/ui/Page';
 import EmptyState from '../components/ui/EmptyState';
 import { StatTile } from '../components/ui/Surface';
+import { CHART, gridProps, xAxisProps, yAxisProps, tooltipProps, barProps, lineProps, usdTick, pctTick } from '../components/ui/chartTheme';
 import {
   Bar,
   BarChart,
@@ -196,6 +197,11 @@ function Analytics() {
       avgLossUsdAbs,
       avgWinPercent,
       avgLossPercentAbs,
+      // Both bars are magnitudes, so both are plotted positive. Plotting the
+      // loss as a negative made the axis span twice the range it needed —
+      // halving the apparent height of both bars and pushing the baseline into
+      // the middle of the plot — and forced a tick formatter that wrapped every
+      // label in Math.abs, so the axis read 0→30→0 in both directions.
       chartData: [
         {
           name: 'Avg Win',
@@ -204,7 +210,7 @@ function Analytics() {
         },
         {
           name: 'Avg Loss',
-          value: -avgLossUsdAbs,
+          value: avgLossUsdAbs,
           fill: COLORS.negative
         }
       ]
@@ -547,34 +553,21 @@ function Analytics() {
               <div className="w-full h-60">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={directionStats}>
-                    <defs>
-                      <linearGradient id="dirGreen" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.9}/>
-                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0.4}/>
-                      </linearGradient>
-                      <linearGradient id="dirRed" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.9}/>
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.4}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-                    <XAxis dataKey="direction" stroke="#9ca3af" />
-                    <YAxis stroke="#9ca3af" tickFormatter={(value) => `${value}%`} domain={[0, 100]} />
+                    <CartesianGrid {...gridProps} />
+                    <XAxis dataKey="direction" {...xAxisProps} />
+                    <YAxis {...yAxisProps} tickFormatter={pctTick} domain={[0, 100]} />
                     <Tooltip
-                      contentStyle={TOOLTIP_THEME.contentStyle}
-                      labelStyle={TOOLTIP_THEME.labelStyle}
-                      itemStyle={TOOLTIP_THEME.itemStyle}
-                      cursor={TOOLTIP_THEME.cursor}
+                      {...tooltipProps}
                       formatter={(value, name) => {
                         if (name === 'winRate') return [`${Number(value).toFixed(2)}%`, 'Win Rate'];
                         return [value, name];
                       }}
                     />
-                    <Bar dataKey="winRate" radius={[6, 6, 0, 0]}>
+                    <Bar dataKey="winRate" {...barProps}>
                       {directionStats.map((entry) => (
                         <Cell
                           key={entry.direction}
-                          fill={entry.winRate >= 50 ? 'url(#dirGreen)' : 'url(#dirRed)'}
+                          fill={entry.winRate >= 50 ? CHART.profit : CHART.loss}
                         />
                       ))}
                     </Bar>
@@ -607,35 +600,22 @@ function Analytics() {
               <div className="w-full h-60">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={timeOfDayStats}>
-                    <defs>
-                      <linearGradient id="todGreen" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.9}/>
-                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0.4}/>
-                      </linearGradient>
-                      <linearGradient id="todRed" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.9}/>
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.4}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-                    <XAxis dataKey="name" stroke="#9ca3af" />
-                    <YAxis stroke="#9ca3af" tickFormatter={(value) => `$${value.toFixed(0)}`} />
+                    <CartesianGrid {...gridProps} />
+                    <XAxis dataKey="name" {...xAxisProps} />
+                    <YAxis {...yAxisProps} tickFormatter={usdTick} />
                     <Tooltip
-                      contentStyle={TOOLTIP_THEME.contentStyle}
-                      labelStyle={TOOLTIP_THEME.labelStyle}
-                      itemStyle={TOOLTIP_THEME.itemStyle}
-                      cursor={TOOLTIP_THEME.cursor}
+                      {...tooltipProps}
                       formatter={(value, name) => {
                         if (name === 'totalPnl') return [`$${Number(value).toFixed(2)}`, 'Total P&L'];
                         if (name === 'trades') return [value, 'Trades'];
                         return [value, name];
                       }}
                     />
-                    <Bar dataKey="totalPnl" radius={[6, 6, 0, 0]}>
+                    <Bar dataKey="totalPnl" {...barProps}>
                       {timeOfDayStats.map((entry) => (
                         <Cell
                           key={entry.name}
-                          fill={entry.totalPnl >= 0 ? 'url(#todGreen)' : 'url(#todRed)'}
+                          fill={entry.totalPnl >= 0 ? CHART.profit : CHART.loss}
                         />
                       ))}
                     </Bar>
@@ -670,29 +650,16 @@ function Analytics() {
               <div className="w-full h-60">
                 <ResponsiveContainer width="100%" height="100%">
                   <BarChart data={avgWinLossStats.chartData}>
-                    <defs>
-                      <linearGradient id="avgGreen" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.9}/>
-                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0.4}/>
-                      </linearGradient>
-                      <linearGradient id="avgRed" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.9}/>
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.4}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-                    <XAxis dataKey="name" stroke="#9ca3af" />
-                    <YAxis stroke="#9ca3af" tickFormatter={(value) => `$${Math.abs(value).toFixed(0)}`} domain={['auto', 'auto']} />
+                    <CartesianGrid {...gridProps} />
+                    <XAxis dataKey="name" {...xAxisProps} />
+                    <YAxis {...yAxisProps} tickFormatter={usdTick} domain={[0, 'auto']} />
                     <Tooltip
-                      contentStyle={TOOLTIP_THEME.contentStyle}
-                      labelStyle={TOOLTIP_THEME.labelStyle}
-                      itemStyle={TOOLTIP_THEME.itemStyle}
-                      cursor={TOOLTIP_THEME.cursor}
-                      formatter={(value) => [`$${Math.abs(Number(value)).toFixed(2)}`, 'Average Size']}
+                      {...tooltipProps}
+                      formatter={(value) => [`$${Number(value).toFixed(2)}`, 'Average Size']}
                     />
-                    <Bar dataKey="value" radius={[6, 6, 0, 0]}>
+                    <Bar dataKey="value" {...barProps}>
                       {avgWinLossStats.chartData.map((entry) => (
-                        <Cell key={entry.name} fill={entry.value >= 0 ? 'url(#avgGreen)' : 'url(#avgRed)'} />
+                        <Cell key={entry.name} fill={entry.fill} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -808,40 +775,27 @@ function Analytics() {
               <div className="w-full h-72">
                 <ResponsiveContainer width="100%" height="100%">
                   <ComposedChart data={monthlyComparison}>
-                    <defs>
-                      <linearGradient id="mthGreen" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#22c55e" stopOpacity={0.9}/>
-                        <stop offset="95%" stopColor="#22c55e" stopOpacity={0.4}/>
-                      </linearGradient>
-                      <linearGradient id="mthRed" x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor="#ef4444" stopOpacity={0.9}/>
-                        <stop offset="95%" stopColor="#ef4444" stopOpacity={0.4}/>
-                      </linearGradient>
-                    </defs>
-                    <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-                    <XAxis dataKey="label" stroke="#9ca3af" />
-                    <YAxis yAxisId="left" stroke="#9ca3af" tickFormatter={(value) => `$${value.toFixed(0)}`} />
-                    <YAxis yAxisId="right" orientation="right" stroke="#9ca3af" tickFormatter={(value) => `${value.toFixed(0)}%`} domain={[0, 100]} />
+                    <CartesianGrid {...gridProps} />
+                    <XAxis dataKey="label" {...xAxisProps} />
+                    <YAxis yAxisId="left" {...yAxisProps} tickFormatter={usdTick} />
+                    <YAxis yAxisId="right" orientation="right" {...yAxisProps} tickFormatter={pctTick} domain={[0, 100]} />
                     <Tooltip
-                      contentStyle={TOOLTIP_THEME.contentStyle}
-                      labelStyle={TOOLTIP_THEME.labelStyle}
-                      itemStyle={TOOLTIP_THEME.itemStyle}
-                      cursor={TOOLTIP_THEME.cursor}
+                      {...tooltipProps}
                       formatter={(value, name) => {
                         if (name === 'totalPnl') return [`$${Number(value).toFixed(2)}`, 'Total P&L'];
                         if (name === 'winRate') return [`${Number(value).toFixed(2)}%`, 'Win Rate'];
                         return [value, name];
                       }}
                     />
-                    <Bar yAxisId="left" dataKey="totalPnl" radius={[6, 6, 0, 0]}>
+                    <Bar yAxisId="left" dataKey="totalPnl" {...barProps}>
                       {monthlyComparison.map((entry) => (
                         <Cell
                           key={entry.key}
-                          fill={entry.totalPnl >= 0 ? 'url(#mthGreen)' : 'url(#mthRed)'}
+                          fill={entry.totalPnl >= 0 ? CHART.profit : CHART.loss}
                         />
                       ))}
                     </Bar>
-                    <Line yAxisId="right" type="monotone" dataKey="winRate" stroke={COLORS.accent} strokeWidth={2} dot={{ r: 3 }} />
+                    <Line yAxisId="right" type="monotone" dataKey="winRate" stroke={CHART.brand} {...lineProps} />
                   </ComposedChart>
                 </ResponsiveContainer>
               </div>
@@ -917,20 +871,17 @@ function Analytics() {
           <div className="w-full h-52">
             <ResponsiveContainer width="100%" height="100%">
               <ComposedChart data={mindsetTrend}>
-                <CartesianGrid strokeDasharray="3 3" stroke="#2a2a2a" />
-                <XAxis dataKey="label" stroke="#9ca3af" />
-                <YAxis domain={[1, 5]} stroke="#a78bfa" tickFormatter={v => `${v}/5`} width={45} />
+                <CartesianGrid {...gridProps} />
+                <XAxis dataKey="label" {...xAxisProps} />
+                <YAxis {...yAxisProps} domain={[1, 5]} tickFormatter={v => `${v}/5`} width={45} />
                 <Tooltip
-                  contentStyle={TOOLTIP_THEME.contentStyle}
-                  labelStyle={TOOLTIP_THEME.labelStyle}
-                  itemStyle={TOOLTIP_THEME.itemStyle}
-                  cursor={TOOLTIP_THEME.cursor}
+                  {...tooltipProps}
                   formatter={(value, name) => {
                     if (name === 'avgMindset') return [`${value}/5`, 'Avg Mindset'];
                     return [value, name];
                   }}
                 />
-                <Line type="monotone" dataKey="avgMindset" stroke="#a78bfa" strokeWidth={2} dot={{ r: 4 }} />
+                <Line type="monotone" dataKey="avgMindset" stroke={CHART.brand} {...lineProps} />
               </ComposedChart>
             </ResponsiveContainer>
           </div>

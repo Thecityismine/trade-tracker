@@ -345,7 +345,7 @@ function WhaleTracker() {
             </div>
             <div className="overflow-x-auto">
               <table className="w-full">
-                <thead className="bg-surface-raised">
+                <thead className="sticky top-0 z-10 bg-surface-raised">
                   <tr className="text-content-secondary text-xs">
                     <th className="text-left py-2.5 px-4 font-medium">Asset</th>
                     <th className="text-center py-2.5 px-3 font-medium">Longs</th>

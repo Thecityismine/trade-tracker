@@ -110,7 +110,7 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
         </div>
 
         {/* Desktop Table */}
-        <div className="hidden md:block overflow-x-auto">
+        <div className="hidden md:block max-h-[60vh] overflow-auto">
           <table className="table-fixed w-full">
             <colgroup>
               <col className="w-[80px]" />
@@ -122,7 +122,7 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
               <col className="w-[80px]" />
               <col />
             </colgroup>
-            <thead>
+            <thead className="sticky top-0 z-10 bg-surface">
               <tr className="border-b border-line text-content-secondary text-sm">
                 <th className="text-left py-3 px-2">Date</th>
                 <th className="text-left py-3 px-2">Ticker</th>

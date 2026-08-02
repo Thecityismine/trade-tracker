@@ -131,7 +131,7 @@ function MonthCalendar({ month }) {
           <span className={`font-bold text-sm ${month.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
             {month.totalPnl >= 0 ? '+$' : '-$'}{Math.abs(month.totalPnl).toFixed(2)}
           </span>
-          <span className={`${month.color} text-content-primary text-xs font-bold px-2 py-0.5 rounded`}>
+          <span className={`${month.color} text-xs font-semibold px-2 py-0.5 rounded-chip`}>
             {month.grade}
           </span>
         </div>
@@ -147,15 +147,16 @@ function MonthCalendar({ month }) {
         ))}
       </div>
 
-      {/* Calendar grid */}
-      <div className="grid grid-cols-7">
+      {/* Calendar grid — row height is fixed on the grid itself so a long P&L
+          string can never make one week taller than the others. */}
+      <div className="grid grid-cols-7 auto-rows-[3.5rem] md:auto-rows-[72px]">
         {cells.map((day, i) => {
           const isLastCol = i % 7 === 6;
           if (day === null) {
             return (
               <div
                 key={i}
-                className={`border-b border-line h-14 md:h-[72px] ${!isLastCol ? 'border-r border-line' : ''}`}
+                className={`border-b border-line ${!isLastCol ? 'border-r border-line' : ''}`}
               />
             );
           }
@@ -166,16 +167,18 @@ function MonthCalendar({ month }) {
           return (
             <div
               key={i}
-              className={`border-b border-line h-14 md:h-[72px] p-1 flex flex-col ${
+              className={`overflow-hidden border-b border-line p-1 flex flex-col ${
                 !isLastCol ? 'border-r border-line' : ''
               } ${isPositive ? 'bg-profit/10' : isNegative ? 'bg-loss/10' : ''}`}
             >
-              <span className={`text-[11px] leading-none font-medium ${data ? 'text-content-secondary' : 'text-content-muted'}`}>
+              <span className={`tabular text-[11px] leading-none font-medium ${
+                data ? 'text-content-primary' : 'text-content-secondary'
+              }`}>
                 {day}
               </span>
               {data && (
-                <div className="flex flex-col justify-end flex-1">
-                  <span className={`text-[11px] md:text-xs font-bold leading-tight ${
+                <div className="flex flex-col justify-end flex-1 min-h-0">
+                  <span className={`tabular truncate text-[11px] md:text-xs font-semibold leading-tight ${
                     isPositive ? 'text-profit' : isNegative ? 'text-loss' : 'text-content-secondary'
                   }`}>
                     {isPositive ? '+$' : '-$'}{Math.abs(data.pnl).toFixed(0)}
@@ -279,7 +282,14 @@ function MonthlyTracker() {
     else if (score >= 35) grade = 'D';
     if (totalPnl < 0) grade = downgradeGrade(grade);
 
-    const colorMap = { A: 'bg-green-600', B: 'bg-brand', C: 'bg-yellow-600', D: 'bg-caution', F: 'bg-red-600' };
+    // Soft tinted chip with a coloured left edge, rather than a solid block.
+    const colorMap = {
+      A: 'bg-profit/12 text-profit border-l-2 border-profit',
+      B: 'bg-brand/12 text-brand border-l-2 border-brand',
+      C: 'bg-warn/12 text-warn border-l-2 border-warn',
+      D: 'bg-caution/12 text-caution border-l-2 border-caution',
+      F: 'bg-loss/12 text-loss border-l-2 border-loss',
+    };
     return { grade, color: colorMap[grade] };
   };
 
@@ -397,7 +407,7 @@ function MonthlyTracker() {
         {viewMode === 'stats' && (
           <div className="hidden md:block overflow-x-auto">
             <table className="w-full">
-              <thead className="bg-surface-raised">
+              <thead className="sticky top-0 z-10 bg-surface-raised">
                 <tr className="text-content-secondary text-sm">
                   <th className="text-left py-3 px-4 font-medium">Month</th>
                   <th className="text-center py-3 px-2 font-medium">Trades</th>
@@ -441,7 +451,7 @@ function MonthlyTracker() {
                       <td className="text-center py-3 px-2 text-content-primary font-medium">{month.losses}</td>
                       <td className="text-center py-3 px-2">
                         <span
-                          className={`${month.color} text-content-primary px-3 py-1 rounded font-bold cursor-help`}
+                          className={`${month.color} px-3 py-1 rounded-chip font-semibold cursor-help`}
                           title={month.gradeExplanation}
                         >
                           {month.grade}
@@ -499,7 +509,7 @@ function MonthlyTracker() {
                       </div>
                     </div>
                     <span
-                      className={`${month.color} text-content-primary text-xl font-black px-3 py-1.5 rounded-lg min-w-[2.75rem] text-center cursor-help`}
+                      className={`${month.color} text-xl font-bold px-3 py-1.5 rounded-chip min-w-[2.75rem] text-center cursor-help`}
                       title={month.gradeExplanation}
                     >
                       {month.grade}

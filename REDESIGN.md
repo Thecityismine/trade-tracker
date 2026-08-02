@@ -113,16 +113,16 @@ is the one that most wants it.
 
 ---
 
-## Phase 5 — Data visualisation  ☐
+## Phase 5 — Data visualisation  ☑
 
-- [ ] **Bug:** Analytics Avg Win vs Avg Loss renders both bars as slivers ($23.44 / $23.17
+- [x] **Bug:** Analytics Avg Win vs Avg Loss renders both bars as slivers ($23.44 / $23.17
       against a $30 axis) — domain or barSize issue, fix before restyling
-- [ ] Shared chart theme: thin rounded-cap bars, flat/minimal gradient fills, 1px dashed
+- [x] Shared chart theme: thin rounded-cap bars, flat/minimal gradient fills, 1px dashed
       low-opacity gridlines, no axis lines, muted ticks, consistent tooltips, entry animation
-- [ ] Tables: sticky header, taller rows, right-aligned tabular numbers, column-picker for
+- [x] Tables: sticky header, taller rows, right-aligned tabular numbers, column-picker for
       Weekly's 11 columns
-- [ ] Monthly grade badges → soft tinted chips with a coloured left edge
-- [ ] Calendar view: higher-contrast day numbers, equal row heights, clearer per-cell P&L
+- [x] Monthly grade badges → soft tinted chips with a coloured left edge
+- [x] Calendar view: higher-contrast day numbers, equal row heights, clearer per-cell P&L
 
 ---
 

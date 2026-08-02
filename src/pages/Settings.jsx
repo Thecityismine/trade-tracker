@@ -7,6 +7,7 @@ import { Trash2, Target, AlertTriangle } from 'lucide-react';
 import Page from '../components/ui/Page';
 import { Card } from '../components/ui/Surface';
 import DateField from '../components/ui/DateField';
+import { CHART, gridProps, xAxisProps, yAxisProps, tooltipProps, lineProps, usdTick } from '../components/ui/chartTheme';
 
 const SECTIONS = [
   { id: 'account', label: 'Account' },
@@ -270,19 +271,15 @@ function Settings() {
               <AreaChart data={equityChartData}>
                 <defs>
                   <linearGradient id="balanceGradient" x1="0" y1="0" x2="0" y2="1">
-                    <stop offset="5%" stopColor="var(--brand)" stopOpacity={0.25} />
-                    <stop offset="95%" stopColor="var(--brand)" stopOpacity={0} />
+                    <stop offset="5%" stopColor={CHART.brand} stopOpacity={0.18} />
+                    <stop offset="95%" stopColor={CHART.brand} stopOpacity={0} />
                   </linearGradient>
                 </defs>
-                <CartesianGrid strokeDasharray="2 4" stroke="var(--line)" vertical={false} />
-                <XAxis dataKey="label" stroke="var(--content-muted)" tickLine={false} axisLine={false} tick={{ fontSize: 11 }} interval="preserveStartEnd" />
-                <YAxis stroke="var(--content-muted)" tickLine={false} axisLine={false} tickFormatter={v => `$${v.toFixed(0)}`} width={55} tick={{ fontSize: 11 }} />
-                <Tooltip
-                  contentStyle={{ background: 'var(--surface-overlay)', border: '1px solid var(--line-strong)', borderRadius: '10px' }}
-                  labelStyle={{ color: 'var(--content-primary)', fontWeight: 600 }}
-                  formatter={v => [`$${Number(v).toFixed(2)}`, 'Balance']}
-                />
-                <Area type="monotone" dataKey="balance" stroke="var(--brand)" strokeWidth={2} fill="url(#balanceGradient)" dot={false} />
+                <CartesianGrid {...gridProps} />
+                <XAxis dataKey="label" {...xAxisProps} interval="preserveStartEnd" />
+                <YAxis {...yAxisProps} tickFormatter={usdTick} width={55} />
+                <Tooltip {...tooltipProps} formatter={v => [`$${Number(v).toFixed(2)}`, 'Balance']} />
+                <Area type="monotone" dataKey="balance" stroke={CHART.brand} fill="url(#balanceGradient)" {...lineProps} />
               </AreaChart>
             </ResponsiveContainer>
           </div>
