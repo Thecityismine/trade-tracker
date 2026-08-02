@@ -21,6 +21,8 @@ import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpl
 import Page from '../components/ui/Page';
 import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
+import Select from '../components/ui/Select';
+import { useDismissable } from '../hooks/useDismissable';
 
 const SORT_OPTIONS = [
   { id: 'newest', label: 'Newest' },
@@ -370,6 +372,7 @@ function Strategies() {
     setIsStrategyModalOpen(false);
     resetStrategyForm();
   };
+  useDismissable(isStrategyModalOpen, closeStrategyModal);
 
   const handleStrategyInput = (field, value) => {
     setStrategyForm((prev) => ({ ...prev, [field]: value }));
@@ -569,6 +572,7 @@ function Strategies() {
     setIsEntryModalOpen(false);
     resetEntryForm();
   };
+  useDismissable(isEntryModalOpen, closeEntryModal);
 
   const handleEntryInput = (field, value) => {
     setEntryForm((prev) => ({ ...prev, [field]: value }));
@@ -738,15 +742,12 @@ function Strategies() {
               className="w-full bg-surface-raised border border-line-strong rounded-lg pl-9 pr-3 py-2 text-content-primary text-sm focus:outline-none focus:border-brand"
             />
           </div>
-          <select
+          <Select
+            className="lg:w-56"
             value={sortBy}
-            onChange={(e) => setSortBy(e.target.value)}
-            className="bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-sm text-content-primary focus:outline-none focus:border-brand"
-          >
-            {SORT_OPTIONS.map((option) => (
-              <option key={option.id} value={option.id}>{option.label}</option>
-            ))}
-          </select>
+            onChange={setSortBy}
+            options={SORT_OPTIONS.map((o) => ({ value: o.id, label: o.label }))}
+          />
         </div>
 
         {filteredStrategies.length === 0 && (
@@ -1218,7 +1219,7 @@ function Strategies() {
               <button
                 type="button"
                 onClick={() => handleDeleteStrategy(activeStrategy.id)}
-                className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-content-primary px-3 py-2 rounded-lg text-sm transition-colors"
+                className="inline-flex items-center gap-2 rounded-control border border-loss/30 bg-loss/15 px-3 py-2 text-sm font-medium text-loss transition-colors hover:bg-loss/25"
               >
                 <Trash2 size={14} />
                 Delete

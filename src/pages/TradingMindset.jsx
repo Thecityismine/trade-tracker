@@ -3,6 +3,7 @@ import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverT
 import { Brain, CheckSquare, Lightbulb, Search, Trash2 } from 'lucide-react';
 import { db } from '../config/firebase';
 import Page from '../components/ui/Page';
+import Select from '../components/ui/Select';
 
 const defaultChecklist = {
   followedPlan: false,
@@ -251,27 +252,19 @@ function TradingMindset() {
             <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-content-secondary text-sm mb-2">Entry Type</label>
-                <select
+                <Select
                   value={formData.type}
-                  onChange={(e) => handleFieldChange('type', e.target.value)}
-                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
-                >
-                  {entryTypes.map((type) => (
-                    <option key={type.value} value={type.value}>{type.label}</option>
-                  ))}
-                </select>
+                  onChange={(v) => handleFieldChange('type', v)}
+                  options={entryTypes.map((t) => ({ value: t.value, label: t.label }))}
+                />
               </div>
               <div>
                 <label className="block text-content-secondary text-sm mb-2">Session</label>
-                <select
+                <Select
                   value={formData.session}
-                  onChange={(e) => handleFieldChange('session', e.target.value)}
-                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
-                >
-                  {sessions.map((session) => (
-                    <option key={session.value} value={session.value}>{session.label}</option>
-                  ))}
-                </select>
+                  onChange={(v) => handleFieldChange('session', v)}
+                  options={sessions.map((s) => ({ value: s.value, label: s.label }))}
+                />
               </div>
             </div>
 
@@ -404,16 +397,15 @@ function TradingMindset() {
                   className="w-full sm:w-56 bg-surface-raised border border-line-strong rounded-lg pl-9 pr-3 py-2 text-content-primary text-sm focus:outline-none focus:border-brand"
                 />
               </div>
-              <select
+              <Select
+                className="sm:w-44"
                 value={filterType}
-                onChange={(e) => setFilterType(e.target.value)}
-                className="bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary text-sm focus:outline-none focus:border-brand"
-              >
-                <option value="all">All Types</option>
-                {entryTypes.map((type) => (
-                  <option key={type.value} value={type.value}>{type.label}</option>
-                ))}
-              </select>
+                onChange={setFilterType}
+                options={[
+                  { value: 'all', label: 'All Types' },
+                  ...entryTypes.map((t) => ({ value: t.value, label: t.label })),
+                ]}
+              />
             </div>
           </div>
 

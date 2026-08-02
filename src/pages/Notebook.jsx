@@ -8,6 +8,8 @@ import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpl
 import Page from '../components/ui/Page';
 import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
+import Select from '../components/ui/Select';
+import { useDismissable } from '../hooks/useDismissable';
 
 const CATEGORY_OPTIONS = [
   { id: 'all', label: 'All' },
@@ -325,6 +327,7 @@ function Notebook() {
     setIsModalOpen(false);
     resetForm();
   };
+  useDismissable(isModalOpen, closeModal);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -545,7 +548,7 @@ function Notebook() {
               onClick={() => setMistakeTypeFilter(mistake.type)}
               className={`px-3 py-1 rounded-lg text-xs border transition-colors ${
                 mistakeTypeFilter.toLowerCase() === mistake.type.toLowerCase()
-                  ? 'bg-red-600 text-content-primary border-loss'
+                  ? 'bg-loss text-canvas border-loss'
                   : 'bg-surface-raised text-loss border-loss/40 hover:border-loss'
               }`}
             >
@@ -579,15 +582,12 @@ function Notebook() {
             </div>
 
             <div className="flex flex-col sm:flex-row gap-2 w-full lg:w-auto">
-              <select
+              <Select
+                className="sm:w-52"
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-sm text-content-primary focus:outline-none focus:border-brand"
-              >
-                {SORT_OPTIONS.map((option) => (
-                  <option key={option.id} value={option.id}>{option.label}</option>
-                ))}
-              </select>
+                onChange={setSortBy}
+                options={SORT_OPTIONS.map((o) => ({ value: o.id, label: o.label }))}
+              />
             </div>
           </div>
 
@@ -702,15 +702,11 @@ function Notebook() {
                 </div>
                 <div>
                   <label className="block text-content-secondary text-sm mb-2">Category</label>
-                  <select
+                  <Select
                     value={formData.category}
-                    onChange={(e) => handleInputChange('category', e.target.value)}
-                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
-                  >
-                    {EDITABLE_CATEGORIES.map((option) => (
-                      <option key={option.id} value={option.id}>{option.label}</option>
-                    ))}
-                  </select>
+                    onChange={(v) => handleInputChange('category', v)}
+                    options={EDITABLE_CATEGORIES.map((o) => ({ value: o.id, label: o.label }))}
+                  />
                 </div>
               </div>
 
@@ -931,7 +927,7 @@ function Notebook() {
               <button
                 type="button"
                 onClick={() => handleDeleteNote(activeNote.id)}
-                className="inline-flex items-center gap-2 bg-red-600 hover:bg-red-700 text-content-primary px-3 py-2 rounded-lg text-sm transition-colors"
+                className="inline-flex items-center gap-2 rounded-control border border-loss/30 bg-loss/15 px-3 py-2 text-sm font-medium text-loss transition-colors hover:bg-loss/25"
               >
                 <Trash2 size={14} />
                 Delete

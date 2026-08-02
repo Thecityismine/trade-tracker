@@ -89,16 +89,27 @@ under white text. Moving them to the lighter semantic tokens would drop contrast
 
 ---
 
-## Phase 4 — Controls, forms, Add Trade modal  ◐
+## Phase 4 — Controls, forms, Add Trade modal  ☑
 
-- [ ] Themed `<Select>` replacing every native `<select>` (RecentTrades ×2, TradeModal,
+- [x] Themed `<Select>` replacing every native `<select>` (RecentTrades ×2, TradeModal,
       ChartPatterns ×4, Notebook ×2, Strategies, TradeJournal ×2, TradingMindset ×3)
-- [ ] Themed `<DateField>` replacing `input[type=date]` (TradeModal, Settings ×2, TradeJournal)
-- [ ] **Add Trade modal:** header with title + X · Escape and backdrop dismissal ·
+- [x] Themed `<DateField>` replacing `input[type=date]` (TradeModal, Settings ×2, TradeJournal)
+- [x] **Add Trade modal:** header with title + X · Escape and backdrop dismissal ·
       `max-h-[85vh]` with internal scroll · sticky footer so Cancel/Save are always visible
 - [x] Button system: primary / secondary / ghost / destructive
 - [x] Chips: outline default, filled when selected — fixes the Alarms day toggles that
       currently render all seven days in solid blue as if pre-selected
+- [x] Popovers portal to `<body>` — an absolutely-positioned dropdown was clipped by the
+      modal body and any scrolling panel
+- [x] Escape-to-close on the other five modals via `useDismissable`, plus backdrop
+      dismissal on the three that lacked it
+- [x] Resolve the solid button fills deferred from phase 3 — selected toggles take the
+      semantic token with canvas-dark text (7.7–11:1), destructive actions take the
+      tinted treatment
+
+**Still on the old markup:** the five non-TradeModal form dialogs dismiss correctly now
+but are not yet built on `<Modal>`, so they lack the sticky footer. Strategies' entry form
+is the one that most wants it.
 
 ---
 

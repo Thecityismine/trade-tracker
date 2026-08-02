@@ -4,6 +4,7 @@ import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import TradeModal from './TradeModal';
 import { generatePnlImage, downloadCanvas } from '../utils/generatePnlImage';
+import { useDismissable, backdropProps } from '../hooks/useDismissable';
 
 const MISTAKE_TAGS = [
   { id: 'over-risk', label: 'Over-Risk' },
@@ -116,6 +117,7 @@ function getNextFocus(trade, maxRiskPercent, mistakeTags) {
 
 function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
   const [isEditing, setIsEditing] = useState(false);
+  useDismissable(!isEditing, onClose);
   const [deleting, setDeleting] = useState(false);
   const [localMistakeTags, setLocalMistakeTags] = useState(trade.mistakeTags || []);
   const [savingTags, setSavingTags] = useState(false);
@@ -190,7 +192,7 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
   return (
     <>
       {!isEditing && (
-        <div className="fixed inset-0 bg-black bg-opacity-80 z-[60] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/80 z-[60] overflow-y-auto" {...backdropProps(onClose)}>
           <div className="flex min-h-full items-start justify-center p-4 py-8">
           <div className="bg-surface rounded-card w-full max-w-2xl shadow-elev-1">
 

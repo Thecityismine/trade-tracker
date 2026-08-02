@@ -6,6 +6,7 @@ import { useTrades } from '../context/TradesContext';
 import { Trash2, Target, AlertTriangle } from 'lucide-react';
 import Page from '../components/ui/Page';
 import { Card } from '../components/ui/Surface';
+import DateField from '../components/ui/DateField';
 
 const SECTIONS = [
   { id: 'account', label: 'Account' },
@@ -323,7 +324,7 @@ function Settings() {
               <button
                 onClick={() => setForm(f => ({ ...f, type: 'deposit' }))}
                 className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  form.type === 'deposit' ? 'bg-green-600 text-content-primary' : 'bg-surface-raised text-content-secondary hover:text-content-primary'
+                  form.type === 'deposit' ? 'bg-profit text-canvas' : 'bg-surface-raised text-content-secondary hover:text-content-primary'
                 }`}
               >
                 Deposit
@@ -331,7 +332,7 @@ function Settings() {
               <button
                 onClick={() => setForm(f => ({ ...f, type: 'withdrawal' }))}
                 className={`px-4 py-2 text-sm font-medium transition-colors ${
-                  form.type === 'withdrawal' ? 'bg-red-600 text-content-primary' : 'bg-surface-raised text-content-secondary hover:text-content-primary'
+                  form.type === 'withdrawal' ? 'bg-loss text-canvas' : 'bg-surface-raised text-content-secondary hover:text-content-primary'
                 }`}
               >
                 Withdrawal
@@ -359,11 +360,10 @@ function Settings() {
           {/* Date */}
           <div>
             <label className="text-content-secondary text-xs block mb-1">Date</label>
-            <input
-              type="date"
+            <DateField
+              className="w-44"
               value={form.date}
-              onChange={e => setForm(f => ({ ...f, date: e.target.value }))}
-              className="bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
+              onChange={(v) => setForm(f => ({ ...f, date: v }))}
             />
           </div>
 
@@ -458,12 +458,7 @@ function Settings() {
             </div>
             <div>
               <label className="text-content-secondary text-xs block mb-1">Goal Target Date</label>
-              <input
-                type="date"
-                value={goalDate}
-                onChange={e => setGoalDate(e.target.value)}
-                className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
-              />
+              <DateField value={goalDate} onChange={setGoalDate} />
             </div>
           </div>
 

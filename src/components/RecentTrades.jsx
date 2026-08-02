@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { ImageIcon, BarChart2, Plus } from 'lucide-react';
 import TradeDetailsModal from './TradeDetailsModal';
+import Select from './ui/Select';
 
 function getExecutionTag(trade, maxRiskPercent) {
   const isOverRisk = maxRiskPercent > 0 && trade.result === 'loss' &&
@@ -84,25 +85,27 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
           <h2 className="text-xl font-bold text-content-primary">Recent Trades</h2>
           <div className="flex gap-2">
-            <select
+            <Select
+              className="w-36"
               value={filterPeriod}
-              onChange={(e) => setFilterPeriod(e.target.value)}
-              className="px-3 py-1.5 bg-surface-raised border border-line-strong rounded-lg text-content-primary text-sm focus:outline-none focus:border-brand cursor-pointer"
-            >
-              <option value="today">Today</option>
-              <option value="week">This Week</option>
-              <option value="month">This Month</option>
-              <option value="all">All Time</option>
-            </select>
-            <select
+              onChange={setFilterPeriod}
+              options={[
+                { value: 'today', label: 'Today' },
+                { value: 'week', label: 'This Week' },
+                { value: 'month', label: 'This Month' },
+                { value: 'all', label: 'All Time' },
+              ]}
+            />
+            <Select
+              className="w-36"
               value={filterResult}
-              onChange={(e) => setFilterResult(e.target.value)}
-              className="px-3 py-1.5 bg-surface-raised border border-line-strong rounded-lg text-content-primary text-sm focus:outline-none focus:border-brand cursor-pointer"
-            >
-              <option value="all">All Results</option>
-              <option value="win">Wins</option>
-              <option value="loss">Losses</option>
-            </select>
+              onChange={setFilterResult}
+              options={[
+                { value: 'all', label: 'All Results' },
+                { value: 'win', label: 'Wins' },
+                { value: 'loss', label: 'Losses' },
+              ]}
+            />
           </div>
         </div>
 

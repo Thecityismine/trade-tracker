@@ -7,6 +7,8 @@ import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpl
 import Page from '../components/ui/Page';
 import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
+import Select from '../components/ui/Select';
+import { useDismissable, backdropProps } from '../hooks/useDismissable';
 
 const TIMEFRAME_OPTIONS = [
   { value: '1min', label: '1min' },
@@ -229,6 +231,8 @@ function ChartPatterns() {
   };
 
   const closeModal = () => { setIsModalOpen(false); resetForm(); };
+  useDismissable(isModalOpen, closeModal);
+
 
   const openAddModal = () => { resetForm(); setStatusMessage(''); setIsModalOpen(true); };
 
@@ -364,26 +368,26 @@ function ChartPatterns() {
 
         {/* Timeframe + Quality dropdowns */}
         <div className="flex gap-2">
-          <select
+          <Select
+            className="flex-1"
             value={timeframeFilter}
-            onChange={(e) => setTimeframeFilter(e.target.value)}
-            className="flex-1 bg-surface-raised border border-line-strong rounded-lg px-3 py-1.5 text-sm text-content-primary focus:outline-none focus:border-brand"
-          >
-            <option value="all">All Timeframes</option>
-            {TIMEFRAME_OPTIONS.map((opt) => (
-              <option key={opt.value} value={opt.value}>{opt.label}</option>
-            ))}
-          </select>
-          <select
+            onChange={setTimeframeFilter}
+            options={[
+              { value: 'all', label: 'All Timeframes' },
+              ...TIMEFRAME_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label })),
+            ]}
+          />
+          <Select
+            className="flex-1"
             value={qualityFilter}
-            onChange={(e) => setQualityFilter(e.target.value)}
-            className="flex-1 bg-surface-raised border border-line-strong rounded-lg px-3 py-1.5 text-sm text-content-primary focus:outline-none focus:border-brand"
-          >
-            <option value="all">All Quality</option>
-            <option value="A+">A+ Only</option>
-            <option value="B">B Only</option>
-            <option value="C">C Only</option>
-          </select>
+            onChange={setQualityFilter}
+            options={[
+              { value: 'all', label: 'All Quality' },
+              { value: 'A+', label: 'A+ Only' },
+              { value: 'B', label: 'B Only' },
+              { value: 'C', label: 'C Only' },
+            ]}
+          />
         </div>
       </div>
 
@@ -573,7 +577,7 @@ function ChartPatterns() {
 
       {/* Add / Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 z-[60] overflow-y-auto">
+        <div className="fixed inset-0 bg-black/75 z-[60] overflow-y-auto" {...backdropProps(closeModal)}>
           <div className="flex min-h-full items-start justify-center p-4 py-8">
             <div className="bg-surface rounded-card w-full max-w-lg shadow-elev-1">
               <div className="flex items-center justify-between p-6 border-b border-line">
@@ -617,29 +621,24 @@ function ChartPatterns() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <label className="block text-content-secondary text-sm mb-2">Trade Side</label>
-                    <select
+                    <Select
                       value={formData.tradeType}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, tradeType: e.target.value }))}
-                      className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
-                    >
-                      <option value="both">Both / General</option>
-                      <option value="long">Long Trades</option>
-                      <option value="short">Short Trades</option>
-                    </select>
+                      onChange={(v) => setFormData((prev) => ({ ...prev, tradeType: v }))}
+                      options={[
+                        { value: 'both', label: 'Both / General' },
+                        { value: 'long', label: 'Long Trades' },
+                        { value: 'short', label: 'Short Trades' },
+                      ]}
+                    />
                   </div>
                   <div>
                     <label className="block text-content-secondary text-sm mb-2">Timeframe</label>
-                    <select
+                    <Select
                       value={formData.timeframe}
-                      onChange={(e) => setFormData((prev) => ({ ...prev, timeframe: e.target.value }))}
-                      className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
-                      required
-                    >
-                      <option value="">Select timeframe</option>
-                      {TIMEFRAME_OPTIONS.map((opt) => (
-                        <option key={opt.value} value={opt.value}>{opt.label}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => setFormData((prev) => ({ ...prev, timeframe: v }))}
+                      placeholder="Select timeframe"
+                      options={TIMEFRAME_OPTIONS.map((opt) => ({ value: opt.value, label: opt.label }))}
+                    />
                   </div>
                 </div>
 
@@ -652,7 +651,7 @@ function ChartPatterns() {
                     {[
                       { value: '', label: 'None', active: 'bg-surface-raised border-line-strong text-content-secondary' },
                       { value: 'A+', label: 'A+', active: 'bg-brand border-brand text-content-primary' },
-                      { value: 'B', label: 'B', active: 'bg-yellow-600 border-warn text-content-primary' },
+                      { value: 'B', label: 'B', active: 'bg-warn border-warn text-canvas' },
                       { value: 'C', label: 'C', active: 'bg-surface-hover border-line-strong text-content-primary' },
                     ].map((opt) => (
                       <button

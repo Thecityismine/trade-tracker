@@ -3,6 +3,14 @@ import { X, Upload } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, updateDoc, doc, onSnapshot } from 'firebase/firestore';
 import { db, storage } from '../config/firebase';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
+import Modal from './ui/Modal';
+import Button from './ui/Button';
+import Select from './ui/Select';
+import DateField from './ui/DateField';
+
+// The submit button lives in the Modal footer, outside the <form>, so it binds
+// back to it by id.
+const FORM_ID = 'trade-form';
 
 const formatDateForInput = (date) => {
   const year = date.getFullYear();
@@ -310,10 +318,23 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   if (!isOpen) return null;
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-75 z-[70] p-2 sm:p-4 overflow-y-auto">
-      <div className="min-h-full flex items-start sm:items-center justify-center">
-        <div className="bg-surface rounded-card w-full max-w-lg my-2 sm:my-8 max-h-[calc(100vh-1rem)] overflow-y-auto shadow-elev-1">
-          <form onSubmit={handleSubmit} className="px-4 sm:px-6 pt-2 sm:pt-3 pb-4 sm:pb-6 space-y-4">
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title={editTrade ? 'Edit Trade' : 'New Trade'}
+      description={editTrade ? 'Update the details of this trade' : 'Log a closed trade'}
+      footer={
+        <>
+          <Button type="button" variant="secondary" onClick={onClose}>
+            Cancel
+          </Button>
+          <Button type="submit" form={FORM_ID} disabled={loading}>
+            {loading ? 'Saving…' : editTrade ? 'Save Changes' : 'Save Trade'}
+          </Button>
+        </>
+      }
+    >
+          <form id={FORM_ID} onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-content-secondary text-sm mb-2">Ticker</label>
               <div className="grid grid-cols-[minmax(0,1fr)_84px_84px] gap-2 items-center">
@@ -330,7 +351,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onClick={() => setFormData((prev) => ({ ...prev, result: 'win' }))}
                   className={`rounded-lg py-2 text-sm font-medium transition-colors ${
                     formData.result === 'win'
-                      ? 'bg-green-600 text-content-primary'
+                      ? 'bg-profit text-canvas'
                       : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
                   }`}
                 >
@@ -341,7 +362,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onClick={() => setFormData((prev) => ({ ...prev, result: 'loss' }))}
                   className={`rounded-lg py-2 text-sm font-medium transition-colors ${
                     formData.result === 'loss'
-                      ? 'bg-red-600 text-content-primary'
+                      ? 'bg-loss text-canvas'
                       : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
                   }`}
                 >
@@ -359,7 +380,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onClick={() => setFormData((prev) => ({ ...prev, direction: 'long' }))}
                   className={`py-2 rounded-lg text-sm font-medium transition-colors ${
                     formData.direction === 'long'
-                      ? 'bg-green-600 text-content-primary'
+                      ? 'bg-profit text-canvas'
                       : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
                   }`}
                 >
@@ -370,7 +391,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onClick={() => setFormData((prev) => ({ ...prev, direction: 'short' }))}
                   className={`py-2 rounded-lg text-sm font-medium transition-colors ${
                     formData.direction === 'short'
-                      ? 'bg-red-600 text-content-primary'
+                      ? 'bg-loss text-canvas'
                       : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
                   }`}
                 >
@@ -381,13 +402,10 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
 
             <div>
               <label className="block text-content-secondary text-sm mb-2">Trade Date</label>
-              <input
-                type="date"
+              <DateField
                 name="tradeDate"
                 value={formData.tradeDate}
-                onChange={handleInputChange}
-                className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
-                required
+                onChange={(v) => handleInputChange({ target: { name: 'tradeDate', value: v } })}
               />
             </div>
 
@@ -533,7 +551,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                           setRemoveExistingChart(true);
                         }
                       }}
-                      className="absolute top-2 right-2 bg-red-600 text-content-primary p-1 rounded-full hover:bg-red-700"
+                      className="absolute top-2 right-2 rounded-full bg-loss/90 p-1 text-canvas transition-colors hover:bg-loss"
                     >
                       <X size={16} />
                     </button>
@@ -572,17 +590,16 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
 
             <div>
               <label className="block text-content-secondary text-sm mb-2">Strategy <span className="text-content-muted">(optional)</span></label>
-              <select
+              <Select
                 name="strategyId"
                 value={formData.strategyId}
-                onChange={handleInputChange}
-                className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
-              >
-                <option value="">— No strategy —</option>
-                {strategies.map((s) => (
-                  <option key={s.id} value={s.id}>{s.name}</option>
-                ))}
-              </select>
+                onChange={(v) => handleInputChange({ target: { name: 'strategyId', value: v } })}
+                placeholder="— No strategy —"
+                options={[
+                  { value: '', label: '— No strategy —' },
+                  ...strategies.map((s) => ({ value: s.id, label: s.name })),
+                ]}
+              />
               {strategies.length === 0 && (
                 <p className="text-xs text-content-muted mt-1">Create a strategy in the Strategies tab to link trades to it.</p>
               )}
@@ -603,27 +620,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
             {formError && (
               <p className="text-sm text-loss pt-2">{formError}</p>
             )}
-
-            <div className="flex gap-3 pt-2">
-              <button
-                type="button"
-                onClick={onClose}
-                className="flex-1 bg-surface-raised border border-line-strong rounded-lg py-3 text-content-secondary font-medium hover:border-brand/50 transition-colors"
-              >
-                Cancel
-              </button>
-              <button
-                type="submit"
-                disabled={loading}
-                className="flex-1 bg-brand hover:bg-brand-hover rounded-lg py-3 text-content-primary font-medium transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
-              >
-                {loading ? 'Saving...' : (editTrade ? 'Save Changes' : 'Save Trade')}
-              </button>
-            </div>
           </form>
-        </div>
-      </div>
-    </div>
+    </Modal>
   );
 }
 

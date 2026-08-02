@@ -6,6 +6,9 @@ import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpl
 import Page from '../components/ui/Page';
 import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
+import Select from '../components/ui/Select';
+import DateField from '../components/ui/DateField';
+import { useDismissable, backdropProps } from '../hooks/useDismissable';
 
 const withTimeout = (promise, ms, timeoutMessage) => {
   let timeoutId;
@@ -197,6 +200,7 @@ function TradeJournal() {
     setIsModalOpen(false);
     resetForm();
   };
+  useDismissable(isModalOpen, closeModal);
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
@@ -436,7 +440,7 @@ function TradeJournal() {
                   </button>
                   <button
                     onClick={() => handleDelete(entry.id)}
-                    className="bg-red-600 hover:bg-red-700 text-content-primary p-2 rounded-full transition-colors"
+                    className="rounded-full bg-loss/90 p-2 text-canvas transition-colors hover:bg-loss"
                     aria-label="Delete entry"
                   >
                     <Trash2 size={14} />
@@ -514,7 +518,7 @@ function TradeJournal() {
       </div>
 
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/75 z-[70] p-2 sm:p-4 overflow-y-auto flex items-center justify-center">
+        <div className="fixed inset-0 bg-black/75 z-[70] p-2 sm:p-4 overflow-y-auto flex items-center justify-center" {...backdropProps(closeModal)}>
           <div className="bg-surface rounded-card w-full max-w-2xl max-h-[calc(100vh-1rem)] overflow-y-auto shadow-elev-1">
             <div className="flex items-center justify-between p-5 border-b border-line">
               <h3 className="text-xl text-content-primary font-bold">{editingEntry ? 'Edit Journal Entry' : 'New Journal Entry'}</h3>
@@ -549,15 +553,15 @@ function TradeJournal() {
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 <div>
                   <label className="block text-content-secondary text-sm mb-2">Result</label>
-                  <select
+                  <Select
                     value={formData.result}
-                    onChange={(e) => handleInputChange('result', e.target.value)}
-                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
-                  >
-                    <option value="win">Win</option>
-                    <option value="loss">Loss</option>
-                    <option value="breakeven">Breakeven</option>
-                  </select>
+                    onChange={(v) => handleInputChange('result', v)}
+                    options={[
+                      { value: 'win', label: 'Win' },
+                      { value: 'loss', label: 'Loss' },
+                      { value: 'breakeven', label: 'Breakeven' },
+                    ]}
+                  />
                 </div>
                 <div>
                   <label className="block text-content-secondary text-sm mb-2">Setup Type</label>
@@ -571,11 +575,9 @@ function TradeJournal() {
                 </div>
                 <div>
                   <label className="block text-content-secondary text-sm mb-2">Trade Date</label>
-                  <input
-                    type="date"
+                  <DateField
                     value={formData.tradeDate}
-                    onChange={(e) => handleInputChange('tradeDate', e.target.value)}
-                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
+                    onChange={(v) => handleInputChange('tradeDate', v)}
                   />
                 </div>
               </div>
@@ -668,16 +670,12 @@ function TradeJournal() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 bg-loss/8 border border-loss/15 rounded-lg p-3">
                   <div>
                     <label className="block text-content-secondary text-sm mb-2">Mistake Tag</label>
-                    <select
+                    <Select
                       value={formData.mistakeTag}
-                      onChange={(e) => handleInputChange('mistakeTag', e.target.value)}
-                      className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
-                    >
-                      <option value="">— Select —</option>
-                      {MISTAKE_TAGS.map(tag => (
-                        <option key={tag} value={tag}>{tag}</option>
-                      ))}
-                    </select>
+                      onChange={(v) => handleInputChange('mistakeTag', v)}
+                      placeholder="— Select —"
+                      options={MISTAKE_TAGS.map((t) => ({ value: t, label: t }))}
+                    />
                   </div>
                   <div>
                     <label className="block text-content-secondary text-sm mb-2">Rule Broken</label>
