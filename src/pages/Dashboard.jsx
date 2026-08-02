@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import CountUp from 'react-countup';
-import { Plus, Pin } from 'lucide-react';
+import { Pin } from 'lucide-react';
 import MetricCard from '../components/MetricCard';
 import EquityCurve from '../components/EquityCurve';
 import RecentTrades from '../components/RecentTrades';
@@ -540,16 +540,8 @@ function Dashboard({ onNavigate }) {
         onAddTrade={() => setIsModalOpen(true)}
       />
 
-      {/* Floating Action Button */}
-      <button
-        onClick={() => setIsModalOpen(true)}
-        className="fixed bottom-6 right-6 bg-blue-600 hover:bg-blue-700 active:scale-95 text-white p-3 rounded-full shadow-lg transition-all hover:scale-110 opacity-60 hover:opacity-100 z-50"
-        aria-label="Add new trade"
-      >
-        <Plus size={24} />
-      </button>
-
-      {/* Trade Modal */}
+      {/* Trade Modal — the FAB moved to the top bar's "New Trade" action; this
+          instance still backs the empty-state CTA in RecentTrades. */}
       {isModalOpen && (
         <TradeModal
           isOpen={isModalOpen}

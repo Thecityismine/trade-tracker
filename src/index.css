@@ -1,30 +1,100 @@
+@import '@fontsource-variable/inter';
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
+/*
+  Design tokens. Mirror of the Tailwind theme in tailwind.config.js — use the
+  Tailwind classes (bg-surface, text-content-secondary, …) in components and reach
+  for these vars only where a raw CSS value is needed (charts, inline styles).
+*/
+:root {
+  /* Surfaces — elevation is a background level, not a border */
+  --surface-canvas: #0b0b0d;
+  --surface: #131316;
+  --surface-raised: #17171b;
+  --surface-overlay: #1c1c21;
+  --surface-hover: #202026;
+
+  /* Borders */
+  --line-subtle: rgba(255, 255, 255, 0.04);
+  --line: rgba(255, 255, 255, 0.07);
+  --line-strong: rgba(255, 255, 255, 0.14);
+
+  /* Text */
+  --content-primary: #f5f5f7;
+  --content-secondary: #a1a1aa;
+  --content-muted: #8a8a93;
+
+  /* Brand accent — everything interactive */
+  --brand: #3b82f6;
+  --brand-hover: #60a5fa;
+  --brand-muted: rgba(59, 130, 246, 0.14);
+  --brand-ring: rgba(59, 130, 246, 0.45);
+
+  /* Semantic — green/red reserved for P&L direction */
+  --profit: #34d399;
+  --profit-soft: rgba(52, 211, 153, 0.12);
+  --loss: #f87171;
+  --loss-soft: rgba(248, 113, 113, 0.12);
+  --warn: #fbbf24;
+  --warn-soft: rgba(251, 191, 36, 0.12);
+
+  /* Radii */
+  --radius-card: 16px;
+  --radius-control: 10px;
+  --radius-chip: 8px;
+
+  /* Elevation */
+  --elev-1: 0 1px 2px rgba(0, 0, 0, 0.4), 0 1px 3px rgba(0, 0, 0, 0.3);
+  --elev-2: 0 4px 12px rgba(0, 0, 0, 0.45), 0 2px 4px rgba(0, 0, 0, 0.3);
+  --elev-3: 0 16px 40px rgba(0, 0, 0, 0.55), 0 4px 12px rgba(0, 0, 0, 0.4);
+
+  color-scheme: dark;
+}
+
 html {
   min-height: 100%;
-  background-color: #0a0a0a;
-  background-image: linear-gradient(160deg, #0a0a0a 0%, #111111 50%, #0d0d0d 100%);
-  background-size: 100% 100%;
-  background-attachment: scroll;
+  background-color: var(--surface-canvas);
 }
 
 body {
   margin: 0;
   min-height: 100vh;
-  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
-    'Ubuntu', 'Cantarell', 'Fira Sans', 'Droid Sans', 'Helvetica Neue',
-    sans-serif;
+  font-family: 'Inter Variable', 'Inter', system-ui, -apple-system, 'Segoe UI', sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  background: transparent;
-  color: #ffffff;
+  background: var(--surface-canvas);
+  color: var(--content-primary);
   overscroll-behavior: none;
 }
 
 * {
   box-sizing: border-box;
+}
+
+/* Tabular figures everywhere numbers are compared down a column or animate in place. */
+table,
+input,
+.tabular {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: 'tnum' 1;
+}
+
+/* Headings read tighter at Inter's default tracking. */
+h1,
+h2,
+h3 {
+  letter-spacing: -0.02em;
+}
+
+/* Native form controls inherit the dark theme until Phase 4 replaces them. */
+select,
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'] {
+  color-scheme: dark;
 }
 
 @keyframes fadeIn {
@@ -40,4 +110,10 @@ body {
 
 .page-fade-in {
   animation: fadeIn 0.2s ease-out;
+}
+
+/* Consistent focus treatment — visible on every surface level. */
+:focus-visible {
+  outline: 2px solid var(--brand-ring);
+  outline-offset: 2px;
 }

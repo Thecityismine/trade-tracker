@@ -1,11 +1,14 @@
-import { useState, useEffect, useRef, lazy, Suspense } from 'react';
+import { useState, useEffect, useRef, useCallback, lazy, Suspense } from 'react';
 import { collection, onSnapshot, query, orderBy } from 'firebase/firestore';
-import { signOut } from 'firebase/auth';
-import { db, auth } from './config/firebase';
+import { db } from './config/firebase';
 import { TradesProvider } from './context/TradesContext';
 import { useHashRoute } from './hooks/useHashRoute';
+import { useNavShortcuts } from './hooks/useNavShortcuts';
 import { playSound } from './utils/alarmSounds';
-import { BarChart3, TrendingUp, Calendar, CalendarDays, Target, BookOpen, FileText, Lightbulb, Settings as SettingsIcon, Eye, Newspaper, Bell, LogOut } from 'lucide-react';
+import { NAV_IDS, NAV_ITEMS, getNavItem } from './config/nav';
+import Sidebar from './components/Sidebar';
+import TopBar from './components/TopBar';
+import TradeModal from './components/TradeModal';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Analytics = lazy(() => import('./pages/Analytics'));
@@ -21,28 +24,31 @@ const WhaleTracker = lazy(() => import('./pages/WhaleTracker'));
 const MorningBrief = lazy(() => import('./pages/MorningBrief'));
 const Alarms = lazy(() => import('./pages/Alarms'));
 
-const TABS = [
-  { id: 'dashboard', label: 'Dashboard', icon: BarChart3 },
-  { id: 'analytics', label: 'Analytics', icon: TrendingUp },
-  { id: 'weekly', label: 'Weekly', icon: Calendar },
-  { id: 'monthly', label: 'Monthly', icon: CalendarDays },
-  { id: 'patterns', label: 'Chart Patterns', icon: Target },
-  { id: 'strategies', label: 'Strategies', icon: Lightbulb },
-  { id: 'journal', label: 'Trade Journal', icon: FileText },
-  { id: 'mindset', label: 'Mindset', icon: BookOpen },
-  { id: 'notebook', label: 'Notebook', icon: BookOpen },
-  { id: 'news', label: 'News', icon: Newspaper },
-  { id: 'whales', label: 'Whales', icon: Eye },
-  { id: 'alarms', label: 'Alarms', icon: Bell },
-  { id: 'settings', label: 'Settings', icon: SettingsIcon },
-];
-const TAB_IDS = TABS.map(t => t.id);
+const RAIL_KEY = 'tt:sidebar-collapsed';
 
 function App() {
-  const [activeTab, setActiveTab] = useHashRoute(TAB_IDS, 'dashboard');
+  const [activeTab, setActiveTab] = useHashRoute(NAV_IDS, 'dashboard');
   const [alarms, setAlarms] = useState([]);
   const [ringing, setRinging] = useState(null);
+  const [railCollapsed, setRailCollapsed] = useState(
+    () => localStorage.getItem(RAIL_KEY) === '1'
+  );
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
+  const [tradeModalOpen, setTradeModalOpen] = useState(false);
   const firedRef = useRef(new Set());
+
+  const toggleRail = useCallback(() => {
+    setRailCollapsed((prev) => {
+      localStorage.setItem(RAIL_KEY, prev ? '0' : '1');
+      return !prev;
+    });
+  }, []);
+
+  const hintG = useNavShortcuts(NAV_ITEMS, setActiveTab, toggleRail);
+  const page = getNavItem(activeTab);
+
+  // Close the mobile drawer whenever the route changes
+  useEffect(() => setMobileNavOpen(false), [activeTab]);
 
   // Load alarms from Firestore — syncs across devices
   useEffect(() => {
@@ -120,57 +126,38 @@ function App() {
 
   return (
     <TradesProvider>
-    <div className="min-h-screen">
-      {/* Header */}
-      <header className="bg-black border-b border-dark-border sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-4 py-4 flex items-center justify-between">
-          <h1 className="text-2xl font-bold text-white">
-            <span className="text-blue-500">T</span>rade <span className="text-red-500">T</span>racker
-          </h1>
-          <button
-            onClick={() => signOut(auth)}
-            className="flex items-center gap-1.5 text-sm text-gray-400 hover:text-white transition-colors"
-          >
-            <LogOut size={16} />
-            <span className="hidden sm:inline">Sign out</span>
-          </button>
-        </div>
-      </header>
+      <div className="min-h-screen bg-canvas">
+        <Sidebar
+          activeId={activeTab}
+          onSelect={setActiveTab}
+          collapsed={railCollapsed}
+          onToggleCollapse={toggleRail}
+          mobileOpen={mobileNavOpen}
+          onCloseMobile={() => setMobileNavOpen(false)}
+        />
 
-      {/* Navigation Tabs */}
-      <nav className="bg-black border-b border-dark-border sticky top-16 z-40 overflow-x-auto">
-        <div className="max-w-7xl mx-auto px-4">
-          <div className="flex min-w-max">
-            {TABS.map((tab) => {
-              const Icon = tab.icon;
-              const isActive = activeTab === tab.id;
-              return (
-                <button
-                  key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`relative flex flex-col sm:flex-row items-center gap-0.5 sm:gap-2 px-3 sm:px-4 py-3 text-sm font-medium transition-colors whitespace-nowrap min-w-[44px] sm:min-w-0 ${
-                    isActive ? 'text-white' : 'text-gray-400 hover:text-gray-300'
-                  }`}
-                >
-                  <Icon size={18} />
-                  <span className="hidden sm:inline text-xs sm:text-sm">{tab.label}</span>
-                  {isActive && (
-                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-blue-500" />
-                  )}
-                </button>
-              );
-            })}
-          </div>
-        </div>
-      </nav>
+        <div className={`transition-[padding] duration-200 ${railCollapsed ? 'lg:pl-16' : 'lg:pl-60'}`}>
+          <TopBar
+            title={page.title}
+            description={page.description}
+            hintG={hintG}
+            onOpenMobileNav={() => setMobileNavOpen(true)}
+            onAddTrade={() => setTradeModalOpen(true)}
+          />
 
-      {/* Main Content */}
-      <main key={activeTab} className="page-fade-in max-w-7xl mx-auto px-4 py-6">
-        <Suspense fallback={<div className="text-gray-500 text-sm py-12 text-center">Loading…</div>}>
-          {renderPage()}
-        </Suspense>
-      </main>
-    </div>
+          <main key={activeTab} className="page-fade-in mx-auto max-w-[1280px] px-5 py-6 lg:px-8">
+            <Suspense
+              fallback={<div className="py-12 text-center text-sm text-content-muted">Loading…</div>}
+            >
+              {renderPage()}
+            </Suspense>
+          </main>
+        </div>
+
+        {tradeModalOpen && (
+          <TradeModal isOpen={tradeModalOpen} onClose={() => setTradeModalOpen(false)} />
+        )}
+      </div>
     </TradesProvider>
   );
 }

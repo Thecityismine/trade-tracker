@@ -1,0 +1,11 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//c/Users/gmedi/.claude/projects/c--Users-gmedi-Desktop-btc-trade-tracker/memory/**)",
+      "Bash(npm install:*)",
+      "Bash(git add:*)",
+      "Bash(git push:*)",
+      "Bash(find /c/Users/gmedi/Desktop/btc-trade-tracker/src -type f \\\\\\(-name *.js -o -name *.ts -o -name *.tsx \\\\\\))"
+    ]
+  }
+}
