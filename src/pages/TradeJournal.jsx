@@ -9,6 +9,7 @@ import EmptyState from '../components/ui/EmptyState';
 import Select from '../components/ui/Select';
 import DateField from '../components/ui/DateField';
 import { useDismissable, backdropProps } from '../hooks/useDismissable';
+import { useToast } from '../components/ui/Toast';
 
 const withTimeout = (promise, ms, timeoutMessage) => {
   let timeoutId;
@@ -81,7 +82,7 @@ function TradeJournal() {
   const [resultFilter, setResultFilter] = useState('all');
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
-  const [statusMessage, setStatusMessage] = useState('');
+  const toast = useToast();
   const [brokenImages, setBrokenImages] = useState({});
 
   useEffect(() => {
@@ -114,12 +115,6 @@ function TradeJournal() {
       document.body.style.overflow = previousOverflow;
     };
   }, [isModalOpen, expandedImage]);
-
-  useEffect(() => {
-    if (!statusMessage) return undefined;
-    const timeoutId = setTimeout(() => setStatusMessage(''), 4000);
-    return () => clearTimeout(timeoutId);
-  }, [statusMessage]);
 
   const filteredEntries = useMemo(() => {
     return entries.filter((entry) => {
@@ -285,7 +280,7 @@ function TradeJournal() {
           15000,
           'Updating trade journal timed out. Please try again.'
         );
-        setStatusMessage('Journal entry updated.');
+        toast.success('Journal entry updated.');
       } else {
         await withTimeout(
           addDoc(collection(db, 'tradeJournalEntries'), {
@@ -295,7 +290,7 @@ function TradeJournal() {
           15000,
           'Saving trade journal timed out. Please try again.'
         );
-        setStatusMessage('Journal entry saved.');
+        toast.success('Journal entry saved.');
       }
 
       closeModal();
@@ -314,7 +309,7 @@ function TradeJournal() {
 
     try {
       await deleteDoc(doc(db, 'tradeJournalEntries', entryId));
-      setStatusMessage('Journal entry deleted.');
+      toast.success('Journal entry deleted.');
     } catch (error) {
       console.error('Error deleting trade journal entry:', error);
       alert('Error deleting journal entry.');
@@ -329,12 +324,6 @@ function TradeJournal() {
         </Button>
       }
     >
-      {statusMessage && (
-        <div className="bg-profit/15 border border-profit/40 text-profit rounded-lg px-4 py-3 text-sm">
-          {statusMessage}
-        </div>
-      )}
-
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-surface rounded-card p-4 shadow-elev-1">
           <p className="text-content-secondary text-sm">Total Entries</p>
@@ -522,7 +511,7 @@ function TradeJournal() {
           <div className="bg-surface rounded-card w-full max-w-2xl max-h-[calc(100vh-1rem)] overflow-y-auto shadow-elev-1">
             <div className="flex items-center justify-between p-5 border-b border-line">
               <h3 className="text-xl text-content-primary font-bold">{editingEntry ? 'Edit Journal Entry' : 'New Journal Entry'}</h3>
-              <button onClick={closeModal} className="text-content-secondary hover:text-content-primary transition-colors">
+              <button onClick={closeModal} className="text-content-secondary hover:text-content-primary transition-colors" aria-label="Close">
                 <X size={22} />
               </button>
             </div>

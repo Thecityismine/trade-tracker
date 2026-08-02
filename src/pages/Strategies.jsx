@@ -23,6 +23,7 @@ import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
 import Select from '../components/ui/Select';
 import { useDismissable } from '../hooks/useDismissable';
+import { useToast } from '../components/ui/Toast';
 
 const SORT_OPTIONS = [
   { id: 'newest', label: 'Newest' },
@@ -184,7 +185,7 @@ function Strategies() {
 
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
-  const [statusMessage, setStatusMessage] = useState('');
+  const toast = useToast();
 
   // Subscribe to strategies
   useEffect(() => {
@@ -242,12 +243,6 @@ function Strategies() {
   }, [trades]);
 
   // Auto-clear status banner
-  useEffect(() => {
-    if (!statusMessage) return undefined;
-    const timeoutId = setTimeout(() => setStatusMessage(''), 4000);
-    return () => clearTimeout(timeoutId);
-  }, [statusMessage]);
-
   // Lock body scroll when modals or panel open
   useEffect(() => {
     if (!isStrategyModalOpen && !isEntryModalOpen && !activeStrategy && !expandedImage) return;
@@ -488,7 +483,7 @@ function Strategies() {
         });
       }
 
-      setStatusMessage('Strategy saved.');
+      toast.success('Strategy saved.');
       closeStrategyModal();
     } catch (error) {
       console.error('Error saving strategy:', error);
@@ -517,7 +512,7 @@ function Strategies() {
 
       await deleteDoc(doc(db, 'strategies', strategyId));
       if (activeStrategy?.id === strategyId) setActiveStrategy(null);
-      setStatusMessage('Strategy deleted.');
+      toast.success('Strategy deleted.');
     } catch (error) {
       console.error('Error deleting strategy:', error);
       alert('Error deleting strategy.');
@@ -668,7 +663,7 @@ function Strategies() {
         });
       }
 
-      setStatusMessage('Entry saved.');
+      toast.success('Entry saved.');
       closeEntryModal();
     } catch (error) {
       console.error('Error saving entry:', error);
@@ -684,7 +679,7 @@ function Strategies() {
     if (!window.confirm('Delete this entry?')) return;
     try {
       await deleteDoc(doc(db, 'strategyEntries', entryId));
-      setStatusMessage('Entry deleted.');
+      toast.success('Entry deleted.');
     } catch (error) {
       console.error('Error deleting entry:', error);
       alert('Error deleting entry.');
@@ -699,12 +694,6 @@ function Strategies() {
         </Button>
       }
     >
-      {statusMessage && (
-        <div className="bg-profit/15 border border-profit/40 text-profit rounded-lg px-4 py-3 text-sm">
-          {statusMessage}
-        </div>
-      )}
-
       {/* Overall stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-surface rounded-card p-4 shadow-elev-1">

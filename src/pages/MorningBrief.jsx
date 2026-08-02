@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
 import Page from '../components/ui/Page';
 import Button from '../components/ui/Button';
+import { SkeletonText } from '../components/ui/Skeleton';
 
 const FEEDS = [
   {
@@ -87,12 +88,10 @@ function timeAgo(dateStr) {
 
 function FeedSkeleton() {
   return (
-    <div className="divide-y divide-line animate-pulse">
+    <div className="divide-y divide-line">
       {[1, 2, 3, 4, 5].map((i) => (
-        <div key={i} className="px-4 py-3 space-y-2">
-          <div className="h-3.5 bg-surface-raised rounded w-full" />
-          <div className="h-3.5 bg-surface-raised rounded w-4/5" />
-          <div className="h-2.5 bg-surface-raised rounded w-1/3" />
+        <div key={i} className="px-4 py-3">
+          <SkeletonText lines={3} />
         </div>
       ))}
     </div>

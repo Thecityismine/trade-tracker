@@ -409,7 +409,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               />
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-content-secondary text-sm mb-2">Entry Price</label>
                 <input
@@ -451,7 +451,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               </div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-content-secondary text-sm mb-2">% Gain</label>
                 <div
@@ -477,7 +477,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               <div></div>
             </div>
 
-            <div className="grid grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               <div>
                 <label className="block text-content-secondary text-sm mb-2">Gain (USD)</label>
                 <input

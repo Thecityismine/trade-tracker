@@ -10,6 +10,7 @@ import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
 import Select from '../components/ui/Select';
 import { useDismissable } from '../hooks/useDismissable';
+import { useToast } from '../components/ui/Toast';
 
 const CATEGORY_OPTIONS = [
   { id: 'all', label: 'All' },
@@ -162,7 +163,7 @@ function Notebook() {
   const [mistakeTypeFilter, setMistakeTypeFilter] = useState('all');
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
-  const [statusMessage, setStatusMessage] = useState('');
+  const toast = useToast();
   const [imageItems, setImageItems] = useState([]);
 
   useEffect(() => {
@@ -189,12 +190,6 @@ function Notebook() {
 
     return () => unsubscribe();
   }, []);
-
-  useEffect(() => {
-    if (!statusMessage) return undefined;
-    const timeoutId = setTimeout(() => setStatusMessage(''), 4000);
-    return () => clearTimeout(timeoutId);
-  }, [statusMessage]);
 
   useEffect(() => {
     if (!isModalOpen && !activeNote && !expandedImage) return;
@@ -439,7 +434,7 @@ function Notebook() {
         });
       }
 
-      setStatusMessage('Saved.');
+      toast.success('Saved.');
       closeModal();
     } catch (error) {
       console.error('Error saving notebook note:', error);
@@ -459,7 +454,7 @@ function Notebook() {
       if (activeNote?.id === noteId) {
         setActiveNote(null);
       }
-      setStatusMessage('Note deleted.');
+      toast.success('Note deleted.');
     } catch (error) {
       console.error('Error deleting notebook note:', error);
       alert('Error deleting note.');
@@ -481,7 +476,7 @@ function Notebook() {
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp()
       });
-      setStatusMessage('Note duplicated.');
+      toast.success('Note duplicated.');
     } catch (error) {
       console.error('Error duplicating notebook note:', error);
       alert('Error duplicating note.');
@@ -512,12 +507,6 @@ function Notebook() {
         </Button>
       }
     >
-      {statusMessage && (
-        <div className="bg-profit/15 border border-profit/40 text-profit rounded-lg px-4 py-3 text-sm">
-          {statusMessage}
-        </div>
-      )}
-
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-surface rounded-card p-4 shadow-elev-1">
           <p className="text-content-secondary text-sm">Total Notes</p>

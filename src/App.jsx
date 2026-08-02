@@ -9,6 +9,7 @@ import { NAV_IDS, NAV_ITEMS, getNavItem } from './config/nav';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import TradeModal from './components/TradeModal';
+import { ToastProvider } from './components/ui/Toast';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Analytics = lazy(() => import('./pages/Analytics'));
@@ -126,6 +127,7 @@ function App() {
 
   return (
     <TradesProvider>
+      <ToastProvider>
       <div className="min-h-screen bg-canvas">
         <Sidebar
           activeId={activeTab}
@@ -158,6 +160,7 @@ function App() {
           <TradeModal isOpen={tradeModalOpen} onClose={() => setTradeModalOpen(false)} />
         )}
       </div>
+      </ToastProvider>
     </TradesProvider>
   );
 }

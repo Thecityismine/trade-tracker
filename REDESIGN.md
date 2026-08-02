@@ -126,17 +126,31 @@ is the one that most wants it.
 
 ---
 
-## Phase 6 — Empty states, polish, motion  ◐
+## Phase 6 — Empty states, polish, motion  ☑
 
 Chart Patterns, Strategies, Journal, Notebook and Whales are all empty right now, so these
 screens *are* the first impression.
 
 - [x] One `<EmptyState>` — outline icon, headline, one line of context, primary CTA, no box
-- [ ] Skeleton loaders matching the good ones already on News
-- [ ] Toasts for save/delete
-- [ ] Motion: 150–200ms hover/active, page fade, animated counters on headline P&L
-- [ ] Responsive pass at 390 / 768 / 1440
-- [ ] A11y pass: focus rings, and contrast on the muted greys (many are below 4.5:1)
+- [x] Skeleton loaders matching the good ones already on News
+- [x] Toasts for save/delete
+- [x] Motion: 150–200ms hover/active, page fade, animated counters on headline P&L
+- [x] Responsive pass at 390 / 768 / 1440
+- [x] A11y pass: focus rings, and contrast on the muted greys (many are below 4.5:1)
+- [x] `prefers-reduced-motion` honoured in CSS *and* in the JS count-up figures, which the
+      media query cannot reach
+
+---
+
+## Done
+
+All six phases are shipped. What is deliberately still open:
+
+- The five non-TradeModal form dialogs dismiss on Escape and backdrop but are not built on
+  `<Modal>`, so they have no sticky footer. Strategies' entry form wants it most.
+- No visual verification has been done at any point — there is no browser in the build
+  environment. Every phase was checked with a production build, an import audit and a
+  compiled-CSS check only.
 
 ---
 

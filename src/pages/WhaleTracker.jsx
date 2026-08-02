@@ -4,6 +4,7 @@ import { db } from '../config/firebase';
 import { RefreshCw, Eye, AlertCircle, ChevronDown, ChevronUp, Plus, X, ExternalLink } from 'lucide-react';
 import Page from '../components/ui/Page';
 import Button from '../components/ui/Button';
+import Skeleton from '../components/ui/Skeleton';
 
 const HL_API = 'https://api.hyperliquid.xyz/info';
 const WATCHLIST_DOC = doc(db, 'settings', 'whaleWatchlist');
@@ -278,9 +279,9 @@ function WhaleTracker() {
       {loading && !data && (
         <div className="space-y-3">
           {[1, 2].map((i) => (
-            <div key={i} className="bg-surface rounded-card p-6 animate-pulse shadow-elev-1">
-              <div className="h-4 bg-surface-raised rounded w-1/3 mb-3" />
-              <div className="h-3 bg-surface-raised rounded w-1/2" />
+            <div key={i} className="bg-surface rounded-card p-6 shadow-elev-1">
+              <Skeleton className="h-4 w-1/3" />
+              <Skeleton className="mt-3 h-3 w-1/2" />
             </div>
           ))}
         </div>

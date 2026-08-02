@@ -9,8 +9,11 @@ import { collection, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
 import Page from '../components/ui/Page';
+import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
 function Dashboard({ onNavigate }) {
+  const reducedMotion = usePrefersReducedMotion();
+  const countDuration = reducedMotion ? 0 : 1;
   const [isModalOpen, setIsModalOpen] = useState(false);
   const { trades, deposits } = useTrades();
   const [metrics, setMetrics] = useState({
@@ -374,7 +377,7 @@ function Dashboard({ onNavigate }) {
           <CountUp
             end={metrics.totalPnl}
             decimals={2}
-            duration={1}
+            duration={countDuration}
             preserveValue
             formattingFn={(val) => `${val < 0 ? '-' : ''}$${Math.abs(val).toFixed(2)}`}
           />
@@ -382,17 +385,17 @@ function Dashboard({ onNavigate }) {
         <p className="text-content-muted text-sm mb-5">{metrics.wins}W · {metrics.losses}L</p>
 
         {/* Secondary stats row */}
-        <div className="grid grid-cols-4 gap-3 mb-5 pb-4 border-b border-white/5">
+        <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 pb-4 border-b border-line">
           <div>
             <p className="text-content-muted text-xs mb-1">Win Rate</p>
             <p className={`text-base font-bold tabular-nums ${metrics.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>
-              <CountUp end={metrics.winRate} suffix="%" decimals={1} duration={1} preserveValue />
+              <CountUp end={metrics.winRate} suffix="%" decimals={1} duration={countDuration} preserveValue />
             </p>
           </div>
           <div>
             <p className="text-content-muted text-xs mb-1">P. Factor</p>
             <p className={`text-base font-bold tabular-nums ${metrics.profitFactor >= 1 ? 'text-profit' : 'text-loss'}`}>
-              <CountUp end={metrics.profitFactor} decimals={2} duration={1} preserveValue />
+              <CountUp end={metrics.profitFactor} decimals={2} duration={countDuration} preserveValue />
             </p>
           </div>
           <div>
@@ -401,7 +404,7 @@ function Dashboard({ onNavigate }) {
               <CountUp
                 end={metrics.expectancy}
                 decimals={2}
-                duration={1}
+                duration={countDuration}
                 preserveValue
                 formattingFn={(val) => `${val < 0 ? '-' : ''}$${Math.abs(val).toFixed(2)}`}
               />
@@ -410,7 +413,7 @@ function Dashboard({ onNavigate }) {
           <div>
             <p className="text-content-muted text-xs mb-1">Max DD</p>
             <p className="text-base font-bold text-loss tabular-nums">
-              <CountUp end={maxDrawdown} prefix="-" suffix="%" decimals={1} duration={1} preserveValue />
+              <CountUp end={maxDrawdown} prefix="-" suffix="%" decimals={1} duration={countDuration} preserveValue />
             </p>
           </div>
         </div>

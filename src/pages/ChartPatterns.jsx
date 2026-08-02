@@ -9,6 +9,7 @@ import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
 import Select from '../components/ui/Select';
 import { useDismissable, backdropProps } from '../hooks/useDismissable';
+import { useToast } from '../components/ui/Toast';
 
 const TIMEFRAME_OPTIONS = [
   { value: '1min', label: '1min' },
@@ -94,7 +95,7 @@ function ChartPatterns() {
   const [imagePreview, setImagePreview] = useState(null);
   const [loading, setLoading] = useState(false);
   const [formError, setFormError] = useState('');
-  const [statusMessage, setStatusMessage] = useState('');
+  const toast = useToast();
   const [brokenImages, setBrokenImages] = useState({});
 
   useEffect(() => {
@@ -113,12 +114,6 @@ function ChartPatterns() {
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
   }, [isModalOpen, expandedImage]);
-
-  useEffect(() => {
-    if (!statusMessage) return undefined;
-    const id = setTimeout(() => setStatusMessage(''), 4000);
-    return () => clearTimeout(id);
-  }, [statusMessage]);
 
   // Per-pattern performance from trades
   const patternPerformance = useMemo(() => {
@@ -305,10 +300,10 @@ function ChartPatterns() {
       };
       if (isEditing) {
         await withTimeout(updateDoc(doc(db, 'chartPatterns', editingPattern.id), { ...payload, updatedAt: serverTimestamp() }), 15000, 'Update timed out.');
-        setStatusMessage('Pattern updated.');
+        toast.success('Pattern updated.');
       } else {
         await withTimeout(addDoc(collection(db, 'chartPatterns'), { ...payload, dateAdded: serverTimestamp() }), 15000, 'Save timed out.');
-        setStatusMessage('Pattern saved.');
+        toast.success('Pattern saved.');
       }
       closeModal();
     } catch (error) {
@@ -340,12 +335,6 @@ function ChartPatterns() {
         </Button>
       }
     >
-      {statusMessage && (
-        <div className="bg-profit/15 border border-profit/40 text-profit rounded-lg px-4 py-3 text-sm">
-          {statusMessage}
-        </div>
-      )}
-
       {/* Filters */}
       <div className="bg-surface rounded-card px-4 py-3 space-y-3 shadow-elev-1">
         {/* Direction filter */}
@@ -584,7 +573,7 @@ function ChartPatterns() {
                 <h3 className="text-xl font-bold text-content-primary">
                   {editingPattern ? 'Edit Pattern' : 'Add Pattern'}
                 </h3>
-                <button onClick={closeModal} className="text-content-secondary hover:text-content-primary transition-colors">
+                <button onClick={closeModal} className="text-content-secondary hover:text-content-primary transition-colors" aria-label="Close">
                   <X size={24} />
                 </button>
               </div>

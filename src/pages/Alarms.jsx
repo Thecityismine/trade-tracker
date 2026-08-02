@@ -225,7 +225,7 @@ function Alarms({ alarms = [], ringing }) {
       {/* Sound Preview */}
       <Card>
         <h3 className="mb-4 font-semibold text-content-primary">Beep Options — Preview</h3>
-        <div className="grid grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
           {Object.entries(SOUNDS).map(([key, s]) => (
             <Panel key={key} className="flex flex-col items-center gap-2 text-center">
               <div className="text-sm font-semibold text-content-primary">{s.label}</div>
