@@ -10,6 +10,7 @@ import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
 import TradeModal from './components/TradeModal';
 import { ToastProvider } from './components/ui/Toast';
+import PageErrorBoundary from './components/PageErrorBoundary';
 
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Analytics = lazy(() => import('./pages/Analytics'));
@@ -148,11 +149,13 @@ function App() {
           />
 
           <main key={activeTab} className="page-fade-in mx-auto max-w-[1280px] px-5 py-6 lg:px-8">
-            <Suspense
-              fallback={<div className="py-12 text-center text-sm text-content-muted">Loading…</div>}
-            >
-              {renderPage()}
-            </Suspense>
+            <PageErrorBoundary routeKey={activeTab}>
+              <Suspense
+                fallback={<div className="py-12 text-center text-sm text-content-muted">Loading…</div>}
+              >
+                {renderPage()}
+              </Suspense>
+            </PageErrorBoundary>
           </main>
         </div>
 
