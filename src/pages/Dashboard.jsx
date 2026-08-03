@@ -90,6 +90,7 @@ function Dashboard({ onNavigate }) {
   };
 
   const getTradeDate = (trade) => trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
+  const getDepositDate = (deposit) => deposit.date?.toDate?.() || new Date(deposit.date);
 
   // Shared chronological trade list + funding total, reused by period-% and drawdown calcs below
   const sortedTrades = [...trades]
@@ -97,8 +98,16 @@ function Dashboard({ onNavigate }) {
     .sort((a, b) => getTradeDate(a) - getTradeDate(b));
   const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
 
+  // Only funding that existed by `date` counts — otherwise a later deposit retroactively
+  // inflates the denominator and shrinks every past period's %.
+  const fundedAt = (date) => deposits.reduce((sum, d) => {
+    const dd = getDepositDate(d);
+    if (Number.isNaN(dd.getTime()) || dd > date) return sum;
+    return sum + (d.type === 'deposit' ? d.amount : -d.amount);
+  }, 0);
+
   const balanceAt = (date) => {
-    let balance = totalFunded;
+    let balance = fundedAt(date);
     for (const t of sortedTrades) {
       if (getTradeDate(t) >= date) break;
       balance += Number(t.gainLoss) || 0;
@@ -287,7 +296,16 @@ function Dashboard({ onNavigate }) {
   const dailyGoalProgress = (() => {
     const goal = parseFloat(appSettings.dailyPnlGoalPercent);
     if (!goal || goal <= 0) return null;
-    const dayPct = percentSummary.day;
+    // Trade-return basis: sums today's per-trade P&L% (the same number the trades table shows),
+    // not account-equity growth like percentSummary.day.
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const dayPct = trades
+      .filter(t => {
+        const d = getTradeDate(t);
+        return !Number.isNaN(d.getTime()) && d >= todayStart && d <= now;
+      })
+      .reduce((sum, t) => sum + (Number(t.pnlPercent) || 0), 0);
     const progress = Math.min(100, Math.max(0, (dayPct / goal) * 100));
     const remaining = Math.max(0, goal - dayPct);
     const hit = dayPct >= goal;

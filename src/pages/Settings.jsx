@@ -470,7 +470,7 @@ function Settings() {
               className="w-full sm:w-40 bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
               placeholder="e.g. 25"
             />
-            <p className="text-content-muted text-xs mt-1">Target % gain on your account per trading day. Dashboard tracks your progress toward this each day.</p>
+            <p className="text-content-muted text-xs mt-1">Target combined trade return % per trading day — the same P&amp;L% shown on each trade, summed. Dashboard tracks your progress toward this each day.</p>
           </div>
 
           <SaveSettingsButton
