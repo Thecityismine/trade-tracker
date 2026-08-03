@@ -11,6 +11,38 @@ import { useTrades } from '../context/TradesContext';
 import Page from '../components/ui/Page';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
 
+/**
+ * A figure that counts up, unless the viewer has asked it not to.
+ *
+ * react-countup divides by its duration to work out each frame, so the old
+ * reduced-motion path — passing duration={0} — rendered NaN instead of a static
+ * number. Anyone with "reduce motion" enabled at the OS level saw NaN% for every
+ * animated figure on the card while the same account looked fine elsewhere.
+ * Skip the animation component entirely rather than asking it to animate over
+ * no time at all.
+ */
+function AnimatedNumber({ value, decimals = 0, prefix = '', suffix = '', formattingFn, duration }) {
+  if (!Number.isFinite(value)) return '--';
+
+  if (!duration) {
+    return formattingFn
+      ? formattingFn(value)
+      : `${prefix}${value.toFixed(decimals)}${suffix}`;
+  }
+
+  return (
+    <CountUp
+      end={value}
+      decimals={decimals}
+      prefix={prefix}
+      suffix={suffix}
+      duration={duration}
+      formattingFn={formattingFn}
+      preserveValue
+    />
+  );
+}
+
 function Dashboard({ onNavigate }) {
   const reducedMotion = usePrefersReducedMotion();
   const countDuration = reducedMotion ? 0 : 1;
@@ -425,11 +457,10 @@ function Dashboard({ onNavigate }) {
           className={`text-4xl font-bold tabular-nums leading-none mb-1 ${metrics.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}
           style={{ filter: `drop-shadow(0 0 12px ${metrics.totalPnl >= 0 ? 'rgba(34,197,94,0.5)' : 'rgba(239,68,68,0.5)'})` }}
         >
-          <CountUp
-            end={metrics.totalPnl}
+          <AnimatedNumber
+            value={metrics.totalPnl}
             decimals={2}
             duration={countDuration}
-            preserveValue
             formattingFn={(val) => `${val < 0 ? '-' : ''}$${Math.abs(val).toFixed(2)}`}
           />
         </p>
@@ -440,7 +471,7 @@ function Dashboard({ onNavigate }) {
           <div>
             <p className="text-content-muted text-xs mb-1">Win Rate</p>
             <p className={`text-base font-bold tabular-nums ${metrics.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>
-              <CountUp end={metrics.winRate} suffix="%" decimals={1} duration={countDuration} preserveValue />
+              <AnimatedNumber value={metrics.winRate} suffix="%" decimals={1} duration={countDuration} />
             </p>
           </div>
           <div>
@@ -452,17 +483,16 @@ function Dashboard({ onNavigate }) {
             }`}>
               {metrics.profitFactor === null
                 ? (metrics.wins > 0 ? '∞' : '--')
-                : <CountUp end={metrics.profitFactor} decimals={2} duration={countDuration} preserveValue />}
+                : <AnimatedNumber value={metrics.profitFactor} decimals={2} duration={countDuration} />}
             </p>
           </div>
           <div>
             <p className="text-content-muted text-xs mb-1">Expect.</p>
             <p className={`text-base font-bold tabular-nums ${metrics.expectancy >= 0 ? 'text-profit' : 'text-loss'}`}>
-              <CountUp
-                end={metrics.expectancy}
+              <AnimatedNumber
+                value={metrics.expectancy}
                 decimals={2}
                 duration={countDuration}
-                preserveValue
                 formattingFn={(val) => `${val < 0 ? '-' : ''}$${Math.abs(val).toFixed(2)}`}
               />
             </p>
@@ -472,7 +502,7 @@ function Dashboard({ onNavigate }) {
                 or it reads as this month's drawdown. */}
             <p className="text-content-muted text-xs mb-1">Max DD <span className="text-[10px] opacity-70">all-time</span></p>
             <p className="text-base font-bold text-loss tabular-nums">
-              <CountUp end={maxDrawdown} prefix="-" suffix="%" decimals={1} duration={countDuration} preserveValue />
+              <AnimatedNumber value={maxDrawdown} prefix="-" suffix="%" decimals={1} duration={countDuration} />
             </p>
           </div>
         </div>
