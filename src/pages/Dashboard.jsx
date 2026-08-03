@@ -15,7 +15,7 @@ function Dashboard({ onNavigate }) {
   const reducedMotion = usePrefersReducedMotion();
   const countDuration = reducedMotion ? 0 : 1;
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { trades, deposits } = useTrades();
+  const { trades, deposits, loading: dataLoading, error: dataError } = useTrades();
   const [metrics, setMetrics] = useState({
     totalPnl: 0,
     winRate: 0,
@@ -530,9 +530,19 @@ function Dashboard({ onNavigate }) {
           </div>
         )}
 
-        {deposits.length === 0 && (
+        {/* Order matters: a failed or pending read also produces zero trades and
+            zero deposits, so those states must be ruled out before blaming the
+            account for being empty. */}
+        {dataError ? (
+          <p className="text-loss/80 text-xs mt-4">
+            Could not load your trades — this is a connection or permissions problem, not an empty
+            account. Nothing has been deleted. Reload to retry.
+          </p>
+        ) : dataLoading ? (
+          <p className="text-content-muted text-xs mt-4">Loading your trades…</p>
+        ) : deposits.length === 0 ? (
           <p className="text-warn/70 text-xs mt-4">Add a deposit in <strong>Settings</strong> to see accurate % gains.</p>
-        )}
+        ) : null}
       </div>
 
       {dashGoal && (
