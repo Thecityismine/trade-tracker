@@ -56,9 +56,10 @@ function Dashboard({ onNavigate }) {
     const currentYear = new Date().getFullYear();
     
     const monthTrades = tradesData.filter(trade => {
-      const tradeDate = trade.tradeDate?.toDate();
-      return tradeDate && 
-        tradeDate.getMonth() === currentMonth && 
+      if (!trade.tradeDate) return false;
+      const tradeDate = getTradeDate(trade);
+      return !Number.isNaN(tradeDate.getTime()) &&
+        tradeDate.getMonth() === currentMonth &&
         tradeDate.getFullYear() === currentYear;
     });
 
@@ -77,7 +78,9 @@ function Dashboard({ onNavigate }) {
     const avgLoss = losses.length > 0 ? totalLosses / losses.length : 0;
     const expectancy = ((winRate / 100) * avgWin) - ((1 - winRate / 100) * avgLoss);
 
-    const profitFactor = totalLosses > 0 ? totalWins / totalLosses : 0;
+    // null, not 0: a month with no losing trades has an undefined profit factor.
+    // Reporting it as 0.00 renders a flawless month as the worst possible score.
+    const profitFactor = totalLosses > 0 ? totalWins / totalLosses : null;
 
     setMetrics({
       totalPnl,
@@ -115,6 +118,23 @@ function Dashboard({ onNavigate }) {
     return balance;
   };
 
+  // The balance the account opened with. A period can start before any funding
+  // existed — Year-to-date on an account first funded in March — and there is no
+  // balance to divide by at that instant. Measuring from inception is the honest
+  // reading of that period's return; returning 0% just hides it.
+  const openingCapital = (() => {
+    const events = deposits
+      .map(d => ({ date: getDepositDate(d), delta: d.type === 'deposit' ? d.amount : -d.amount }))
+      .filter(e => !Number.isNaN(e.date.getTime()))
+      .sort((a, b) => a.date - b.date);
+    let running = 0;
+    for (const e of events) {
+      running += e.delta;
+      if (running > 0) return running;
+    }
+    return 0;
+  })();
+
   const calculatePeriodPercent = (period) => {
     const now = new Date();
     let periodStart;
@@ -146,19 +166,43 @@ function Dashboard({ onNavigate }) {
       })
       .reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
 
-    const startBalance = balanceAt(periodStart);
+    const atStart = balanceAt(periodStart);
+    const startBalance = atStart > 0 ? atStart : openingCapital;
     return startBalance > 0 ? (periodPnl / startBalance) * 100 : 0;
   };
 
+  // All-time drawdown, walked over deposits and trades on one timeline. Seeding
+  // from totalFunded instead would model early trades against capital that did
+  // not exist yet, understating the real drawdown.
   const maxDrawdown = (() => {
     if (deposits.length === 0 || trades.length === 0) return 0;
-    let peak = totalFunded;
-    let balance = totalFunded;
+
+    const events = [];
+    deposits.forEach(d => {
+      const date = getDepositDate(d);
+      if (Number.isNaN(date.getTime())) return;
+      events.push({ date, delta: d.type === 'deposit' ? d.amount : -d.amount, funding: true });
+    });
+    sortedTrades.forEach(t => {
+      events.push({ date: getTradeDate(t), delta: Number(t.gainLoss) || 0, funding: false });
+    });
+    events.sort((a, b) => a.date - b.date);
+
+    let balance = 0;
+    let peak = 0;
     let maxDD = 0;
-    for (const t of sortedTrades) {
-      balance += Number(t.gainLoss) || 0;
-      if (balance > peak) peak = balance;
-      if (peak > 0) maxDD = Math.max(maxDD, ((peak - balance) / peak) * 100);
+    for (const e of events) {
+      balance += e.delta;
+      if (e.funding) {
+        // Funding is not performance. Shift the high-water mark with it so a
+        // withdrawal never reads as a loss, nor a deposit as a recovery.
+        peak = Math.max(0, peak + e.delta, balance);
+      } else if (balance > peak) {
+        peak = balance;
+      }
+      if (peak > 0 && balance < peak) {
+        maxDD = Math.max(maxDD, ((peak - balance) / peak) * 100);
+      }
     }
     return maxDD;
   })();
@@ -412,8 +456,14 @@ function Dashboard({ onNavigate }) {
           </div>
           <div>
             <p className="text-content-muted text-xs mb-1">P. Factor</p>
-            <p className={`text-base font-bold tabular-nums ${metrics.profitFactor >= 1 ? 'text-profit' : 'text-loss'}`}>
-              <CountUp end={metrics.profitFactor} decimals={2} duration={countDuration} preserveValue />
+            <p className={`text-base font-bold tabular-nums ${
+              metrics.profitFactor === null
+                ? (metrics.wins > 0 ? 'text-profit' : 'text-content-muted')
+                : metrics.profitFactor >= 1 ? 'text-profit' : 'text-loss'
+            }`}>
+              {metrics.profitFactor === null
+                ? (metrics.wins > 0 ? '∞' : '--')
+                : <CountUp end={metrics.profitFactor} decimals={2} duration={countDuration} preserveValue />}
             </p>
           </div>
           <div>
@@ -429,7 +479,9 @@ function Dashboard({ onNavigate }) {
             </p>
           </div>
           <div>
-            <p className="text-content-muted text-xs mb-1">Max DD</p>
+            {/* The only all-time stat in an otherwise month-scoped row — say so,
+                or it reads as this month's drawdown. */}
+            <p className="text-content-muted text-xs mb-1">Max DD <span className="text-[10px] opacity-70">all-time</span></p>
             <p className="text-base font-bold text-loss tabular-nums">
               <CountUp end={maxDrawdown} prefix="-" suffix="%" decimals={1} duration={countDuration} preserveValue />
             </p>
