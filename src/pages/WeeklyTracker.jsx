@@ -336,12 +336,16 @@ function WeeklyTracker() {
         </div>
       }
     >
-      <Card padded={false} className="overflow-hidden">
-        {/* Desktop Table — sticky header needs its own scroll box, so the
-            wrapper caps height rather than growing the page. */}
-        <div className="hidden lg:block max-h-[70vh] overflow-auto">
+      {/* overflow-clip, not overflow-hidden: it still rounds off the table's
+          corners but does not create a scroll container, which would capture
+          the sticky header and pin it to the card instead of the viewport. */}
+      <Card padded={false} className="overflow-clip">
+        {/* Desktop Table — the table grows with its content and the page scrolls.
+            No inner scrollbox: the header sticks under the 4rem TopBar instead,
+            which needs every ancestor to stay overflow-visible. */}
+        <div className="hidden lg:block">
           <table className="w-full">
-            <thead className="sticky top-0 z-10 bg-surface-raised">
+            <thead className="sticky top-16 z-10 bg-surface-raised">
               <tr className="text-content-secondary text-sm">
                 <th className="text-left py-3.5 px-4 font-medium">Week</th>
                 {isVisible('wins') && <th className="text-right py-3.5 px-2 font-medium">Wins</th>}

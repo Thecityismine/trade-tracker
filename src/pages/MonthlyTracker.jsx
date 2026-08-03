@@ -167,23 +167,25 @@ function MonthCalendar({ month }) {
           return (
             <div
               key={i}
-              className={`overflow-hidden border-b border-line p-1 flex flex-col ${
+              className={`relative overflow-hidden border-b border-line ${
                 !isLastCol ? 'border-r border-line' : ''
               } ${isPositive ? 'bg-profit/10' : isNegative ? 'bg-loss/10' : ''}`}
             >
-              <span className={`tabular text-[11px] leading-none font-medium ${
-                data ? 'text-content-primary' : 'text-content-secondary'
+              {/* Day number is corner furniture — the P&L is the thing you scan
+                  for, so it gets the centre of the cell and the larger type. */}
+              <span className={`tabular absolute left-1.5 top-1 text-[10px] leading-none font-medium ${
+                data ? 'text-content-secondary' : 'text-content-muted'
               }`}>
                 {day}
               </span>
               {data && (
-                <div className="flex flex-col justify-end flex-1 min-h-0">
-                  <span className={`tabular truncate text-[11px] md:text-xs font-semibold leading-tight ${
+                <div className="flex h-full flex-col items-center justify-center px-1">
+                  <span className={`tabular truncate text-xs md:text-lg font-bold leading-none ${
                     isPositive ? 'text-profit' : isNegative ? 'text-loss' : 'text-content-secondary'
                   }`}>
                     {isPositive ? '+$' : '-$'}{Math.abs(data.pnl).toFixed(0)}
                   </span>
-                  <span className="hidden md:block text-[10px] text-content-muted leading-none">
+                  <span className="mt-1 hidden md:block text-[10px] text-content-muted leading-none">
                     {data.trades}t
                   </span>
                 </div>

@@ -3,7 +3,7 @@ import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContai
 import { CHART, gridProps, xAxisProps, yAxisProps, tooltipProps, lineProps, usdTick } from './ui/chartTheme';
 
 function EquityCurve({ trades, deposits = [] }) {
-  const [timeframe, setTimeframe] = useState('weekly');
+  const [timeframe, setTimeframe] = useState('all');
 
   // Calculate cumulative P&L for equity curve
   const calculateEquityCurve = () => {
