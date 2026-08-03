@@ -132,7 +132,10 @@ function Dashboard({ onNavigate }) {
     let index = 1;
     const points = [];
     for (const e of events) {
-      if (!e.funding && balance > 0) index *= 1 + e.delta / balance;
+      // Clamp at 0: a manually-entered loss larger than the balance would
+      // otherwise drive the factor negative and flip the index's sign, which
+      // makes every downstream return and drawdown meaningless.
+      if (!e.funding && balance > 0) index *= Math.max(0, 1 + e.delta / balance);
       balance += e.delta;
       points.push({ date: e.date, index });
     }

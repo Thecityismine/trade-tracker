@@ -17,12 +17,27 @@ function EquityCurve({ trades, deposits = [] }) {
         return dateA - dateB;
       });
 
-    const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
-    let cumulativePnl = totalFunded;
+    // Funding has to be applied on the timeline, not all at once up front.
+    // Seeding the first point with every deposit ever made lifts the whole early
+    // curve to a balance that did not exist yet, which flattens the real decline.
+    const funding = deposits
+      .map(d => ({
+        date: d.date?.toDate?.() || new Date(d.date),
+        delta: d.type === 'deposit' ? d.amount : -d.amount
+      }))
+      .filter(f => !Number.isNaN(f.date.getTime()))
+      .sort((a, b) => a.date - b.date);
+
+    let cumulativePnl = 0;
+    let nextFunding = 0;
     const data = sortedTrades.map(trade => {
-      cumulativePnl += trade.gainLoss || 0;
       const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
-      
+      while (nextFunding < funding.length && funding[nextFunding].date <= tradeDate) {
+        cumulativePnl += funding[nextFunding].delta;
+        nextFunding++;
+      }
+      cumulativePnl += trade.gainLoss || 0;
+
       return {
         date: tradeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
         fullDate: tradeDate,
