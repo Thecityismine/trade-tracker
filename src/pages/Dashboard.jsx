@@ -101,39 +101,54 @@ function Dashboard({ onNavigate }) {
     .sort((a, b) => getTradeDate(a) - getTradeDate(b));
   const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
 
-  // Only funding that existed by `date` counts — otherwise a later deposit retroactively
-  // inflates the denominator and shrinks every past period's %.
-  const fundedAt = (date) => deposits.reduce((sum, d) => {
-    const dd = getDepositDate(d);
-    if (Number.isNaN(dd.getTime()) || dd > date) return sum;
-    return sum + (d.type === 'deposit' ? d.amount : -d.amount);
-  }, 0);
+  /**
+   * A time-weighted return index over deposits and trades on one timeline.
+   *
+   * Deposits move the balance without being performance, which is what breaks
+   * every simpler approach: divide by the opening balance and a year that
+   * received deposits reads as a catastrophic loss; let funding raise the
+   * high-water mark and topping up a losing account manufactures drawdown.
+   *
+   * Compounding each trade's return on the balance that was actually at risk
+   * when it was taken, and letting funding move the balance without touching
+   * the index, is the one model where Year (which spans deposits) stays
+   * comparable to Day (which does not).
+   */
+  const returnIndex = (() => {
+    const events = [];
+    deposits.forEach(d => {
+      const date = getDepositDate(d);
+      if (Number.isNaN(date.getTime())) return;
+      events.push({ date, delta: d.type === 'deposit' ? d.amount : -d.amount, funding: true });
+    });
+    sortedTrades.forEach(t => {
+      const date = getTradeDate(t);
+      if (Number.isNaN(date.getTime())) return;
+      events.push({ date, delta: Number(t.gainLoss) || 0, funding: false });
+    });
+    events.sort((a, b) => a.date - b.date);
 
-  const balanceAt = (date) => {
-    let balance = fundedAt(date);
-    for (const t of sortedTrades) {
-      if (getTradeDate(t) >= date) break;
-      balance += Number(t.gainLoss) || 0;
-    }
-    return balance;
-  };
-
-  // The balance the account opened with. A period can start before any funding
-  // existed — Year-to-date on an account first funded in March — and there is no
-  // balance to divide by at that instant. Measuring from inception is the honest
-  // reading of that period's return; returning 0% just hides it.
-  const openingCapital = (() => {
-    const events = deposits
-      .map(d => ({ date: getDepositDate(d), delta: d.type === 'deposit' ? d.amount : -d.amount }))
-      .filter(e => !Number.isNaN(e.date.getTime()))
-      .sort((a, b) => a.date - b.date);
-    let running = 0;
+    let balance = 0;
+    let index = 1;
+    const points = [];
     for (const e of events) {
-      running += e.delta;
-      if (running > 0) return running;
+      if (!e.funding && balance > 0) index *= 1 + e.delta / balance;
+      balance += e.delta;
+      points.push({ date: e.date, index });
     }
-    return 0;
+    return points;
   })();
+
+  // Index as of `date` — the last point at or before it, or 1 if the account
+  // had not started yet.
+  const indexAt = (date) => {
+    let value = 1;
+    for (const p of returnIndex) {
+      if (p.date > date) break;
+      value = p.index;
+    }
+    return value;
+  };
 
   const calculatePeriodPercent = (period) => {
     const now = new Date();
@@ -159,49 +174,20 @@ function Dashboard({ onNavigate }) {
         return 0;
     }
 
-    const periodPnl = trades
-      .filter(t => {
-        const d = getTradeDate(t);
-        return !Number.isNaN(d.getTime()) && d >= periodStart && d <= now;
-      })
-      .reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
-
-    const atStart = balanceAt(periodStart);
-    const startBalance = atStart > 0 ? atStart : openingCapital;
-    return startBalance > 0 ? (periodPnl / startBalance) * 100 : 0;
+    const start = indexAt(periodStart);
+    const end = indexAt(now);
+    return start > 0 ? ((end / start) - 1) * 100 : 0;
   };
 
-  // All-time drawdown, walked over deposits and trades on one timeline. Seeding
-  // from totalFunded instead would model early trades against capital that did
-  // not exist yet, understating the real drawdown.
+  // All-time drawdown of the return index, so funding never registers as either
+  // a loss or a recovery.
   const maxDrawdown = (() => {
-    if (deposits.length === 0 || trades.length === 0) return 0;
-
-    const events = [];
-    deposits.forEach(d => {
-      const date = getDepositDate(d);
-      if (Number.isNaN(date.getTime())) return;
-      events.push({ date, delta: d.type === 'deposit' ? d.amount : -d.amount, funding: true });
-    });
-    sortedTrades.forEach(t => {
-      events.push({ date: getTradeDate(t), delta: Number(t.gainLoss) || 0, funding: false });
-    });
-    events.sort((a, b) => a.date - b.date);
-
-    let balance = 0;
     let peak = 0;
     let maxDD = 0;
-    for (const e of events) {
-      balance += e.delta;
-      if (e.funding) {
-        // Funding is not performance. Shift the high-water mark with it so a
-        // withdrawal never reads as a loss, nor a deposit as a recovery.
-        peak = Math.max(0, peak + e.delta, balance);
-      } else if (balance > peak) {
-        peak = balance;
-      }
-      if (peak > 0 && balance < peak) {
-        maxDD = Math.max(maxDD, ((peak - balance) / peak) * 100);
+    for (const p of returnIndex) {
+      if (p.index > peak) peak = p.index;
+      if (peak > 0 && p.index < peak) {
+        maxDD = Math.max(maxDD, ((peak - p.index) / peak) * 100);
       }
     }
     return maxDD;
