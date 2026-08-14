@@ -1,4 +1,7 @@
-import { AlertTriangle, CheckCircle2, LineChart, RefreshCw, Sparkles, Target } from 'lucide-react';
+import { useState } from 'react';
+import { AlertTriangle, Check, CheckCircle2, Copy, LineChart, RefreshCw, Sparkles, Target } from 'lucide-react';
+import { reportToMarkdown } from '../utils/weeklyReport';
+import { useToast } from './ui/Toast';
 
 const GRADE_STYLES = {
   A: 'bg-profit/15 text-profit border-profit/30',
@@ -64,6 +67,32 @@ function TradeRefs({ refs, tradesByRef }) {
   );
 }
 
+/**
+ * Clipboard API needs a secure context and can still be blocked on mobile;
+ * fall back to a hidden textarea so the copy works rather than silently failing.
+ */
+async function writeToClipboard(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+    return true;
+  } catch {
+    try {
+      const field = document.createElement('textarea');
+      field.value = text;
+      field.setAttribute('readonly', '');
+      field.style.position = 'fixed';
+      field.style.opacity = '0';
+      document.body.appendChild(field);
+      field.select();
+      const ok = document.execCommand('copy');
+      document.body.removeChild(field);
+      return ok;
+    } catch {
+      return false;
+    }
+  }
+}
+
 function WeeklyReport({
   doc,
   tradesByRef,
@@ -73,6 +102,20 @@ function WeeklyReport({
   hasCharts,
   onGenerate
 }) {
+  const toast = useToast();
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = async () => {
+    const markdown = reportToMarkdown(doc, tradesByRef);
+    if (await writeToClipboard(markdown)) {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2000);
+      toast.success('Report copied — paste into Notion');
+    } else {
+      toast.error('Could not copy to clipboard.');
+    }
+  };
+
   if (!doc && !generating) {
     return (
       <div className="bg-surface-raised rounded-control p-4">
@@ -260,6 +303,17 @@ function WeeklyReport({
           </div>
         </div>
       )}
+
+      {/* Copy out */}
+      <button
+        onClick={handleCopy}
+        disabled={chartsPending}
+        title={chartsPending ? 'Chart review still running' : 'Copy as markdown for Notion'}
+        className="w-full flex items-center justify-center gap-2 rounded-control border border-line bg-surface hover:bg-surface-hover transition-colors px-4 py-2.5 text-sm font-medium text-content-secondary hover:text-content-primary disabled:opacity-40 disabled:cursor-not-allowed active:scale-[0.99]"
+      >
+        {copied ? <Check size={15} className="text-profit" /> : <Copy size={15} />}
+        {copied ? 'Copied' : 'Copy for Notion'}
+      </button>
 
       <div className="flex items-center justify-between text-[11px] text-content-muted pt-1">
         <span>

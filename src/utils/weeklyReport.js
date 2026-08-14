@@ -209,3 +209,100 @@ async function postJson(path, body) {
 
 export const requestWeeklyReport = (payload) => postJson('/api/weekly-report', payload);
 export const requestChartNotes = (payload) => postJson('/api/weekly-report-charts', payload);
+
+const MARKDOWN_VERDICTS = {
+  kept: 'Kept',
+  partial: 'Partial',
+  broken: 'Broken',
+  no_data: 'Not tested'
+};
+
+function refLabels(refs, tradesByRef) {
+  if (!refs?.length) return null;
+  return refs
+    .map((ref) => {
+      const trade = tradesByRef?.get(ref);
+      return trade ? `${ref} · ${trade.ticker || 'BTC'} ${(trade.direction || '').toUpperCase()}` : ref;
+    })
+    .join(', ');
+}
+
+/**
+ * Flattens a stored report doc into Notion-friendly markdown. Indented bullets
+ * paste as nested bullets, so detail lines stay attached to their claim.
+ */
+export function reportToMarkdown(reportDoc, tradesByRef) {
+  const report = reportDoc?.report || {};
+  const lines = [];
+
+  lines.push(`# Coach Review — ${reportDoc?.weekLabel || 'Week'}`, '');
+
+  if (report.grade || report.headline) {
+    lines.push(`**Grade ${report.grade || '—'}** — ${report.headline || ''}`.trim());
+    if (report.gradeReason) lines.push('', report.gradeReason);
+    lines.push('');
+  }
+
+  if (report.lastWeekReview?.length) {
+    lines.push('## Last week you committed to', '');
+    report.lastWeekReview.forEach((item) => {
+      lines.push(`- **${MARKDOWN_VERDICTS[item.verdict] || item.verdict}** — ${item.commitment}`);
+      if (item.evidence) lines.push(`    - ${item.evidence}`);
+    });
+    lines.push('');
+  }
+
+  const claimSection = (title, items) => {
+    if (!items?.length) return;
+    lines.push(`## ${title}`, '');
+    items.forEach((item) => {
+      lines.push(`- **${item.claim}**${item.severity ? ` (${item.severity})` : ''}`);
+      if (item.detail) lines.push(`    - ${item.detail}`);
+      const refs = refLabels(item.tradeRefs, tradesByRef);
+      if (refs) lines.push(`    - Trades: ${refs}`);
+    });
+    lines.push('');
+  };
+
+  claimSection('What broke', report.whatBroke);
+  claimSection('What worked', report.whatWorked);
+
+  if (reportDoc?.chartNotes?.length) {
+    lines.push('## Chart review', '');
+    reportDoc.chartNotes.forEach((note) => {
+      const trade = tradesByRef?.get(note.ref);
+      const label = trade
+        ? `${note.ref} · ${trade.ticker || 'BTC'} ${(trade.direction || '').toUpperCase()}`
+        : note.ref;
+      lines.push(`- **${label}** — ${note.verdict}`);
+      if (note.setup) lines.push(`    - Setup — ${note.setup}`);
+      if (note.execution) lines.push(`    - Execution — ${note.execution}`);
+    });
+    lines.push('');
+  }
+
+  if (report.commitments?.length) {
+    lines.push('## Commit to this next week', '');
+    report.commitments.forEach((item, i) => {
+      lines.push(`${i + 1}. ${item.commitment}`);
+      if (item.measurable) lines.push(`    - Checked by: ${item.measurable}`);
+    });
+    lines.push('');
+  }
+
+  const generatedAt = reportDoc?.generatedAt?.toDate?.();
+  if (generatedAt) {
+    lines.push('---', '');
+    lines.push(
+      `Generated ${generatedAt.toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        year: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit'
+      })}`
+    );
+  }
+
+  return lines.join('\n').replace(/\n{3,}/g, '\n\n').trim();
+}
