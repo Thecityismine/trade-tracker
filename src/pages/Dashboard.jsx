@@ -4,6 +4,7 @@ import { Pin } from 'lucide-react';
 import MetricCard from '../components/MetricCard';
 import EquityCurve from '../components/EquityCurve';
 import RecentTrades from '../components/RecentTrades';
+import OpenPositions from '../components/OpenPositions';
 import TradeModal from '../components/TradeModal';
 import { collection, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -47,7 +48,8 @@ function Dashboard({ onNavigate }) {
   const reducedMotion = usePrefersReducedMotion();
   const countDuration = reducedMotion ? 0 : 1;
   const [isModalOpen, setIsModalOpen] = useState(false);
-  const { trades, deposits, loading: dataLoading, error: dataError } = useTrades();
+  const [closingTrade, setClosingTrade] = useState(null);
+  const { trades, openTrades, deposits, loading: dataLoading, error: dataError } = useTrades();
   const [metrics, setMetrics] = useState({
     totalPnl: 0,
     winRate: 0,
@@ -414,6 +416,10 @@ function Dashboard({ onNavigate }) {
 
   return (
     <Page>
+      {/* Open positions — live trades, deliberately above the stats they are
+          excluded from. */}
+      <OpenPositions trades={openTrades} onClose={setClosingTrade} />
+
       {/* Risk Status Badge */}
       {riskStatus && (
         <div className={`rounded-xl px-4 py-3 flex items-center justify-between border ${
@@ -649,6 +655,16 @@ function Dashboard({ onNavigate }) {
         <TradeModal
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
+        />
+      )}
+
+      {/* Closing a position reuses the same modal, prefilled — flipping the
+          status toggle to Closed reveals the exit fields. */}
+      {closingTrade && (
+        <TradeModal
+          isOpen
+          editTrade={closingTrade}
+          onClose={() => setClosingTrade(null)}
         />
       )}
     </Page>

@@ -46,17 +46,24 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     entryPrice: '',
     exitPrice: '',
     stopLoss: '',
+    targetPrice: '',
     leverage: '25',
     gainLoss: '',
     fee: '',
     result: 'win',
     comment: '',
+    entryReason: '',
     chartPattern: '',
     strategyId: '',
     executionScore: 5,
     tradeDate: formatDateForInput(new Date())
   });
 
+  // 'open' hides every field that only exists once a trade resolves. New trades
+  // default to closed so the existing log-it-after-the-fact flow is unchanged.
+  const [tradeStatus, setTradeStatus] = useState('closed');
+  const isOpenPosition = tradeStatus === 'open';
+  const [plannedRR, setPlannedRR] = useState(null);
   const [chartImage, setChartImage] = useState(null);
   const [chartPreview, setChartPreview] = useState(null);
   const [removeExistingChart, setRemoveExistingChart] = useState(false);
@@ -104,16 +111,19 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       entryPrice: editTrade.entryPrice?.toString() || '',
       exitPrice: editTrade.exitPrice?.toString() || '',
       stopLoss: editTrade.stopLoss?.toString() || '',
+      targetPrice: editTrade.targetPrice?.toString() || '',
       leverage: editTrade.leverage?.toString() || '25',
       gainLoss: editTrade.gainLoss?.toString() || '',
       fee: editTrade.fee?.toString() || '',
       result: normalizedResult,
       comment: editTrade.comment || '',
+      entryReason: editTrade.entryReason || '',
       chartPattern: editTrade.chartPattern || '',
       strategyId: editTrade.strategyId || '',
       executionScore: editTrade.executionScore || 5,
       tradeDate: formattedDate
     });
+    setTradeStatus(editTrade.status === 'open' ? 'open' : 'closed');
     setChartImage(null);
     setChartPreview(editTrade.chartImageUrl || null);
     setRemoveExistingChart(false);
@@ -179,6 +189,24 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     }
   }, [formData.entryPrice, formData.stopLoss, formData.exitPrice, formData.direction, formData.leverage]);
 
+  // Planned R:R is knowable at entry from stop and target alone. Leverage
+  // scales risk and reward equally, so it cancels out of the ratio.
+  useEffect(() => {
+    const entry = parseFloat(formData.entryPrice);
+    const stop = parseFloat(formData.stopLoss);
+    const target = parseFloat(formData.targetPrice);
+
+    if (
+      ![entry, stop, target].every((n) => Number.isFinite(n) && n > 0) ||
+      stop === entry
+    ) {
+      setPlannedRR(null);
+      return;
+    }
+
+    setPlannedRR(Math.abs(target - entry) / Math.abs(entry - stop));
+  }, [formData.entryPrice, formData.stopLoss, formData.targetPrice]);
+
   const loadLastTicker = async () => {
     try {
       const q = query(collection(db, 'trades'), orderBy('createdAt', 'desc'), limit(1));
@@ -243,22 +271,29 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       const tradeData = {
         ticker: formData.ticker,
         direction: formData.direction,
+        status: tradeStatus,
         entryPrice: parseFloat(formData.entryPrice),
-        exitPrice: parseFloat(formData.exitPrice) || null,
         stopLoss: parseFloat(formData.stopLoss) || null,
-        rr: riskReward,
+        targetPrice: parseFloat(formData.targetPrice) || null,
+        plannedRR,
         leverage: parseFloat(formData.leverage),
-        gainLoss: parseFloat(formData.gainLoss),
-        fee: parseFloat(formData.fee) || 0,
-        pnlPercent: calculatedPnl,
-        result: formData.result,
+        entryReason: formData.entryReason || null,
+        // An open position has no result yet. Null these rather than writing
+        // zeros — a 0 would read as a real break-even trade downstream.
+        exitPrice: isOpenPosition ? null : (parseFloat(formData.exitPrice) || null),
+        rr: isOpenPosition ? null : riskReward,
+        gainLoss: isOpenPosition ? null : parseFloat(formData.gainLoss),
+        fee: isOpenPosition ? null : (parseFloat(formData.fee) || 0),
+        pnlPercent: isOpenPosition ? null : calculatedPnl,
+        result: isOpenPosition ? null : formData.result,
+        closedAt: isOpenPosition ? null : (editTrade?.closedAt || serverTimestamp()),
         comment: formData.comment,
         chartPattern: formData.chartPattern || null,
         strategyId: formData.strategyId || null,
         strategyName: formData.strategyId
           ? (strategies.find((s) => s.id === formData.strategyId)?.name || null)
           : null,
-        executionScore: Number(formData.executionScore),
+        executionScore: isOpenPosition ? null : Number(formData.executionScore),
         chartImageUrl,
         chartImageSource,
         tradeDate: mergeDateWithExistingTime(
@@ -286,11 +321,13 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
           entryPrice: '',
           exitPrice: '',
           stopLoss: '',
+          targetPrice: '',
           leverage: formData.leverage,
           gainLoss: '',
           fee: '',
           result: 'win',
           comment: '',
+          entryReason: '',
           chartPattern: '',
           strategyId: formData.strategyId,
           executionScore: 5,
@@ -302,6 +339,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       setRemoveExistingChart(false);
       setCalculatedPnl(0);
       setRiskReward(null);
+      setPlannedRR(null);
+      setTradeStatus('closed');
 
       onSaved?.();
       onClose();
@@ -321,23 +360,72 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={editTrade ? 'Edit Trade' : 'New Trade'}
-      description={editTrade ? 'Update the details of this trade' : 'Log a closed trade'}
+      title={editTrade ? (isOpenPosition ? 'Edit Position' : 'Edit Trade') : (isOpenPosition ? 'New Position' : 'New Trade')}
+      description={
+        isOpenPosition
+          ? 'Log a position you just opened'
+          : editTrade?.status === 'open'
+            ? 'Close out this position'
+            : editTrade
+              ? 'Update the details of this trade'
+              : 'Log a closed trade'
+      }
       footer={
         <>
           <Button type="button" variant="secondary" onClick={onClose}>
             Cancel
           </Button>
           <Button type="submit" form={FORM_ID} disabled={loading}>
-            {loading ? 'Saving…' : editTrade ? 'Save Changes' : 'Save Trade'}
+            {loading
+              ? 'Saving…'
+              : editTrade?.status === 'open' && !isOpenPosition
+                ? 'Close Trade'
+                : editTrade
+                  ? 'Save Changes'
+                  : isOpenPosition
+                    ? 'Open Position'
+                    : 'Save Trade'}
           </Button>
         </>
       }
     >
           <form id={FORM_ID} onSubmit={handleSubmit} className="space-y-4">
             <div>
+              <label className="block text-content-secondary text-sm mb-2">Trade Status</label>
+              <div className="grid grid-cols-2 gap-2">
+                <button
+                  type="button"
+                  onClick={() => setTradeStatus('open')}
+                  className={`py-2 rounded-lg text-sm font-medium transition-colors ${
+                    isOpenPosition
+                      ? 'bg-brand text-content-primary'
+                      : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
+                  }`}
+                >
+                  Still open
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setTradeStatus('closed')}
+                  className={`py-2 rounded-lg text-sm font-medium transition-colors ${
+                    !isOpenPosition
+                      ? 'bg-brand text-content-primary'
+                      : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
+                  }`}
+                >
+                  Closed
+                </button>
+              </div>
+              <p className="text-xs text-content-muted mt-1">
+                {isOpenPosition
+                  ? 'Logged as a live position — kept out of your stats until you close it.'
+                  : 'Counts toward your P&L, win rate and coach review.'}
+              </p>
+            </div>
+
+            <div>
               <label className="block text-content-secondary text-sm mb-2">Ticker</label>
-              <div className="grid grid-cols-[minmax(0,1fr)_84px_84px] gap-2 items-center">
+              <div className={`grid gap-2 items-center ${isOpenPosition ? 'grid-cols-1' : 'grid-cols-[minmax(0,1fr)_84px_84px]'}`}>
                 <input
                   type="text"
                   name="ticker"
@@ -346,28 +434,32 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   className="bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   required
                 />
-                <button
-                  type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, result: 'win' }))}
-                  className={`rounded-lg py-2 text-sm font-medium transition-colors ${
-                    formData.result === 'win'
-                      ? 'bg-profit text-canvas'
-                      : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
-                  }`}
-                >
-                  Win
-                </button>
-                <button
-                  type="button"
-                  onClick={() => setFormData((prev) => ({ ...prev, result: 'loss' }))}
-                  className={`rounded-lg py-2 text-sm font-medium transition-colors ${
-                    formData.result === 'loss'
-                      ? 'bg-loss text-canvas'
-                      : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
-                  }`}
-                >
-                  Loss
-                </button>
+                {!isOpenPosition && (
+                  <>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, result: 'win' }))}
+                      className={`rounded-lg py-2 text-sm font-medium transition-colors ${
+                        formData.result === 'win'
+                          ? 'bg-profit text-canvas'
+                          : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
+                      }`}
+                    >
+                      Win
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, result: 'loss' }))}
+                      className={`rounded-lg py-2 text-sm font-medium transition-colors ${
+                        formData.result === 'loss'
+                          ? 'bg-loss text-canvas'
+                          : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
+                      }`}
+                    >
+                      Loss
+                    </button>
+                  </>
+                )}
               </div>
               <p className="text-xs text-content-muted mt-1">Last: {lastTicker}</p>
             </div>
@@ -401,7 +493,9 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
             </div>
 
             <div>
-              <label className="block text-content-secondary text-sm mb-2">Trade Date</label>
+              <label className="block text-content-secondary text-sm mb-2">
+                {isOpenPosition ? 'Entry Date' : 'Trade Date'}
+              </label>
               <DateField
                 name="tradeDate"
                 value={formData.tradeDate}
@@ -424,18 +518,20 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                 />
               </div>
 
-              <div>
-                <label className="block text-content-secondary text-sm mb-2">Exit Price</label>
-                <input
-                  type="number"
-                  name="exitPrice"
-                  value={formData.exitPrice}
-                  onChange={handleInputChange}
-                  step="0.01"
-                  placeholder="0.00"
-                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
-                />
-              </div>
+              {!isOpenPosition && (
+                <div>
+                  <label className="block text-content-secondary text-sm mb-2">Exit Price</label>
+                  <input
+                    type="number"
+                    name="exitPrice"
+                    value={formData.exitPrice}
+                    onChange={handleInputChange}
+                    step="0.01"
+                    placeholder="0.00"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-content-secondary text-sm mb-2">Stop Loss</label>
@@ -447,63 +543,108 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   step="0.01"
                   placeholder="0.00"
                   className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
+                  required={isOpenPosition}
+                />
+              </div>
+
+              <div>
+                <label className="block text-content-secondary text-sm mb-2">
+                  Target Price {!isOpenPosition && <span className="text-content-muted">(optional)</span>}
+                </label>
+                <input
+                  type="number"
+                  name="targetPrice"
+                  value={formData.targetPrice}
+                  onChange={handleInputChange}
+                  step="0.01"
+                  placeholder="0.00"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                 />
               </div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+              {!isOpenPosition && (
+                <div>
+                  <label className="block text-content-secondary text-sm mb-2">% Gain</label>
+                  <div
+                    className={`w-full border border-line-strong rounded-control px-4 py-2 h-[42px] flex items-center font-medium ${
+                      priceMovePercent >= 0 ? 'text-profit' : 'text-loss'
+                    }`}
+                  >
+                    {Number.isFinite(priceMovePercent) ? `${priceMovePercent >= 0 ? '+' : ''}${priceMovePercent.toFixed(2)}%` : '--'}
+                  </div>
+                </div>
+              )}
+
               <div>
-                <label className="block text-content-secondary text-sm mb-2">% Gain</label>
+                <label className="block text-content-secondary text-sm mb-2">
+                  {isOpenPosition ? 'Planned R:R' : 'R:R Ratio'}
+                </label>
                 <div
                   className={`w-full border border-line-strong rounded-control px-4 py-2 h-[42px] flex items-center font-medium ${
-                    priceMovePercent >= 0 ? 'text-profit' : 'text-loss'
+                    (isOpenPosition ? plannedRR : riskReward) === null
+                      ? 'text-content-muted'
+                      : (isOpenPosition ? plannedRR : riskReward) >= 1
+                        ? 'text-profit'
+                        : 'text-loss'
                   }`}
                 >
-                  {Number.isFinite(priceMovePercent) ? `${priceMovePercent >= 0 ? '+' : ''}${priceMovePercent.toFixed(2)}%` : '--'}
+                  {isOpenPosition
+                    ? (plannedRR !== null ? `${plannedRR.toFixed(2)}R` : '--')
+                    : (riskReward !== null ? `${riskReward.toFixed(2)}R` : '--')}
                 </div>
               </div>
 
-              <div>
-                <label className="block text-content-secondary text-sm mb-2">R:R Ratio</label>
-                <div
-                  className={`w-full border border-line-strong rounded-control px-4 py-2 h-[42px] flex items-center font-medium ${
-                    riskReward === null ? 'text-content-muted' : riskReward >= 1 ? 'text-profit' : 'text-loss'
-                  }`}
-                >
-                  {riskReward !== null ? `${riskReward.toFixed(2)}R` : '--'}
+              {isOpenPosition && (
+                <div>
+                  <label className="block text-content-secondary text-sm mb-2">Risk if stopped</label>
+                  <div className="w-full border border-line-strong rounded-control px-4 py-2 h-[42px] flex items-center font-medium text-loss">
+                    {(() => {
+                      const entry = parseFloat(formData.entryPrice);
+                      const stop = parseFloat(formData.stopLoss);
+                      const lev = parseFloat(formData.leverage) || 1;
+                      if (!Number.isFinite(entry) || !Number.isFinite(stop) || entry <= 0) return '--';
+                      return `-${((Math.abs(entry - stop) / entry) * 100 * lev).toFixed(2)}%`;
+                    })()}
+                  </div>
                 </div>
-              </div>
+              )}
 
               <div></div>
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-              <div>
-                <label className="block text-content-secondary text-sm mb-2">Gain (USD)</label>
-                <input
-                  type="number"
-                  name="gainLoss"
-                  value={formData.gainLoss}
-                  onChange={handleInputChange}
-                  step="0.01"
-                  placeholder="0.00"
-                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
-                  required
-                />
-              </div>
+              {!isOpenPosition && (
+                <div>
+                  <label className="block text-content-secondary text-sm mb-2">Gain (USD)</label>
+                  <input
+                    type="number"
+                    name="gainLoss"
+                    value={formData.gainLoss}
+                    onChange={handleInputChange}
+                    step="0.01"
+                    placeholder="0.00"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
+                    required
+                  />
+                </div>
+              )}
 
-              <div>
-                <label className="block text-content-secondary text-sm mb-2">Fee (USD)</label>
-                <input
-                  type="number"
-                  name="fee"
-                  value={formData.fee}
-                  onChange={handleInputChange}
-                  step="0.01"
-                  placeholder="0.00"
-                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
-                />
-              </div>
+              {!isOpenPosition && (
+                <div>
+                  <label className="block text-content-secondary text-sm mb-2">Fee (USD)</label>
+                  <input
+                    type="number"
+                    name="fee"
+                    value={formData.fee}
+                    onChange={handleInputChange}
+                    step="0.01"
+                    placeholder="0.00"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
+                  />
+                </div>
+              )}
 
               <div>
                 <label className="block text-content-secondary text-sm mb-2">Leverage</label>
@@ -560,21 +701,23 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               </div>
             </div>
 
-            <div>
-              <label className="block text-content-secondary text-sm mb-2">Execution Score: {formData.executionScore}/10</label>
-              <input
-                type="range"
-                name="executionScore"
-                min="1"
-                max="10"
-                value={formData.executionScore}
-                onChange={handleInputChange}
-                className="w-full"
-              />
-              <div className="flex justify-between text-xs text-content-muted mt-1">
-                <span>Poor</span><span>Average</span><span>Perfect</span>
+            {!isOpenPosition && (
+              <div>
+                <label className="block text-content-secondary text-sm mb-2">Execution Score: {formData.executionScore}/10</label>
+                <input
+                  type="range"
+                  name="executionScore"
+                  min="1"
+                  max="10"
+                  value={formData.executionScore}
+                  onChange={handleInputChange}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-xs text-content-muted mt-1">
+                  <span>Poor</span><span>Average</span><span>Perfect</span>
+                </div>
               </div>
-            </div>
+            )}
 
             <div>
               <label className="block text-content-secondary text-sm mb-2">Pattern Used <span className="text-content-muted">(optional)</span></label>
@@ -606,7 +749,23 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
             </div>
 
             <div>
-              <label className="block text-content-secondary text-sm mb-2">Comment</label>
+              <label className="block text-content-secondary text-sm mb-2">
+                Why I entered {isOpenPosition && <span className="text-content-muted">(write this now, before you know)</span>}
+              </label>
+              <textarea
+                name="entryReason"
+                value={formData.entryReason}
+                onChange={handleInputChange}
+                rows="3"
+                placeholder="The setup, the trigger, what invalidates it..."
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand resize-none"
+              />
+            </div>
+
+            <div>
+              <label className="block text-content-secondary text-sm mb-2">
+                {isOpenPosition ? 'Notes' : 'Comment'}
+              </label>
               <textarea
                 name="comment"
                 value={formData.comment}
