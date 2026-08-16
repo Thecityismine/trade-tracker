@@ -1,8 +1,9 @@
 import { Menu, Plus } from 'lucide-react';
 
 /**
- * Slim contextual header. Holds the page identity and the app's primary action —
- * replaces the old overflowing tab strip.
+ * Slim contextual header. Holds the page identity, and the primary action only
+ * on pages that pass one — logging a trade belongs to the dashboard, not to
+ * every screen in the app.
  */
 function TopBar({ title, description, onOpenMobileNav, onAddTrade, hintG }) {
   return (
@@ -29,13 +30,15 @@ function TopBar({ title, description, onOpenMobileNav, onAddTrade, hintG }) {
           </span>
         )}
 
-        <button
-          onClick={onAddTrade}
-          className="flex items-center gap-1.5 rounded-control bg-brand px-3 py-2 text-sm font-medium text-content-primary transition-colors hover:bg-brand-hover active:scale-95"
-        >
-          <Plus size={16} />
-          <span className="hidden sm:inline">New Trade</span>
-        </button>
+        {onAddTrade && (
+          <button
+            onClick={onAddTrade}
+            className="flex items-center gap-1.5 rounded-control bg-brand px-3 py-2 text-sm font-medium text-content-primary transition-colors hover:bg-brand-hover active:scale-95"
+          >
+            <Plus size={16} />
+            <span className="hidden sm:inline">New Trade</span>
+          </button>
+        )}
       </div>
     </header>
   );

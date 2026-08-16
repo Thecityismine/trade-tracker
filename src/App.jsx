@@ -145,7 +145,7 @@ function App() {
             description={page.description}
             hintG={hintG}
             onOpenMobileNav={() => setMobileNavOpen(true)}
-            onAddTrade={() => setTradeModalOpen(true)}
+            onAddTrade={activeTab === 'dashboard' ? () => setTradeModalOpen(true) : undefined}
           />
 
           <main key={activeTab} className="page-fade-in mx-auto max-w-[1280px] px-5 py-6 lg:px-8">
