@@ -222,7 +222,6 @@ function TradeJournal() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
-    setStatusMessage('');
     setLoading(true);
 
     try {

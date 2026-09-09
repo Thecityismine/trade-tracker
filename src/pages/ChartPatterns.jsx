@@ -229,12 +229,11 @@ function ChartPatterns() {
   useDismissable(isModalOpen, closeModal);
 
 
-  const openAddModal = () => { resetForm(); setStatusMessage(''); setIsModalOpen(true); };
+  const openAddModal = () => { resetForm(); setIsModalOpen(true); };
 
   const openEditModal = (pattern) => {
     setEditingPattern(pattern);
     setFormError('');
-    setStatusMessage('');
     setPatternImage(null);
     setImagePreview(pattern.imageUrl || null);
     const parsed = parseDescriptionToChecklist(pattern.description || '');
@@ -260,7 +259,6 @@ function ChartPatterns() {
         return;
       }
       setPatternImage(file);
-      setStatusMessage('');
       setFormError('');
       const reader = new FileReader();
       reader.onloadend = () => setImagePreview(reader.result);
@@ -271,7 +269,6 @@ function ChartPatterns() {
   const handleSubmit = async (e) => {
     e.preventDefault();
     setFormError('');
-    setStatusMessage('');
     const isEditing = Boolean(editingPattern?.id);
     if (!isEditing && !patternImage) { setFormError('Please upload a chart image.'); return; }
     setLoading(true);
