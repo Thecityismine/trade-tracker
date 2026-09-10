@@ -1,6 +1,10 @@
 {
   "functions": {
     "api/weekly-report.js": { "maxDuration": 60 },
-    "api/weekly-report-charts.js": { "maxDuration": 60 }
-  }
+    "api/weekly-report-charts.js": { "maxDuration": 60 },
+    "api/ai/gateway.js": { "maxDuration": 30 }
+  },
+  "rewrites": [
+    { "source": "/api/ai/:aipath*", "destination": "/api/ai/gateway?aipath=:aipath*" }
+  ]
 }

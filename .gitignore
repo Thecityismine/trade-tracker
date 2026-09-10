@@ -29,3 +29,7 @@ dist-ssr
 .env.production
 
 .vercel
+
+# Firebase service account keys: these grant full database access
+serviceAccount*.json
+*-firebase-adminsdk-*.json
