@@ -56,6 +56,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     chartPattern: '',
     strategyId: '',
     executionScore: 5,
+    followedPlan: '',
+    planDeviationNote: '',
     tradeDate: formatDateForInput(new Date())
   });
 
@@ -63,6 +65,16 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   // default to closed so the existing log-it-after-the-fact flow is unchanged.
   const [tradeStatus, setTradeStatus] = useState('closed');
   const isOpenPosition = tradeStatus === 'open';
+  // A position opened before it was closed carries a plan fixed ahead of the
+  // outcome. Closing it records the result against that plan rather than
+  // reopening the plan for revision — otherwise the stop, target and thesis
+  // could be rewritten once the result is known, which is what makes an
+  // outcome log masquerade as a process log.
+  const hasLockedPlan = Boolean(editTrade?.planLockedAt) || editTrade?.status === 'open';
+  const isClosingPlannedTrade = hasLockedPlan && !isOpenPosition;
+  const lockedFieldClass = isClosingPlannedTrade
+    ? 'bg-surface border-line text-content-secondary cursor-not-allowed'
+    : 'bg-surface-raised border-line-strong text-content-primary focus:outline-none focus:border-brand';
   const [plannedRR, setPlannedRR] = useState(null);
   const [chartImage, setChartImage] = useState(null);
   const [chartPreview, setChartPreview] = useState(null);
@@ -121,6 +133,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       chartPattern: editTrade.chartPattern || '',
       strategyId: editTrade.strategyId || '',
       executionScore: editTrade.executionScore || 5,
+      followedPlan: editTrade.followedPlan || '',
+      planDeviationNote: editTrade.planDeviationNote || '',
       tradeDate: formattedDate
     });
     setTradeStatus(editTrade.status === 'open' ? 'open' : 'closed');
@@ -294,6 +308,15 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
           ? (strategies.find((s) => s.id === formData.strategyId)?.name || null)
           : null,
         executionScore: isOpenPosition ? null : Number(formData.executionScore),
+        // Asked at close against a plan that was fixed at entry, so it is a
+        // factual check rather than a score formed while looking at the result.
+        followedPlan: isOpenPosition ? null : (formData.followedPlan || null),
+        planDeviationNote: isOpenPosition ? null : (formData.planDeviationNote.trim() || null),
+        // Stamped the first time a position is opened. Its presence is what
+        // marks a trade as having had a plan before the outcome was known.
+        planLockedAt: isOpenPosition
+          ? (editTrade?.planLockedAt || serverTimestamp())
+          : (editTrade?.planLockedAt || null),
         chartImageUrl,
         chartImageSource,
         tradeDate: mergeDateWithExistingTime(
@@ -331,6 +354,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
           chartPattern: '',
           strategyId: formData.strategyId,
           executionScore: 5,
+          followedPlan: '',
+          planDeviationNote: '',
           tradeDate: formatDateForInput(new Date())
         });
       }
@@ -423,6 +448,48 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               </p>
             </div>
 
+            {isClosingPlannedTrade && (
+              <div className="rounded-lg border border-brand/30 bg-brand/8 p-4">
+                <p className="text-xs uppercase tracking-wider text-brand-hover font-semibold mb-2">
+                  Your plan, set at entry
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-sm">
+                  <div>
+                    <p className="text-[10px] uppercase text-content-muted">Entry</p>
+                    <p className="text-content-primary font-medium tabular-nums">
+                      {formData.entryPrice || '--'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase text-content-muted">Stop</p>
+                    <p className="text-content-primary font-medium tabular-nums">
+                      {formData.stopLoss || '--'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase text-content-muted">Target</p>
+                    <p className="text-content-primary font-medium tabular-nums">
+                      {formData.targetPrice || '--'}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-[10px] uppercase text-content-muted">Planned R:R</p>
+                    <p className="text-content-primary font-medium tabular-nums">
+                      {plannedRR !== null ? `${plannedRR.toFixed(2)}R` : '--'}
+                    </p>
+                  </div>
+                </div>
+                {formData.entryReason && (
+                  <p className="text-sm text-content-secondary mt-3 whitespace-pre-wrap leading-6">
+                    {formData.entryReason}
+                  </p>
+                )}
+                <p className="text-xs text-content-muted mt-3">
+                  Locked when you opened this position. Record what happened below.
+                </p>
+              </div>
+            )}
+
             <div>
               <label className="block text-content-secondary text-sm mb-2">Ticker</label>
               <div className={`grid gap-2 items-center ${isOpenPosition ? 'grid-cols-1' : 'grid-cols-[minmax(0,1fr)_84px_84px]'}`}>
@@ -469,22 +536,24 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               <div className="grid grid-cols-2 gap-2">
                 <button
                   type="button"
+                  disabled={isClosingPlannedTrade}
                   onClick={() => setFormData((prev) => ({ ...prev, direction: 'long' }))}
                   className={`py-2 rounded-lg text-sm font-medium transition-colors ${
                     formData.direction === 'long'
                       ? 'bg-profit text-canvas'
-                      : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
+                      : `bg-surface-raised text-content-secondary border border-line-strong ${isClosingPlannedTrade ? 'opacity-50 cursor-not-allowed' : 'hover:border-brand/50'}`
                   }`}
                 >
                   LONG
                 </button>
                 <button
                   type="button"
+                  disabled={isClosingPlannedTrade}
                   onClick={() => setFormData((prev) => ({ ...prev, direction: 'short' }))}
                   className={`py-2 rounded-lg text-sm font-medium transition-colors ${
                     formData.direction === 'short'
                       ? 'bg-loss text-canvas'
-                      : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
+                      : `bg-surface-raised text-content-secondary border border-line-strong ${isClosingPlannedTrade ? 'opacity-50 cursor-not-allowed' : 'hover:border-brand/50'}`
                   }`}
                 >
                   SHORT
@@ -513,7 +582,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onChange={handleInputChange}
                   step="0.01"
                   placeholder="0.00"
-                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
+                  readOnly={isClosingPlannedTrade}
+                  className={`w-full border rounded-lg px-4 py-2 ${lockedFieldClass}`}
                   required
                 />
               </div>
@@ -542,7 +612,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onChange={handleInputChange}
                   step="0.01"
                   placeholder="0.00"
-                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
+                  readOnly={isClosingPlannedTrade}
+                  className={`w-full border rounded-lg px-4 py-2 ${lockedFieldClass}`}
                   required={isOpenPosition}
                 />
               </div>
@@ -558,7 +629,9 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                   onChange={handleInputChange}
                   step="0.01"
                   placeholder="0.00"
-                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
+                  readOnly={isClosingPlannedTrade}
+                  className={`w-full border rounded-lg px-4 py-2 ${lockedFieldClass}`}
+                  required={isOpenPosition}
                 />
               </div>
             </div>
@@ -701,6 +774,47 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               </div>
             </div>
 
+            {isClosingPlannedTrade && (
+              <div>
+                <label className="block text-content-secondary text-sm mb-2">
+                  Did you follow the plan?
+                </label>
+                <div className="grid grid-cols-3 gap-2">
+                  {[
+                    { value: 'yes', label: 'Followed it', active: 'bg-profit text-canvas' },
+                    { value: 'partial', label: 'Partly', active: 'bg-warn text-canvas' },
+                    { value: 'no', label: 'Broke it', active: 'bg-loss text-canvas' },
+                  ].map((option) => (
+                    <button
+                      key={option.value}
+                      type="button"
+                      onClick={() => setFormData((prev) => ({ ...prev, followedPlan: option.value }))}
+                      className={`py-2 rounded-lg text-sm font-medium transition-colors ${
+                        formData.followedPlan === option.value
+                          ? option.active
+                          : 'bg-surface-raised text-content-secondary border border-line-strong hover:border-brand/50'
+                      }`}
+                    >
+                      {option.label}
+                    </button>
+                  ))}
+                </div>
+                <p className="text-xs text-content-muted mt-1">
+                  Measured against the stop, target and thesis above — not against how it turned out.
+                </p>
+                {(formData.followedPlan === 'partial' || formData.followedPlan === 'no') && (
+                  <textarea
+                    name="planDeviationNote"
+                    value={formData.planDeviationNote}
+                    onChange={handleInputChange}
+                    rows="2"
+                    placeholder="What did you do differently, and why?"
+                    className="mt-2 w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand resize-none"
+                  />
+                )}
+              </div>
+            )}
+
             {!isOpenPosition && (
               <div>
                 <label className="block text-content-secondary text-sm mb-2">Execution Score: {formData.executionScore}/10</label>
@@ -758,7 +872,9 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                 onChange={handleInputChange}
                 rows="3"
                 placeholder="The setup, the trigger, what invalidates it..."
-                className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand resize-none"
+                readOnly={isClosingPlannedTrade}
+                required={isOpenPosition}
+                className={`w-full border rounded-lg px-4 py-2 resize-none ${lockedFieldClass}`}
               />
             </div>
 

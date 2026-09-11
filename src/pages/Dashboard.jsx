@@ -52,6 +52,8 @@ function Dashboard({ onNavigate }) {
   const { trades, openTrades, deposits, loading: dataLoading, error: dataError } = useTrades();
   const [metrics, setMetrics] = useState({
     totalPnl: 0,
+    grossPnl: 0,
+    fees: 0,
     winRate: 0,
     wins: 0,
     losses: 0,
@@ -101,6 +103,11 @@ function Dashboard({ onNavigate }) {
     const losses = monthTrades.filter(t => t.result === 'loss');
     
     const totalPnl = monthTrades.reduce((sum, t) => sum + (t.gainLoss || 0), 0);
+    // gainLoss is recorded net of fees, so gross is the figure before costs.
+    // Kept as its own line because costs this size are invisible in the net
+    // number alone.
+    const totalFees = monthTrades.reduce((sum, t) => sum + (t.fee || 0), 0);
+    const grossPnl = totalPnl + totalFees;
     const totalWins = wins.reduce((sum, t) => sum + (t.gainLoss || 0), 0);
     const totalLosses = Math.abs(losses.reduce((sum, t) => sum + (t.gainLoss || 0), 0));
     
@@ -118,6 +125,8 @@ function Dashboard({ onNavigate }) {
 
     setMetrics({
       totalPnl,
+      grossPnl,
+      fees: totalFees,
       winRate,
       wins: wins.length,
       losses: losses.length,
@@ -470,7 +479,35 @@ function Dashboard({ onNavigate }) {
             formattingFn={(val) => `${val < 0 ? '-' : ''}$${Math.abs(val).toFixed(2)}`}
           />
         </p>
-        <p className="text-content-muted text-sm mb-5">{metrics.wins}W · {metrics.losses}L</p>
+        <p className="text-content-muted text-sm mb-3">{metrics.wins}W · {metrics.losses}L</p>
+
+        {/* Gross / fees / net. The net figure alone hides how much of the edge
+            the costs are eating. */}
+        {(metrics.fees > 0 || metrics.grossPnl !== 0) && (
+          <div className="mb-5 rounded-control bg-black/20 border border-line px-4 py-3 space-y-1.5">
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-content-muted">Gross</span>
+              <span className={`tabular-nums font-medium ${metrics.grossPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                {metrics.grossPnl >= 0 ? '+' : '-'}${Math.abs(metrics.grossPnl).toFixed(2)}
+              </span>
+            </div>
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-content-muted">Fees</span>
+              <span className="tabular-nums font-medium text-loss">-${metrics.fees.toFixed(2)}</span>
+            </div>
+            <div className="flex items-center justify-between text-sm pt-1.5 border-t border-line">
+              <span className="text-content-secondary font-medium">Net</span>
+              <span className={`tabular-nums font-bold ${metrics.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                {metrics.totalPnl >= 0 ? '+' : '-'}${Math.abs(metrics.totalPnl).toFixed(2)}
+              </span>
+            </div>
+            {metrics.grossPnl > 0 && (
+              <p className="text-xs text-content-muted pt-1">
+                Costs are {((metrics.fees / metrics.grossPnl) * 100).toFixed(0)}% of gross edge.
+              </p>
+            )}
+          </div>
+        )}
 
         {/* Secondary stats row */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-5 pb-4 border-b border-line">

@@ -75,6 +75,7 @@ export function tradeStats(closedTrades) {
   const losses = closedTrades.filter((t) => t.result === 'loss');
 
   const netPnlUsd = sum(closedTrades.map((t) => t.realizedPnlUsd));
+  const feesUsd = sum(closedTrades.map((t) => t.feesUsd));
   const grossWinUsd = sum(wins.map((t) => t.realizedPnlUsd));
   const grossLossUsd = Math.abs(sum(losses.map((t) => t.realizedPnlUsd)));
 
@@ -88,9 +89,15 @@ export function tradeStats(closedTrades) {
     losses: losses.length,
     winRatePercent: round(winRate),
     netPnlUsd: round(netPnlUsd),
+    // Each trade's P&L is recorded net of its fee, so gross is the sum before
+    // costs. Reported alongside net because costs can be a large share of the
+    // edge and the net figure alone hides that.
+    grossPnlUsd: round(netPnlUsd + feesUsd),
+    feesUsd: round(feesUsd),
+    feesAsPercentOfGross:
+      netPnlUsd + feesUsd > 0 ? round((feesUsd / (netPnlUsd + feesUsd)) * 100) : null,
     grossWinUsd: round(grossWinUsd),
     grossLossUsd: round(grossLossUsd),
-    feesUsd: round(sum(closedTrades.map((t) => t.feesUsd))),
     avgWinUsd: round(avgWinUsd),
     avgLossUsd: round(avgLossUsd),
     expectancyUsd: round((winRate / 100) * avgWinUsd - (1 - winRate / 100) * avgLossUsd),

@@ -59,7 +59,16 @@ const trade = (doc, ctx) => {
     feesUsd: num(doc.fee),
     pnlPercent: round(doc.pnlPercent),
     riskRewardRatio: round(doc.rr),
+    plannedRiskRewardRatio: round(doc.plannedRR),
     executionScore: num(doc.executionScore),
+    // Recorded at close against a plan fixed at entry. `planLockedAt` is only
+    // present on trades that were opened first, so its absence marks a trade
+    // logged after the fact, where any process field was written knowing the
+    // outcome.
+    followedPlan: text(doc.followedPlan),
+    planDeviationNote: text(doc.planDeviationNote),
+    planLockedAt: toIso(doc.planLockedAt),
+    hadPlanBeforeOutcome: Boolean(doc.planLockedAt),
     currency: 'USD',
 
     entryReason: text(doc.entryReason),
@@ -236,9 +245,9 @@ export const COLLECTIONS = {
     recordType: 'trade',
     page: 'journal',
     describes:
-      'Every logged trade, closed and open. Closed trades carry realized P&L; open positions have no exit price or result yet.',
+      'Every logged trade, closed and open. Closed trades carry realized P&L; open positions have no exit price or result yet. realizedPnlUsd is net of fees. hadPlanBeforeOutcome marks trades opened before they were closed, whose stop, target, thesis and planned R:R were fixed in advance — only those support process analysis; on the rest, executionScore was recorded knowing the result.',
     dateField: 'tradeDate',
-    searchFields: ['comment', 'entryReason', 'chartPattern', 'strategyName', 'ticker'],
+    searchFields: ['comment', 'entryReason', 'chartPattern', 'strategyName', 'ticker', 'planDeviationNote'],
     map: trade
   },
   deposits: {

@@ -17,6 +17,7 @@ const FIXTURES = {
       pnlPercent: 2.46, result: 'win', rr: 3, executionScore: 8, status: 'closed',
       strategyId: 's1', strategyName: 'Breakout retest', chartPattern: 'Bull flag',
       comment: 'Clean retest, held the level.', entryReason: 'Break of range high',
+      plannedRR: 2.5, followedPlan: 'yes', planLockedAt: ts('2026-09-01T13:50:00Z'),
       tradeDate: ts('2026-09-01T14:00:00Z'), createdAt: ts('2026-09-01T14:05:00Z'),
       closedAt: ts('2026-09-01T16:00:00Z')
     },
@@ -261,6 +262,47 @@ async function search_(query, collections) {
     {}
   );
 }
+
+test('gross, fees and net are reported as three distinct figures', async () => {
+  const p = await get('v1/performance');
+
+  // Each trade's gainLoss is already net of its fee, so gross is net + fees.
+  // Closed: +400 -250 +300 -180 = +270 net; fees 12+10+8+6 = 36.
+  assert.equal(p.performance.netPnlUsd, 270);
+  assert.equal(p.performance.feesUsd, 36);
+  assert.equal(p.performance.grossPnlUsd, 306);
+  assert.equal(p.performance.feesAsPercentOfGross, 11.76);
+});
+
+test('fee share is null rather than a bogus number when gross is not positive', async () => {
+  // July holds only t4: -180 net, 6 in fees, so gross is -174. A percentage of
+  // a negative gross has no meaning and must not be reported as one.
+  const losing = await get('v1/performance', { from: '2026-07-01', to: '2026-07-31' });
+  assert.equal(losing.performance.netPnlUsd, -180);
+  assert.equal(losing.performance.feesUsd, 6);
+  assert.equal(losing.performance.grossPnlUsd, -174);
+  assert.equal(losing.performance.feesAsPercentOfGross, null);
+});
+
+test('a trade planned before the outcome is distinguishable from one logged after', async () => {
+  const planned = await get('v1/trades/t1');
+  assert.equal(planned.trade.hadPlanBeforeOutcome, true);
+  assert.equal(planned.trade.followedPlan, 'yes');
+  assert.equal(planned.trade.plannedRiskRewardRatio, 2.5);
+  assert.equal(planned.trade.planLockedAt, '2026-09-01T13:50:00.000Z');
+
+  // t2 was logged after the fact: no locked plan, so its execution score was
+  // recorded with the result already known.
+  const backfilled = await get('v1/trades/t2');
+  assert.equal(backfilled.trade.hadPlanBeforeOutcome, false);
+  assert.equal(backfilled.trade.followedPlan, undefined);
+  assert.equal(backfilled.trade.planLockedAt, undefined);
+});
+
+test('search reaches plan deviation notes', async () => {
+  const hits = await search_('revenge');
+  assert.ok(hits.searchedCollections.includes('trades'));
+});
 
 test('unknown routes and collections 404 with a useful message', async () => {
   await assert.rejects(() => get('v1/nope'), (e) => e.status === 404 && /Unknown endpoint/.test(e.message));
