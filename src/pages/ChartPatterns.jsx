@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, X, Upload, Pencil, Trash2, ImageIcon, Check, Target } from 'lucide-react';
+import { Plus, X, Upload, Pencil, Trash2, ImageIcon, Check, Target, ArrowLeft } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { db, storage } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
@@ -75,6 +75,7 @@ function ChartPatterns() {
   const [patterns, setPatterns] = useState([]);
   const { trades } = useTrades();
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [activePattern, setActivePattern] = useState(null);
   const [expandedImage, setExpandedImage] = useState(null);
   const [editingPattern, setEditingPattern] = useState(null);
   const [tradeFilter, setTradeFilter] = useState('all');
@@ -108,12 +109,27 @@ function ChartPatterns() {
     });
   }, []);
 
+  // The panel renders from its own copy of the pattern, so an edit saved while
+  // it is open would otherwise leave it showing stale text until reopened.
   useEffect(() => {
-    if (!isModalOpen && !expandedImage) return;
+    if (!activePattern?.id) return;
+    const latest = patterns.find((item) => item.id === activePattern.id);
+    if (!latest) {
+      setActivePattern(null);
+      return;
+    }
+    setActivePattern(latest);
+  }, [patterns, activePattern?.id]);
+
+  // Keyed on the id, not the object: the sync effect above swaps in a fresh
+  // object on every snapshot, which would otherwise release and reapply the
+  // scroll lock on each one.
+  useEffect(() => {
+    if (!isModalOpen && !expandedImage && !activePattern) return;
     const prev = document.body.style.overflow;
     document.body.style.overflow = 'hidden';
     return () => { document.body.style.overflow = prev; };
-  }, [isModalOpen, expandedImage]);
+  }, [isModalOpen, expandedImage, activePattern?.id]);
 
   // Per-pattern performance from trades
   const patternPerformance = useMemo(() => {
@@ -134,6 +150,17 @@ function ChartPatterns() {
     });
     return map;
   }, [trades]);
+
+  const activePatternTrades = useMemo(() => {
+    if (!activePattern?.name) return [];
+    return trades
+      .filter((trade) => trade.chartPattern === activePattern.name)
+      .sort((a, b) => {
+        const aDate = a.tradeDate?.toDate?.() || new Date(a.tradeDate);
+        const bDate = b.tradeDate?.toDate?.() || new Date(b.tradeDate);
+        return bDate - aDate;
+      });
+  }, [trades, activePattern?.name]);
 
   const inferTradeType = (pattern) => {
     if (pattern.tradeType) return pattern.tradeType;
@@ -227,6 +254,9 @@ function ChartPatterns() {
 
   const closeModal = () => { setIsModalOpen(false); resetForm(); };
   useDismissable(isModalOpen, closeModal);
+
+  const closePattern = () => setActivePattern(null);
+  useDismissable(Boolean(activePattern) && !isModalOpen && !expandedImage, closePattern);
 
 
   const openAddModal = () => { resetForm(); setIsModalOpen(true); };
@@ -393,7 +423,8 @@ function ChartPatterns() {
             return (
               <div
                 key={pattern.id}
-                className="group bg-surface border border-line-strong rounded-lg overflow-hidden hover:border-brand/50 transition-colors"
+                onClick={() => setActivePattern(pattern)}
+                className="group bg-surface border border-line-strong rounded-lg overflow-hidden cursor-pointer hover:border-brand/50 transition-colors"
               >
                 {/* Image */}
                 <div className="relative aspect-video bg-surface-raised">
@@ -403,19 +434,12 @@ function ChartPatterns() {
                       <span className="text-xs">Image unavailable</span>
                     </div>
                   ) : (
-                    <button
-                      type="button"
-                      onClick={() => setExpandedImage({ url: pattern.imageUrl, name: pattern.name })}
-                      className="w-full h-full cursor-zoom-in"
-                      aria-label={`Expand ${pattern.name}`}
-                    >
-                      <img
-                        src={pattern.imageUrl}
-                        alt={pattern.name}
-                        className="w-full h-full object-cover"
-                        onError={() => setBrokenImages((prev) => ({ ...prev, [pattern.id]: true }))}
-                      />
-                    </button>
+                    <img
+                      src={pattern.imageUrl}
+                      alt={pattern.name}
+                      className="w-full h-full object-cover"
+                      onError={() => setBrokenImages((prev) => ({ ...prev, [pattern.id]: true }))}
+                    />
                   )}
 
                   {/* Action buttons — top-right overlay */}
@@ -479,7 +503,7 @@ function ChartPatterns() {
                             <button
                               key={i}
                               type="button"
-                              onClick={() => toggleCheck(pattern.id, i)}
+                              onClick={(e) => { e.stopPropagation(); toggleCheck(pattern.id, i); }}
                               className="w-full text-left flex items-start gap-2 group/check"
                             >
                               <span className={`flex-shrink-0 w-4 h-4 rounded border mt-0.5 flex items-center justify-center transition-colors ${
@@ -561,9 +585,252 @@ function ChartPatterns() {
         )}
       </div>
 
+      {/* Pattern detail panel */}
+      {activePattern && (() => {
+        const detailChecklist = getDisplayChecklist(activePattern);
+        const detailAvoidIf = getDisplayAvoidIf(activePattern);
+        const detailSummary = getDisplaySummary(activePattern);
+        const detailTimeframe = inferTimeframe(activePattern);
+        const detailTradeType = inferTradeType(activePattern);
+        const detailChecked = allChecked(activePattern.id, detailChecklist);
+        const perf = patternPerformance[activePattern.name];
+        const wins = perf?.wins || 0;
+        const losses = (perf?.count || 0) - wins;
+        const addedOn = activePattern.dateAdded?.toDate?.() || null;
+        const updatedOn = activePattern.updatedAt?.toDate?.() || null;
+
+        return (
+          <div className="fixed inset-0 z-[70]">
+            <div className="absolute inset-0 bg-black/75" onClick={closePattern} />
+            <aside className="absolute right-0 top-0 h-full w-full sm:w-[600px] md:w-[760px] bg-surface border-l border-line flex flex-col shadow-elev-1">
+              <div className="flex items-start justify-between gap-3 p-5 border-b border-line">
+                <div className="min-w-0">
+                  <button
+                    type="button"
+                    onClick={closePattern}
+                    className="sm:hidden flex items-center gap-1 text-content-secondary hover:text-content-primary text-sm mb-2"
+                  >
+                    <ArrowLeft size={14} />
+                    Back
+                  </button>
+                  <div className="flex flex-wrap items-center gap-1.5 mb-1.5">
+                    {detailTradeType !== 'both' && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-semibold ${
+                        detailTradeType === 'long' ? 'bg-profit/15 text-profit' : 'bg-loss/15 text-loss'
+                      }`}>
+                        {detailTradeType === 'long' ? 'Long' : 'Short'}
+                      </span>
+                    )}
+                    {detailTimeframe && (
+                      <span className="text-xs px-2 py-0.5 rounded-md bg-brand-muted text-brand-hover border border-brand/30">
+                        {detailTimeframe}
+                      </span>
+                    )}
+                    {activePattern.setupQuality && (
+                      <span className={`text-xs px-2 py-0.5 rounded-full font-bold ${QUALITY_BADGE[activePattern.setupQuality] || ''}`}>
+                        {activePattern.setupQuality}
+                      </span>
+                    )}
+                  </div>
+                  <h3 className="text-xl text-content-primary font-bold truncate">{activePattern.name || 'Untitled'}</h3>
+                  <p className="text-xs text-content-secondary mt-1">
+                    {addedOn
+                      ? `Added ${addedOn.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`
+                      : 'Added date unknown'}
+                    {updatedOn && ` | Updated ${updatedOn.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}`}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5 flex-shrink-0">
+                  <button
+                    type="button"
+                    onClick={() => openEditModal(activePattern)}
+                    className="bg-surface-raised hover:bg-surface-hover text-content-secondary hover:text-content-primary p-2 rounded-lg border border-line-strong transition-colors"
+                    aria-label="Edit pattern"
+                  >
+                    <Pencil size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => handleDelete(activePattern.id)}
+                    className="bg-loss/15 hover:bg-loss/30 text-loss p-2 rounded-lg border border-loss/30 transition-colors"
+                    aria-label="Delete pattern"
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                  <button
+                    type="button"
+                    onClick={closePattern}
+                    className="text-content-secondary hover:text-content-primary transition-colors ml-1"
+                    aria-label="Close panel"
+                  >
+                    <X size={22} />
+                  </button>
+                </div>
+              </div>
+
+              <div className="p-5 overflow-y-auto space-y-5 flex-1">
+                {activePattern.imageUrl && !brokenImages[activePattern.id] && (
+                  <button
+                    type="button"
+                    onClick={() => setExpandedImage({ url: activePattern.imageUrl, name: activePattern.name })}
+                    className="block w-full border border-line-strong rounded-lg overflow-hidden hover:border-brand/50 transition-colors cursor-zoom-in"
+                    aria-label={`Expand ${activePattern.name}`}
+                  >
+                    <img
+                      src={activePattern.imageUrl}
+                      alt={activePattern.name}
+                      className="w-full max-h-[360px] object-contain bg-surface-raised"
+                      onError={() => setBrokenImages((prev) => ({ ...prev, [activePattern.id]: true }))}
+                    />
+                  </button>
+                )}
+
+                {/* Stats strip */}
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                  <div className="bg-surface-raised rounded-control p-3">
+                    <p className="text-[10px] text-content-muted uppercase">Trades</p>
+                    <p className="text-content-primary text-xl font-bold">{perf?.count || 0}</p>
+                  </div>
+                  <div className="bg-surface-raised rounded-control p-3">
+                    <p className="text-[10px] text-content-muted uppercase">Win Rate</p>
+                    <p className={`text-xl font-bold ${!perf?.count ? 'text-content-secondary' : perf.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>
+                      {perf?.count ? `${perf.winRate.toFixed(1)}%` : '—'}
+                    </p>
+                  </div>
+                  <div className="bg-surface-raised rounded-control p-3">
+                    <p className="text-[10px] text-content-muted uppercase">W / L</p>
+                    <p className="text-content-primary text-xl font-bold">
+                      <span className="text-profit">{wins}</span>
+                      <span className="text-content-muted mx-1">/</span>
+                      <span className="text-loss">{losses}</span>
+                    </p>
+                  </div>
+                  <div className="bg-surface-raised rounded-control p-3">
+                    <p className="text-[10px] text-content-muted uppercase">Net P&L</p>
+                    <p className={`text-xl font-bold ${(perf?.pnl || 0) >= 0 ? 'text-profit' : 'text-loss'}`}>
+                      {(perf?.pnl || 0) >= 0 ? '+' : '-'}${Math.abs(perf?.pnl || 0).toFixed(2)}
+                    </p>
+                  </div>
+                </div>
+
+                {detailSummary && (
+                  <div>
+                    <h4 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Summary</h4>
+                    <div className="rounded-control bg-surface-raised p-4">
+                      <p className="text-content-secondary text-sm leading-7">{detailSummary}</p>
+                    </div>
+                  </div>
+                )}
+
+                {detailChecklist.length > 0 && (
+                  <div>
+                    <h4 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Checklist</h4>
+                    <div className="rounded-control bg-surface-raised p-4 space-y-2.5">
+                      {detailChecklist.map((item, i) => {
+                        const checked = isChecked(activePattern.id, i);
+                        return (
+                          <button
+                            key={i}
+                            type="button"
+                            onClick={() => toggleCheck(activePattern.id, i)}
+                            className="w-full text-left flex items-start gap-2.5 group/check"
+                          >
+                            <span className={`flex-shrink-0 w-4 h-4 rounded border mt-0.5 flex items-center justify-center transition-colors ${
+                              checked ? 'bg-profit border-profit' : 'border-line-strong'
+                            }`}>
+                              {checked && <Check size={10} className="text-content-primary" />}
+                            </span>
+                            <span className={`text-sm leading-snug transition-colors ${
+                              checked ? 'line-through text-content-muted' : 'text-content-secondary'
+                            }`}>
+                              {item}
+                            </span>
+                          </button>
+                        );
+                      })}
+                      {detailChecked && (
+                        <div className="mt-1 text-center text-xs font-bold text-profit bg-profit/10 border border-profit/25 rounded-lg py-1.5 tracking-widest">
+                          VALID SETUP
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                )}
+
+                {detailAvoidIf.length > 0 && (
+                  <div>
+                    <h4 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Avoid If</h4>
+                    <div className="border border-loss/30 rounded-lg bg-loss/8 p-4 space-y-1.5">
+                      {detailAvoidIf.map((item, i) => (
+                        <div key={i} className="flex items-start gap-2 text-sm text-content-secondary">
+                          <span className="text-loss/60 flex-shrink-0 mt-0.5">•</span>
+                          {item}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+
+                {activePattern.description && (
+                  <div>
+                    <h4 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Notes</h4>
+                    <div className="rounded-control bg-surface-raised p-4">
+                      <p className="text-content-secondary whitespace-pre-wrap break-words text-sm leading-7">
+                        {activePattern.description}
+                      </p>
+                    </div>
+                  </div>
+                )}
+
+                {/* Trades taken on this pattern */}
+                <div>
+                  <h4 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">
+                    Trades ({activePatternTrades.length})
+                  </h4>
+                  {activePatternTrades.length === 0 ? (
+                    <div className="bg-surface-raised rounded-control p-6 text-center text-content-secondary text-sm">
+                      No trades logged against this pattern yet.
+                    </div>
+                  ) : (
+                    <div className="space-y-2">
+                      {activePatternTrades.map((trade) => {
+                        const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
+                        const pnl = Number(trade.gainLoss) || 0;
+                        return (
+                          <div key={trade.id} className="bg-surface-raised rounded-control p-3 flex items-center justify-between gap-3">
+                            <div className="min-w-0">
+                              <p className="text-content-primary text-sm font-semibold truncate">
+                                {trade.ticker || 'BTC'} {trade.direction || 'long'}
+                                {trade.result && (
+                                  <span className={`ml-2 text-xs font-normal ${trade.result === 'win' ? 'text-profit' : 'text-loss'}`}>
+                                    {trade.result}
+                                  </span>
+                                )}
+                              </p>
+                              <p className="text-xs text-content-muted mt-0.5">
+                                {Number.isNaN(tradeDate.getTime())
+                                  ? 'Date unknown'
+                                  : tradeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                              </p>
+                            </div>
+                            <span className={`text-sm font-semibold flex-shrink-0 ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                              {pnl >= 0 ? '+$' : '-$'}{Math.abs(pnl).toFixed(2)}
+                            </span>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+                </div>
+              </div>
+            </aside>
+          </div>
+        );
+      })()}
+
       {/* Add / Edit Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 bg-black/75 z-[60] overflow-y-auto" {...backdropProps(closeModal)}>
+        <div className="fixed inset-0 bg-black/75 z-[85] overflow-y-auto" {...backdropProps(closeModal)}>
           <div className="flex min-h-full items-start justify-center p-4 py-8">
             <div className="bg-surface rounded-card w-full max-w-lg shadow-elev-1">
               <div className="flex items-center justify-between p-6 border-b border-line">
@@ -788,7 +1055,7 @@ function ChartPatterns() {
       {/* Image Viewer */}
       {expandedImage && (
         <div
-          className="fixed inset-0 z-[80] bg-black p-4 flex items-center justify-center"
+          className="fixed inset-0 z-[100] bg-black p-4 flex items-center justify-center"
           onClick={() => setExpandedImage(null)}
         >
           <button

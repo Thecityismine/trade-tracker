@@ -33,3 +33,4 @@ dist-ssr
 # Firebase service account keys: these grant full database access
 serviceAccount*.json
 *-firebase-adminsdk-*.json
+.env*
