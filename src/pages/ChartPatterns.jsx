@@ -1,5 +1,5 @@
 import { useState, useEffect, useMemo } from 'react';
-import { Plus, X, Upload, Pencil, Trash2, ImageIcon, Check, Target, ArrowLeft } from 'lucide-react';
+import { Plus, X, Upload, Pencil, Trash2, ImageIcon, Target, ArrowLeft } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, onSnapshot, deleteDoc, doc, updateDoc, query, orderBy } from 'firebase/firestore';
 import { db, storage } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
@@ -81,7 +81,6 @@ function ChartPatterns() {
   const [tradeFilter, setTradeFilter] = useState('all');
   const [timeframeFilter, setTimeframeFilter] = useState('all');
   const [qualityFilter, setQualityFilter] = useState('all');
-  const [checkedItems, setCheckedItems] = useState({});
   const [formData, setFormData] = useState({
     name: '',
     summary: '',
@@ -151,17 +150,6 @@ function ChartPatterns() {
     return map;
   }, [trades]);
 
-  const activePatternTrades = useMemo(() => {
-    if (!activePattern?.name) return [];
-    return trades
-      .filter((trade) => trade.chartPattern === activePattern.name)
-      .sort((a, b) => {
-        const aDate = a.tradeDate?.toDate?.() || new Date(a.tradeDate);
-        const bDate = b.tradeDate?.toDate?.() || new Date(b.tradeDate);
-        return bDate - aDate;
-      });
-  }, [trades, activePattern?.name]);
-
   const inferTradeType = (pattern) => {
     if (pattern.tradeType) return pattern.tradeType;
     const h = [pattern.name, pattern.description, ...(Array.isArray(pattern.tags) ? pattern.tags : [])].join(' ').toLowerCase();
@@ -226,15 +214,6 @@ function ChartPatterns() {
       return matchesTrade && matchesTimeframe && matchesQuality;
     });
   }, [patterns, tradeFilter, timeframeFilter, qualityFilter]);
-
-  // Checklist interaction
-  const toggleCheck = (patternId, itemIdx) => {
-    const key = `${patternId}:${itemIdx}`;
-    setCheckedItems((prev) => ({ ...prev, [key]: !prev[key] }));
-  };
-  const isChecked = (patternId, itemIdx) => !!checkedItems[`${patternId}:${itemIdx}`];
-  const allChecked = (patternId, checklist) =>
-    checklist.length > 0 && checklist.every((_, i) => isChecked(patternId, i));
 
   // Form list helpers
   const addListItem = (field) =>
@@ -417,7 +396,6 @@ function ChartPatterns() {
             const displayChecklist = getDisplayChecklist(pattern);
             const displayAvoidIf = getDisplayAvoidIf(pattern);
             const displaySummary = getDisplaySummary(pattern);
-            const isAllChecked = allChecked(pattern.id, displayChecklist);
             const perf = patternPerformance[pattern.name];
 
             return (
@@ -441,24 +419,6 @@ function ChartPatterns() {
                       onError={() => setBrokenImages((prev) => ({ ...prev, [pattern.id]: true }))}
                     />
                   )}
-
-                  {/* Action buttons — top-right overlay */}
-                  <div className="absolute top-2 right-2 flex gap-1.5">
-                    <button
-                      onClick={(e) => { e.stopPropagation(); openEditModal(pattern); }}
-                      className="bg-surface/85 hover:bg-surface text-content-secondary hover:text-content-primary p-1.5 rounded-card transition-all backdrop-blur-sm /50 shadow-elev-1"
-                      aria-label="Edit pattern"
-                    >
-                      <Pencil size={13} />
-                    </button>
-                    <button
-                      onClick={(e) => { e.stopPropagation(); handleDelete(pattern.id); }}
-                      className="bg-loss/80 hover:bg-loss text-content-primary p-1.5 rounded-lg transition-all backdrop-blur-sm"
-                      aria-label="Delete pattern"
-                    >
-                      <Trash2 size={13} />
-                    </button>
-                  </div>
                 </div>
 
                 {/* Content */}
@@ -497,34 +457,13 @@ function ChartPatterns() {
                     <div>
                       <div className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Checklist</div>
                       <div className="space-y-2">
-                        {displayChecklist.map((item, i) => {
-                          const checked = isChecked(pattern.id, i);
-                          return (
-                            <button
-                              key={i}
-                              type="button"
-                              onClick={(e) => { e.stopPropagation(); toggleCheck(pattern.id, i); }}
-                              className="w-full text-left flex items-start gap-2 group/check"
-                            >
-                              <span className={`flex-shrink-0 w-4 h-4 rounded border mt-0.5 flex items-center justify-center transition-colors ${
-                                checked ? 'bg-profit border-profit' : 'border-line-strong group-hover/check:border-line-strong'
-                              }`}>
-                                {checked && <Check size={10} className="text-content-primary" />}
-                              </span>
-                              <span className={`text-sm leading-snug transition-colors ${
-                                checked ? 'line-through text-content-muted' : 'text-content-secondary'
-                              }`}>
-                                {item}
-                              </span>
-                            </button>
-                          );
-                        })}
+                        {displayChecklist.map((item, i) => (
+                          <div key={i} className="flex items-start gap-2">
+                            <span className="flex-shrink-0 w-4 h-4 rounded border border-line-strong mt-0.5" />
+                            <span className="text-sm leading-snug text-content-secondary">{item}</span>
+                          </div>
+                        ))}
                       </div>
-                      {isAllChecked && (
-                        <div className="mt-2.5 text-center text-xs font-bold text-profit bg-profit/10 border border-profit/25 rounded-lg py-1.5 tracking-widest">
-                          VALID SETUP
-                        </div>
-                      )}
                     </div>
                   )}
 
@@ -592,10 +531,6 @@ function ChartPatterns() {
         const detailSummary = getDisplaySummary(activePattern);
         const detailTimeframe = inferTimeframe(activePattern);
         const detailTradeType = inferTradeType(activePattern);
-        const detailChecked = allChecked(activePattern.id, detailChecklist);
-        const perf = patternPerformance[activePattern.name];
-        const wins = perf?.wins || 0;
-        const losses = (perf?.count || 0) - wins;
         const addedOn = activePattern.dateAdded?.toDate?.() || null;
         const updatedOn = activePattern.updatedAt?.toDate?.() || null;
 
@@ -685,34 +620,6 @@ function ChartPatterns() {
                   </button>
                 )}
 
-                {/* Stats strip */}
-                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                  <div className="bg-surface-raised rounded-control p-3">
-                    <p className="text-[10px] text-content-muted uppercase">Trades</p>
-                    <p className="text-content-primary text-xl font-bold">{perf?.count || 0}</p>
-                  </div>
-                  <div className="bg-surface-raised rounded-control p-3">
-                    <p className="text-[10px] text-content-muted uppercase">Win Rate</p>
-                    <p className={`text-xl font-bold ${!perf?.count ? 'text-content-secondary' : perf.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>
-                      {perf?.count ? `${perf.winRate.toFixed(1)}%` : '—'}
-                    </p>
-                  </div>
-                  <div className="bg-surface-raised rounded-control p-3">
-                    <p className="text-[10px] text-content-muted uppercase">W / L</p>
-                    <p className="text-content-primary text-xl font-bold">
-                      <span className="text-profit">{wins}</span>
-                      <span className="text-content-muted mx-1">/</span>
-                      <span className="text-loss">{losses}</span>
-                    </p>
-                  </div>
-                  <div className="bg-surface-raised rounded-control p-3">
-                    <p className="text-[10px] text-content-muted uppercase">Net P&L</p>
-                    <p className={`text-xl font-bold ${(perf?.pnl || 0) >= 0 ? 'text-profit' : 'text-loss'}`}>
-                      {(perf?.pnl || 0) >= 0 ? '+' : '-'}${Math.abs(perf?.pnl || 0).toFixed(2)}
-                    </p>
-                  </div>
-                </div>
-
                 {detailSummary && (
                   <div>
                     <h4 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Summary</h4>
@@ -726,33 +633,12 @@ function ChartPatterns() {
                   <div>
                     <h4 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">Checklist</h4>
                     <div className="rounded-control bg-surface-raised p-4 space-y-2.5">
-                      {detailChecklist.map((item, i) => {
-                        const checked = isChecked(activePattern.id, i);
-                        return (
-                          <button
-                            key={i}
-                            type="button"
-                            onClick={() => toggleCheck(activePattern.id, i)}
-                            className="w-full text-left flex items-start gap-2.5 group/check"
-                          >
-                            <span className={`flex-shrink-0 w-4 h-4 rounded border mt-0.5 flex items-center justify-center transition-colors ${
-                              checked ? 'bg-profit border-profit' : 'border-line-strong'
-                            }`}>
-                              {checked && <Check size={10} className="text-content-primary" />}
-                            </span>
-                            <span className={`text-sm leading-snug transition-colors ${
-                              checked ? 'line-through text-content-muted' : 'text-content-secondary'
-                            }`}>
-                              {item}
-                            </span>
-                          </button>
-                        );
-                      })}
-                      {detailChecked && (
-                        <div className="mt-1 text-center text-xs font-bold text-profit bg-profit/10 border border-profit/25 rounded-lg py-1.5 tracking-widest">
-                          VALID SETUP
+                      {detailChecklist.map((item, i) => (
+                        <div key={i} className="flex items-start gap-2.5">
+                          <span className="flex-shrink-0 w-4 h-4 rounded border border-line-strong mt-0.5" />
+                          <span className="text-sm leading-snug text-content-secondary">{item}</span>
                         </div>
-                      )}
+                      ))}
                     </div>
                   </div>
                 )}
@@ -782,46 +668,6 @@ function ChartPatterns() {
                   </div>
                 )}
 
-                {/* Trades taken on this pattern */}
-                <div>
-                  <h4 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-2">
-                    Trades ({activePatternTrades.length})
-                  </h4>
-                  {activePatternTrades.length === 0 ? (
-                    <div className="bg-surface-raised rounded-control p-6 text-center text-content-secondary text-sm">
-                      No trades logged against this pattern yet.
-                    </div>
-                  ) : (
-                    <div className="space-y-2">
-                      {activePatternTrades.map((trade) => {
-                        const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
-                        const pnl = Number(trade.gainLoss) || 0;
-                        return (
-                          <div key={trade.id} className="bg-surface-raised rounded-control p-3 flex items-center justify-between gap-3">
-                            <div className="min-w-0">
-                              <p className="text-content-primary text-sm font-semibold truncate">
-                                {trade.ticker || 'BTC'} {trade.direction || 'long'}
-                                {trade.result && (
-                                  <span className={`ml-2 text-xs font-normal ${trade.result === 'win' ? 'text-profit' : 'text-loss'}`}>
-                                    {trade.result}
-                                  </span>
-                                )}
-                              </p>
-                              <p className="text-xs text-content-muted mt-0.5">
-                                {Number.isNaN(tradeDate.getTime())
-                                  ? 'Date unknown'
-                                  : tradeDate.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
-                              </p>
-                            </div>
-                            <span className={`text-sm font-semibold flex-shrink-0 ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                              {pnl >= 0 ? '+$' : '-$'}{Math.abs(pnl).toFixed(2)}
-                            </span>
-                          </div>
-                        );
-                      })}
-                    </div>
-                  )}
-                </div>
               </div>
             </aside>
           </div>
