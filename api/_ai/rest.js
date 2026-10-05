@@ -21,6 +21,7 @@ const COLLECTION_ALIASES = {
   journal: 'tradeJournalEntries',
   mindset: 'mindsetEntries',
   notebook: 'notebookEntries',
+  playbook: 'playbookTrades',
   deposits: 'deposits',
   alarms: 'alarms'
 };

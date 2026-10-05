@@ -1,7 +1,8 @@
-import { useState } from 'react';
-import { Pencil, Trash2, ImageDown } from 'lucide-react';
-import { doc, deleteDoc, updateDoc } from 'firebase/firestore';
+import { useEffect, useState } from 'react';
+import { Pencil, Trash2, ImageDown, BookMarked } from 'lucide-react';
+import { doc, deleteDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { PLAYBOOK_COLLECTION, addTradeToPlaybook, completedFieldCount, removeFromPlaybook } from '../utils/playbook';
 import TradeModal from './TradeModal';
 import { generatePnlImage, downloadCanvas } from '../utils/generatePnlImage';
 import { useDismissable, backdropProps } from '../hooks/useDismissable';
@@ -122,6 +123,36 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
   const [localMistakeTags, setLocalMistakeTags] = useState(trade.mistakeTags || []);
   const [savingTags, setSavingTags] = useState(false);
   const [generatingImage, setGeneratingImage] = useState(false);
+  // null until the first snapshot lands, so the checkbox never flashes unchecked
+  const [playbookEntry, setPlaybookEntry] = useState(null);
+  const [savingPlaybook, setSavingPlaybook] = useState(false);
+
+  useEffect(() => {
+    if (!trade?.id) return undefined;
+    return onSnapshot(
+      doc(db, PLAYBOOK_COLLECTION, trade.id),
+      (snap) => setPlaybookEntry(snap.exists() ? snap.data() : false),
+      (err) => console.error('Error loading playbook status:', err)
+    );
+  }, [trade?.id]);
+
+  const togglePlaybook = async () => {
+    if (playbookEntry === null || savingPlaybook) return;
+    if (playbookEntry) {
+      const hasWork = completedFieldCount(playbookEntry) > 0 || playbookEntry.grade;
+      if (hasWork && !window.confirm('Remove this trade from your Playbook? Its breakdown will be deleted.')) return;
+    }
+    setSavingPlaybook(true);
+    try {
+      if (playbookEntry) await removeFromPlaybook(trade.id);
+      else await addTradeToPlaybook(trade);
+    } catch (err) {
+      console.error('Error updating playbook:', err);
+      alert('Could not update the Playbook. Please try again.');
+    } finally {
+      setSavingPlaybook(false);
+    }
+  };
 
   const handleSharePnl = async () => {
     setGeneratingImage(true);
@@ -351,6 +382,40 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                     </button>
                   ))}
                 </div>
+              </div>
+
+              {/* PLAYBOOK */}
+              <div className={`flex items-start gap-3 rounded-lg border p-4 transition-colors ${
+                playbookEntry ? 'bg-brand/5 border-brand/25' : 'bg-surface-raised border-line-strong'
+              }`}>
+                <input
+                  id={`playbook-${trade.id}`}
+                  type="checkbox"
+                  checked={Boolean(playbookEntry)}
+                  onChange={togglePlaybook}
+                  disabled={playbookEntry === null || savingPlaybook}
+                  className="mt-0.5 h-4 w-4 cursor-pointer accent-brand disabled:cursor-wait"
+                />
+                <label htmlFor={`playbook-${trade.id}`} className="min-w-0 flex-1 cursor-pointer">
+                  <span className="flex items-center gap-1.5 text-sm font-medium text-content-primary">
+                    <BookMarked size={14} className="text-brand" />
+                    Add to Playbook
+                  </span>
+                  <span className="mt-0.5 block text-xs text-content-muted">
+                    {playbookEntry
+                      ? `In your Playbook — ${completedFieldCount(playbookEntry)} variables broken down.`
+                      : 'Break this trade down at the close so you can trade it again.'}
+                  </span>
+                </label>
+                {playbookEntry && (
+                  <a
+                    href="#playbook"
+                    onClick={onClose}
+                    className="flex-shrink-0 text-xs font-medium text-brand hover:text-brand-hover"
+                  >
+                    Open
+                  </a>
+                )}
               </div>
 
               {/* 6. TRADE DETAILS */}

@@ -117,7 +117,7 @@ test('manifest lists endpoints and conventions', async () => {
 
 test('collections report real counts', async () => {
   const { collections } = await get('v1/collections');
-  assert.equal(collections.length, 10);
+  assert.equal(collections.length, 11);
   assert.equal(collections.find((c) => c.name === 'trades').recordCount, 5);
   assert.equal(collections.find((c) => c.name === 'strategies').recordCount, 3);
 });
@@ -224,6 +224,7 @@ test('aliases reach the underlying collections', async () => {
   assert.equal((await get('v1/journal')).collection, 'tradeJournalEntries');
   assert.equal((await get('v1/mindset')).collection, 'mindsetEntries');
   assert.equal((await get('v1/notebook')).collection, 'notebookEntries');
+  assert.equal((await get('v1/playbook')).collection, 'playbookTrades');
   assert.equal((await get('v1/deposits')).collection, 'deposits');
   assert.equal((await get('v1/alarms')).collection, 'alarms');
 });
@@ -408,7 +409,7 @@ test('MCP notifications get 202 and no body', async () => {
 
 test('MCP resources list and read', async () => {
   const list = await rpc({ jsonrpc: '2.0', id: 9, method: 'resources/list' });
-  assert.equal(list.body.result.resources.length, 10);
+  assert.equal(list.body.result.resources.length, 11);
 
   const read = await rpc({ jsonrpc: '2.0', id: 10, method: 'resources/read', params: { uri: 'tradetracker://trades' } });
   const payload = JSON.parse(read.body.result.contents[0].text);

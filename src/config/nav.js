@@ -7,6 +7,7 @@ import {
   Lightbulb,
   FileText,
   BookOpen,
+  BookMarked,
   StickyNote,
   Newspaper,
   Eye,
@@ -31,6 +32,7 @@ export const NAV_GROUPS = [
     items: [
       { id: 'patterns', label: 'Chart Patterns', icon: Target, key: 'p', title: 'Chart Patterns', description: 'Your pattern library and how each one performs' },
       { id: 'strategies', label: 'Strategies', icon: Lightbulb, key: 's', title: 'Strategies', description: 'Documented setups and their rules' },
+      { id: 'playbook', label: 'Playbook', icon: BookMarked, key: 'b', title: 'Playbook', description: 'Your best trades, broken down. Only trade what is in here' },
       { id: 'journal', label: 'Trade Journal', icon: FileText, key: 'j', title: 'Trade Journal', description: 'Every trade, annotated' },
     ],
   },

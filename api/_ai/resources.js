@@ -114,6 +114,7 @@ export function getManifest(ctx) {
       { method: 'GET', path: '/api/ai/v1/patterns', purpose: 'Chart patterns with per-pattern performance rollups' },
       { method: 'GET', path: '/api/ai/v1/journal', purpose: 'Written post-trade reviews' },
       { method: 'GET', path: '/api/ai/v1/mindset', purpose: 'Mindset and psychology logs' },
+      { method: 'GET', path: '/api/ai/v1/playbook', purpose: 'Playbook trades broken down into the PlayBook template' },
       { method: 'GET', path: '/api/ai/v1/notebook', purpose: 'Notes, playbooks and recurring mistakes' },
       { method: 'GET', path: '/api/ai/v1/deposits', purpose: 'Funding history' },
       { method: 'GET', path: '/api/ai/v1/alarms', purpose: 'Session reminders' },

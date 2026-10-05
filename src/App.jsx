@@ -21,6 +21,7 @@ const TradingMindset = lazy(() => import('./pages/TradingMindset'));
 const TradeJournal = lazy(() => import('./pages/TradeJournal'));
 const Notebook = lazy(() => import('./pages/Notebook'));
 const Strategies = lazy(() => import('./pages/Strategies'));
+const Playbook = lazy(() => import('./pages/Playbook'));
 const Settings = lazy(() => import('./pages/Settings'));
 const WhaleTracker = lazy(() => import('./pages/WhaleTracker'));
 const MorningBrief = lazy(() => import('./pages/MorningBrief'));
@@ -107,6 +108,8 @@ function App() {
         return <ChartPatterns />;
       case 'strategies':
         return <Strategies />;
+      case 'playbook':
+        return <Playbook />;
       case 'journal':
         return <TradeJournal />;
       case 'notebook':

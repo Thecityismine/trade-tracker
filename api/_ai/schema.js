@@ -205,6 +205,41 @@ const chartPattern = (doc, ctx) =>
     summary: preview(doc.summary || doc.description)
   });
 
+const playbookTrade = (doc, ctx) => {
+  const snapshot = doc.trade || {};
+  const ticker = text(snapshot.ticker) || text(doc.ticker) || 'BTC';
+  const direction = text(snapshot.direction) || text(doc.direction) || 'long';
+  const spotted = doc.source === 'spotted';
+
+  return compact({
+    ...envelope(doc, ctx),
+    title: `${text(doc.setupName) || 'Unnamed setup'} — ${ticker} ${direction}${spotted ? ' (spotted)' : ''}`,
+    status: doc.grade ? `graded_${doc.grade}` : 'recorded',
+    occurredAt: toIso(snapshot.tradeDate || doc.tradeDate),
+    createdAt: toIso(doc.createdAt),
+    updatedAt: toIso(doc.updatedAt),
+    source: spotted ? 'spotted' : 'my_trade',
+    setupName: text(doc.setupName),
+    grade: text(doc.grade),
+    ticker,
+    direction,
+    realizedPnlUsd: spotted ? null : num(snapshot.gainLoss),
+    bigPicture: text(doc.bigPicture),
+    catalyst: text(doc.catalyst),
+    technicals: text(doc.technicals),
+    tape: text(doc.tape),
+    intuition: text(doc.intuition),
+    entry: text(doc.entry),
+    risk: text(doc.risk),
+    exits: text(doc.exits),
+    improve: text(doc.improve),
+    rules: text(doc.rules),
+    imageUrl: text(doc.imageUrl),
+    related: compact({ tradeId: text(doc.tradeId) }),
+    summary: preview(doc.rules || doc.technicals || doc.bigPicture)
+  });
+};
+
 const alarm = (doc, ctx) =>
   compact({
     ...envelope(doc, ctx),
@@ -311,6 +346,15 @@ export const COLLECTIONS = {
     dateField: 'createdAt',
     searchFields: ['title', 'content', 'category', 'mistakeType', 'tags'],
     map: notebookEntry
+  },
+  playbookTrades: {
+    recordType: 'playbook_trade',
+    page: 'playbook',
+    describes:
+      'The PlayBook: the best trades (taken or only spotted) deconstructed into big picture, catalyst, technicals, tape, intuition, entry, risk, exits and rules for next time. Only setups in here should be traded.',
+    dateField: 'createdAt',
+    searchFields: ['setupName', 'grade', 'bigPicture', 'catalyst', 'technicals', 'tape', 'intuition', 'entry', 'risk', 'exits', 'improve', 'rules'],
+    map: playbookTrade
   },
   chartPatterns: {
     recordType: 'chart_pattern',
