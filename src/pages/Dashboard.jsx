@@ -327,20 +327,6 @@ function Dashboard({ onNavigate }) {
     return { goalAmt, balance, progress, remaining: Math.max(0, goalAmt - balance) };
   })();
 
-  const riskStatus = (() => {
-    const r = parseFloat(appSettings.maxRiskPercent);
-    if (!r || r <= 0 || trades.length === 0) return null;
-    const now = new Date();
-    const thirtyDaysAgo = new Date(now.getFullYear(), now.getMonth(), now.getDate() - 30);
-    const violations = trades.filter(t => {
-      const d = getTradeDate(t);
-      return t.result === 'loss' && Math.abs(t.pnlPercent || 0) > r && d >= thirtyDaysAgo;
-    }).length;
-    if (violations === 0) return { level: 'green', label: '🟢 Within Rules', violations };
-    if (violations <= 3) return { level: 'yellow', label: '🟡 Warning', violations };
-    return { level: 'red', label: '🔴 System Violation', violations };
-  })();
-
   const todaysFocus = (() => {
     if (trades.length === 0) return null;
     const r = parseFloat(appSettings.maxRiskPercent);
@@ -428,26 +414,6 @@ function Dashboard({ onNavigate }) {
       {/* Open positions — live trades, deliberately above the stats they are
           excluded from. */}
       <OpenPositions trades={openTrades} onClose={setClosingTrade} />
-
-      {/* Risk Status Badge */}
-      {riskStatus && (
-        <div className={`rounded-xl px-4 py-3 flex items-center justify-between border ${
-          riskStatus.level === 'green' ? 'bg-profit/10 border-profit/15' :
-          riskStatus.level === 'yellow' ? 'bg-warn/10 border-warn/15' :
-          'bg-loss/10 border-loss/15'
-        }`}>
-          <span className={`font-bold text-sm ${
-            riskStatus.level === 'green' ? 'text-profit' :
-            riskStatus.level === 'yellow' ? 'text-warn' : 'text-loss'
-          }`}>{riskStatus.label}</span>
-          {riskStatus.level === 'red' && (
-            <span className="text-loss/80 text-xs">Reduce size immediately</span>
-          )}
-          {riskStatus.level === 'yellow' && (
-            <span className="text-warn/80 text-xs">{riskStatus.violations} breach{riskStatus.violations !== 1 ? 'es' : ''}</span>
-          )}
-        </div>
-      )}
 
       {/* Today's Focus */}
       {todaysFocus && (
