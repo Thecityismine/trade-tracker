@@ -1,6 +1,6 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth } from 'firebase/auth';
-import { getFirestore } from 'firebase/firestore';
+import { initializeFirestore, persistentLocalCache, persistentMultipleTabManager } from 'firebase/firestore';
 import { getStorage } from 'firebase/storage';
 
 // TODO: Replace with your Firebase config
@@ -17,7 +17,13 @@ const firebaseConfig = {
 const app = initializeApp(firebaseConfig);
 
 // Initialize services
-export const db = getFirestore(app);
+// Keep a copy of the data on the device (IndexedDB). Listeners then answer
+// from that copy immediately and sync with the server in the background,
+// instead of every page opening empty until the network round-trip finishes.
+// Falls back to an in-memory cache where IndexedDB isn't available.
+export const db = initializeFirestore(app, {
+  localCache: persistentLocalCache({ tabManager: persistentMultipleTabManager() })
+});
 export const storage = getStorage(app);
 export const auth = getAuth(app);
 
