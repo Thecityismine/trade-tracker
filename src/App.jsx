@@ -5,6 +5,7 @@ import { TradesProvider } from './context/TradesContext';
 import { useHashRoute } from './hooks/useHashRoute';
 import { useNavShortcuts } from './hooks/useNavShortcuts';
 import { playSound } from './utils/alarmSounds';
+import { getStoredDeviceId } from './utils/alarmPush';
 import { NAV_IDS, NAV_ITEMS, getNavItem } from './config/nav';
 import Sidebar from './components/Sidebar';
 import TopBar from './components/TopBar';
@@ -78,7 +79,8 @@ function App() {
         playSound(alarm.sound);
         setRinging(alarm.id);
         setTimeout(() => setRinging(r => r === alarm.id ? null : r), 5000);
-        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
+        // A device registered for push already gets the server's notification.
+        if (typeof Notification !== 'undefined' && Notification.permission === 'granted' && !getStoredDeviceId()) {
           new Notification(alarm.label || 'Alarm', { body: hhmm });
         }
       });

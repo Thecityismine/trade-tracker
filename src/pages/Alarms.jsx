@@ -7,6 +7,10 @@ import Page from '../components/ui/Page';
 import Button, { Chip } from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
 import { Card, Panel } from '../components/ui/Surface';
+import { useToast } from '../components/ui/Toast';
+import {
+  getStoredDeviceId, isIOS, isStandalone, pushConfigured, pushSupported, registerAlarmDevice, sendTestAlarm
+} from '../utils/alarmPush';
 
 const notificationsSupported = typeof Notification !== 'undefined';
 
@@ -17,6 +21,40 @@ function formatTime12(time24) {
   const ampm = h >= 12 ? 'PM' : 'AM';
   const h12 = h % 12 || 12;
   return `${h12}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+/** Turns on push so alarms reach this device while the app is closed. */
+function PushCard({ permission, registered, busy, onEnable, onTest }) {
+  let message;
+  let action = null;
+
+  if (registered) {
+    message = 'Notifications are on for this device. Alarms pop up with your phone\'s notification sound, even when the app is closed.';
+    action = <Button size="sm" variant="secondary" onClick={onTest} disabled={busy}>{busy ? 'Sending…' : 'Send test'}</Button>;
+  } else if (isIOS() && !isStandalone()) {
+    message = 'To get alarms on your iPhone when the app is closed, tap Share → Add to Home Screen, then open Trade Tracker from your Home Screen and turn notifications on here.';
+  } else if (!pushSupported()) {
+    message = 'This browser can\'t get notifications when the app is closed. Alarms will only sound while it is open.';
+  } else if (!pushConfigured()) {
+    message = 'Background notifications aren\'t set up yet (missing VITE_FIREBASE_VAPID_KEY). Alarms will only sound while the app is open.';
+  } else if (permission === 'denied') {
+    message = isIOS()
+      ? 'Notifications are blocked. Turn them on in iPhone Settings → Notifications → Trade Tracker.'
+      : 'Notifications are blocked. Turn them on in your browser\'s site settings.';
+  } else {
+    message = 'Turn on notifications so alarms pop up with sound even when the app is closed or your phone is locked.';
+    action = <Button size="sm" onClick={onEnable} disabled={busy}>{busy ? 'Turning on…' : 'Turn on'}</Button>;
+  }
+
+  return (
+    <div className="bg-surface rounded-card p-4 flex items-center justify-between gap-3 shadow-elev-1">
+      <div className="flex items-center gap-2 text-sm text-content-secondary">
+        <BellRing size={16} className={`shrink-0 ${registered ? 'text-profit' : 'text-brand'}`} />
+        {message}
+      </div>
+      {action && <div className="shrink-0">{action}</div>}
+    </div>
+  );
 }
 
 // alarms + ringing come from App.jsx so the ticker runs on every tab
@@ -34,12 +72,42 @@ function Alarms({ alarms = [], ringing }) {
   const [notifPermission, setNotifPermission] = useState(
     notificationsSupported ? Notification.permission : 'unsupported'
   );
+  const [deviceId, setDeviceId] = useState(() => getStoredDeviceId());
+  const [pushBusy, setPushBusy] = useState(false);
+  const toast = useToast();
 
-  const requestNotifPermission = async () => {
-    if (!notificationsSupported) return;
-    const result = await Notification.requestPermission();
-    setNotifPermission(result);
+  const enablePush = async () => {
+    setPushBusy(true);
+    try {
+      setDeviceId(await registerAlarmDevice());
+      toast.success('This device will get alarm notifications.');
+    } catch (err) {
+      console.error('Alarm push registration failed:', err);
+      toast.error(err.message || 'Could not turn on notifications.');
+    } finally {
+      if (notificationsSupported) setNotifPermission(Notification.permission);
+      setPushBusy(false);
+    }
   };
+
+  const testPush = async () => {
+    setPushBusy(true);
+    try {
+      await sendTestAlarm(deviceId);
+      toast.success('Test sent — it should pop up in a few seconds.');
+    } catch (err) {
+      toast.error(err.message);
+    } finally {
+      setPushBusy(false);
+    }
+  };
+
+  // Push tokens rotate; re-saving on each visit keeps the server's copy (and
+  // this device's time zone) current. Permission is already granted, so no prompt.
+  useEffect(() => {
+    if (!deviceId || !pushConfigured() || !pushSupported() || Notification.permission !== 'granted') return;
+    registerAlarmDevice().then(setDeviceId).catch((err) => console.error('Alarm push refresh failed:', err));
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     const tick = () => setCurrentTime(
@@ -107,24 +175,13 @@ function Alarms({ alarms = [], ringing }) {
     <Page
       toolbar={<span className="tabular text-sm text-content-secondary">{currentTime}</span>}
     >
-      {notificationsSupported && notifPermission !== 'granted' && (
-        <div className="bg-surface rounded-card p-4 flex items-center justify-between gap-3 shadow-elev-1">
-          <div className="flex items-center gap-2 text-sm text-content-secondary">
-            <BellRing size={16} className="text-brand shrink-0" />
-            {notifPermission === 'denied'
-              ? 'System notifications are blocked — enable them in your browser settings to get alerts when this tab is in the background.'
-              : 'Enable system notifications to still catch alarms when this tab is backgrounded.'}
-          </div>
-          {notifPermission !== 'denied' && (
-            <button
-              onClick={requestNotifPermission}
-              className="shrink-0 px-3 py-1.5 bg-brand hover:bg-brand-hover text-content-primary rounded-lg text-xs font-medium transition-colors"
-            >
-              Enable
-            </button>
-          )}
-        </div>
-      )}
+      <PushCard
+        permission={notifPermission}
+        registered={Boolean(deviceId) && notifPermission === 'granted'}
+        busy={pushBusy}
+        onEnable={enablePush}
+        onTest={testPush}
+      />
 
       <div className="grid gap-6 lg:grid-cols-[minmax(0,400px)_minmax(0,1fr)] lg:items-start">
       <div className="space-y-6">
@@ -133,16 +190,16 @@ function Alarms({ alarms = [], ringing }) {
         <h3 className="mb-4 font-semibold text-content-primary">Add Alarm</h3>
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-3">
-            <div>
+            <div className="min-w-0">
               <label className="text-content-secondary text-xs block mb-1">Time</label>
               <input
                 type="time"
                 value={form.time}
                 onChange={e => setForm(f => ({ ...f, time: e.target.value }))}
-                className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
+                className="block h-[42px] w-full min-w-0 appearance-none bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
               />
             </div>
-            <div>
+            <div className="min-w-0">
               <label className="text-content-secondary text-xs block mb-1">Label</label>
               <input
                 type="text"
@@ -268,7 +325,7 @@ function Alarms({ alarms = [], ringing }) {
                           type="time"
                           value={editForm.time}
                           onChange={e => setEditForm(f => ({ ...f, time: e.target.value }))}
-                          className="w-full bg-surface border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
+                          className="block h-[42px] w-full min-w-0 appearance-none bg-surface border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
                         />
                       </div>
                       <div>
@@ -403,7 +460,7 @@ function Alarms({ alarms = [], ringing }) {
       </div>
 
       <p className="pb-2 text-center text-xs text-content-muted">
-        Alarms fire as long as this app is open in any tab — no need to be on the Alarms page.
+        While the app is open, alarms play the sound you picked. When it's closed, devices with notifications on get a pop-up with the phone's notification sound.
       </p>
     </Page>
   );

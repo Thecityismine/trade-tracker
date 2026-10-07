@@ -34,23 +34,29 @@ function readCredentials() {
 /**
  * Reuses the app across warm invocations — initializeApp throws if called twice
  * with the same name, and a cold init on every request would burn ~200ms.
+ * Also used for Cloud Messaging by the alarm sender.
  */
-export function adminDb() {
+export function adminApp() {
   const existing = getApps().find((app) => app.name === APP_NAME);
-  if (existing) {
-    return getFirestore(existing);
-  }
+  if (existing) return existing;
 
   const credentials = readCredentials();
-  const app = initializeApp(
+  return initializeApp(
     { credential: cert(credentials), projectId: credentials.projectId },
     APP_NAME
   );
+}
 
-  const db = getFirestore(app);
+let configuredDb = null;
+
+export function adminDb() {
+  if (configuredDb) return configuredDb;
+
+  const db = getFirestore(adminApp());
   // Without this, every date field comes back as a Timestamp instance that
   // JSON.stringify flattens to {_seconds, _nanoseconds} — unreadable to a model.
   db.settings({ ignoreUndefinedProperties: true });
+  configuredDb = db;
   return db;
 }
 
