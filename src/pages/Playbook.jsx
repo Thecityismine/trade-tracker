@@ -142,13 +142,16 @@ function Playbook() {
 
   return (
     <Page
+      actionsClassName="w-full flex-nowrap sm:w-auto sm:flex-shrink-0"
       actions={
         <>
-          <Button variant="secondary" icon={Eye} onClick={() => setEditing({ isNew: true })}>
-            Add Spotted Trade
+          <Button variant="secondary" icon={Eye} onClick={() => setEditing({ isNew: true })} className="min-w-0 flex-1 sm:flex-none">
+            <span className="sm:hidden">Spotted Trade</span>
+            <span className="hidden sm:inline">Add Spotted Trade</span>
           </Button>
-          <Button icon={Plus} onClick={() => setPickerOpen(true)}>
-            Add From My Trades
+          <Button icon={Plus} onClick={() => setPickerOpen(true)} className="min-w-0 flex-1 sm:flex-none">
+            <span className="sm:hidden">From My Trades</span>
+            <span className="hidden sm:inline">Add From My Trades</span>
           </Button>
         </>
       }

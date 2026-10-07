@@ -7,13 +7,13 @@
  * the vertical rhythm and the toolbar/actions row that sits above the content.
  * Max width and gutters come from <main> in App.jsx.
  */
-function Page({ toolbar, actions, children, className = '' }) {
+function Page({ toolbar, actions, actionsClassName = 'flex-shrink-0', children, className = '' }) {
   return (
     <div className={`space-y-6 ${className}`}>
       {(toolbar || actions) && (
         <div className="flex flex-wrap items-center justify-between gap-3">
           <div className="flex min-w-0 flex-wrap items-center gap-2">{toolbar}</div>
-          <div className="flex flex-shrink-0 flex-wrap items-center gap-2">{actions}</div>
+          <div className={`flex flex-wrap items-center gap-2 ${actionsClassName}`}>{actions}</div>
         </div>
       )}
       {children}
