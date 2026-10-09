@@ -37,7 +37,9 @@ function Settings() {
   const [form, setForm] = useState({
     amount: '',
     type: 'deposit',
-    date: new Date().toISOString().split('T')[0],
+    // Local calendar date. toISOString() is UTC, which defaulted to tomorrow
+    // in the evening for anyone west of Greenwich.
+    date: new Date().toLocaleDateString('en-CA'),
     note: ''
   });
   const [saving, setSaving] = useState(false);

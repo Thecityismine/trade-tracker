@@ -57,6 +57,18 @@ const toNumber = (value) => {
   return Number.isFinite(parsed) ? parsed : 0;
 };
 
+// Sign before the dollar sign: -$12.00, never $-12.00. Rounded first so a
+// value that displays as 0.00 doesn't pick up a stray minus.
+const usd = (value) => {
+  const rounded = Math.round(toNumber(value) * 100) / 100;
+  return `${rounded < 0 ? '-' : ''}$${Math.abs(rounded).toFixed(2)}`;
+};
+
+const signedUsd = (value) => {
+  const rounded = Math.round(toNumber(value) * 100) / 100;
+  return `${rounded < 0 ? '-' : '+'}$${Math.abs(rounded).toFixed(2)}`;
+};
+
 const getTradeDate = (trade) => trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
 
 // Midnight local time on the Monday of the trade's week. Keeping the trade's
@@ -395,7 +407,7 @@ function Analytics() {
     if (active.length === 0) return null;
     const best = active.reduce((a, b) => a.totalPnl >= b.totalPnl ? a : b);
     if (best.totalPnl <= 0) return `No profitable session yet — keep building your history.`;
-    return `You perform best in the ${best.name.toLowerCase()} (+$${best.totalPnl.toFixed(2)} total P&L).`;
+    return `You perform best in the ${best.name.toLowerCase()} (${signedUsd(best.totalPnl)} total P&L).`;
   }, [timeOfDayStats]);
 
   const avgWinLossInsight = useMemo(() => {
@@ -413,7 +425,7 @@ function Analytics() {
     const best = [...monthlyComparison].reduce((a, b) => a.totalPnl >= b.totalPnl ? a : b);
     const totalPnl = monthlyComparison.reduce((sum, m) => sum + m.totalPnl, 0);
     const trend = totalPnl >= 0 ? 'Overall trend is positive.' : 'Focus on consistency to improve the trend.';
-    return `Best month: ${best.label} (+$${best.totalPnl.toFixed(2)}). ${trend}`;
+    return `Best month: ${best.label} (${signedUsd(best.totalPnl)}). ${trend}`;
   }, [monthlyComparison]);
 
   const patternPerformance = useMemo(() => {
@@ -454,8 +466,8 @@ function Analytics() {
     if (days.length >= 2) {
       const best = days.reduce((a, b) => a.pnl >= b.pnl ? a : b);
       const worst = days.reduce((a, b) => a.pnl <= b.pnl ? a : b);
-      if (best.pnl > 0) insights.push({ type: 'positive', text: `${best.name} is your best trading day (+$${best.pnl.toFixed(2)} total, ${best.wins}W / ${best.losses}L).` });
-      if (worst.pnl < 0 && worst.day !== best.day) insights.push({ type: 'warning', text: `${worst.name} is your worst day ($${worst.pnl.toFixed(2)} total) — consider smaller size on ${worst.name}.` });
+      if (best.pnl > 0) insights.push({ type: 'positive', text: `${best.name} is your best trading day (${signedUsd(best.pnl)} total, ${best.wins}W / ${best.losses}L).` });
+      if (worst.pnl < 0 && worst.day !== best.day) insights.push({ type: 'warning', text: `${worst.name} is your worst day (${usd(worst.pnl)} total) — consider smaller size on ${worst.name}.` });
     }
 
     const sorted = [...completedTrades].sort((a, b) => a.parsedTradeDate - b.parsedTradeDate);
@@ -606,7 +618,7 @@ function Analytics() {
                     <p className="text-content-primary font-medium">{item.direction}</p>
                     <p className="text-content-secondary text-sm">{item.wins}W / {item.losses}L</p>
                     <p className={`text-sm mt-1 ${item.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                      ${item.totalPnl.toFixed(2)} total
+                      {usd(item.totalPnl)} total
                     </p>
                   </div>
                 ))}
@@ -631,7 +643,7 @@ function Analytics() {
                     <Tooltip
                       {...tooltipProps}
                       formatter={(value, name) => {
-                        if (name === 'totalPnl') return [`$${Number(value).toFixed(2)}`, 'Total P&L'];
+                        if (name === 'totalPnl') return [usd(value), 'Total P&L'];
                         if (name === 'trades') return [value, 'Trades'];
                         return [value, name];
                       }}
@@ -654,7 +666,7 @@ function Analytics() {
                     <p className="text-content-primary text-sm font-medium">{item.name}</p>
                     <p className="text-content-secondary text-xs">{item.trades} trades</p>
                     <p className={`text-sm mt-1 ${item.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                      ${item.totalPnl.toFixed(2)} total
+                      {usd(item.totalPnl)} total
                     </p>
                   </div>
                 ))}
@@ -761,7 +773,7 @@ function Analytics() {
                           {p.winRate.toFixed(1)}%
                         </td>
                         <td className={`text-right py-2 pl-2 font-bold ${p.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                          {p.totalPnl >= 0 ? '+' : ''}${p.totalPnl.toFixed(2)}
+                          {signedUsd(p.totalPnl)}
                         </td>
                       </tr>
                     ))}
@@ -807,7 +819,7 @@ function Analytics() {
                     <Tooltip
                       {...tooltipProps}
                       formatter={(value, name) => {
-                        if (name === 'totalPnl') return [`$${Number(value).toFixed(2)}`, 'Total P&L'];
+                        if (name === 'totalPnl') return [usd(value), 'Total P&L'];
                         if (name === 'winRate') return [`${Number(value).toFixed(2)}%`, 'Win Rate'];
                         return [value, name];
                       }}
@@ -840,7 +852,7 @@ function Analytics() {
                   <div className="bg-surface-raised rounded-control p-4">
                     <p className="text-xs text-content-secondary">Best Week</p>
                     <p className="text-content-primary font-medium mt-1">{bestWorstWeeks.bestWeek.label}</p>
-                    <p className="text-profit text-xl font-bold mt-1">${bestWorstWeeks.bestWeek.totalPnl.toFixed(2)}</p>
+                    <p className={`text-xl font-bold mt-1 ${bestWorstWeeks.bestWeek.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>{usd(bestWorstWeeks.bestWeek.totalPnl)}</p>
                     <p className="text-xs text-content-muted mt-1">{bestWorstWeeks.bestWeek.trades} trades · {bestWorstWeeks.bestWeek.wins}W / {bestWorstWeeks.bestWeek.losses}L</p>
                     <p className="text-xs text-profit/70 mt-2 italic">
                       {bestWorstWeeks.bestWeek.trades >= 8 ? 'High-volume week — consistency drove results.' : `${bestWorstWeeks.bestWeek.trades} selective trades → quality over quantity.`}
@@ -850,7 +862,7 @@ function Analytics() {
                   <div className="bg-surface-raised rounded-control p-4">
                     <p className="text-xs text-content-secondary">Worst Week</p>
                     <p className="text-content-primary font-medium mt-1">{bestWorstWeeks.worstWeek.label}</p>
-                    <p className="text-loss text-xl font-bold mt-1">${bestWorstWeeks.worstWeek.totalPnl.toFixed(2)}</p>
+                    <p className={`text-xl font-bold mt-1 ${bestWorstWeeks.worstWeek.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>{usd(bestWorstWeeks.worstWeek.totalPnl)}</p>
                     <p className="text-xs text-content-muted mt-1">{bestWorstWeeks.worstWeek.trades} trades · {bestWorstWeeks.worstWeek.wins}W / {bestWorstWeeks.worstWeek.losses}L</p>
                     <p className="text-xs text-loss/70 mt-2 italic">
                       {bestWorstWeeks.worstWeek.trades <= 3 ? 'Low trade count — likely forced or low-quality entries.' : 'High-frequency losing week — reduce size and slow down.'}
