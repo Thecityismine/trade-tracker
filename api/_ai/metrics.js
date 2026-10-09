@@ -129,33 +129,46 @@ function currentStreak(closedTrades) {
 }
 
 /**
- * Peak-to-trough on the realized equity curve. Funding events move the balance
- * without counting as drawdown — a withdrawal is not a losing trade.
+ * Peak-to-trough, with funding kept out of it in both directions.
+ *
+ * The percentage is the drawdown of a time-weighted return index — each trade
+ * compounds its return on the balance actually at risk, and deposits or
+ * withdrawals move the balance without touching the index. This is the same
+ * model the app's Dashboard and Analytics pages use (src/utils/accountMath.js),
+ * so all three report one number.
+ *
+ * The dollar figures run on the real balance. A withdrawal lowers the peak by
+ * the same amount, so taking money out never reads as a loss; a deposit only
+ * raises the peak if it lifts the balance past it. The peak is therefore the
+ * high-water mark less any withdrawals made since.
  */
 function drawdown(closedTrades, deposits) {
+  // Funding sorts ahead of a trade at the same instant, matching the app.
   const events = [
     ...deposits.map((d) => ({ at: time(d.occurredAt), delta: d.signedAmountUsd || 0, funding: true })),
     ...closedTrades.map((t) => ({ at: time(t.occurredAt), delta: t.realizedPnlUsd || 0, funding: false }))
-  ].sort((a, b) => a.at - b.at);
+  ].sort((a, b) => (a.at - b.at) || (Number(b.funding) - Number(a.funding)));
 
   let balance = 0;
   let peak = 0;
+  let index = 1;
+  let peakIndex = 1;
   let maxDrawdownUsd = 0;
   let maxDrawdownPercent = 0;
 
   events.forEach((event) => {
-    balance += event.delta;
     if (event.funding) {
-      // Funding raises the high-water mark rather than counting as recovery.
-      peak = Math.max(peak, balance);
+      balance += event.delta;
+      peak = event.delta < 0 ? peak + event.delta : Math.max(peak, balance);
       return;
     }
+    // Clamp at 0 so a loss larger than the balance cannot flip the index sign.
+    if (balance > 0) index *= Math.max(0, 1 + event.delta / balance);
+    balance += event.delta;
     peak = Math.max(peak, balance);
-    const gap = peak - balance;
-    if (gap > maxDrawdownUsd) {
-      maxDrawdownUsd = gap;
-      maxDrawdownPercent = peak > 0 ? (gap / peak) * 100 : 0;
-    }
+    peakIndex = Math.max(peakIndex, index);
+    maxDrawdownUsd = Math.max(maxDrawdownUsd, peak - balance);
+    if (peakIndex > 0) maxDrawdownPercent = Math.max(maxDrawdownPercent, ((peakIndex - index) / peakIndex) * 100);
   });
 
   return {

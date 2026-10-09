@@ -19,6 +19,7 @@ import {
   YAxis
 } from 'recharts';
 import { db } from '../config/firebase';
+import { buildReturnIndex, maxDrawdownPercent } from '../utils/accountMath';
 
 const COLORS = {
   positive: '#22c55e',
@@ -356,36 +357,11 @@ function Analytics() {
     };
   }, [weeklyPerformance]);
 
+  // Same return-index drawdown as the Dashboard, so the two pages agree and
+  // deposits or withdrawals never register as a gain or a loss.
   const maxDrawdown = useMemo(() => {
     if (deposits.length === 0 || completedTrades.length === 0) return 0;
-    // Funding is applied on the timeline, as in EquityCurve. Seeding the
-    // balance with every deposit ever made inflated the early peak and
-    // understated the drop. Each funding event moves the peak by the same
-    // amount, so a withdrawal is not counted as a trading loss and a deposit
-    // does not create a new high.
-    const funding = deposits
-      .map((d) => ({
-        date: d.date?.toDate?.() || new Date(d.date),
-        delta: d.type === 'deposit' ? toNumber(d.amount) : -toNumber(d.amount)
-      }))
-      .filter((f) => !Number.isNaN(f.date.getTime()))
-      .sort((a, b) => a.date - b.date);
-    const sorted = [...completedTrades].sort((a, b) => a.parsedTradeDate - b.parsedTradeDate);
-    let peak = 0;
-    let balance = 0;
-    let maxDD = 0;
-    let nextFunding = 0;
-    for (const t of sorted) {
-      while (nextFunding < funding.length && funding[nextFunding].date <= t.parsedTradeDate) {
-        balance += funding[nextFunding].delta;
-        peak += funding[nextFunding].delta;
-        nextFunding++;
-      }
-      balance += toNumber(t.gainLoss);
-      if (balance > peak) peak = balance;
-      if (peak > 0) maxDD = Math.max(maxDD, ((peak - balance) / peak) * 100);
-    }
-    return maxDD;
+    return maxDrawdownPercent(buildReturnIndex(completedTrades, deposits));
   }, [completedTrades, deposits]);
 
   const tradeFrequency = useMemo(() => {

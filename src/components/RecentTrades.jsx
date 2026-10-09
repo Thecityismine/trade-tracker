@@ -1,11 +1,11 @@
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import { ImageIcon, BarChart2, Plus } from 'lucide-react';
 import TradeDetailsModal from './TradeDetailsModal';
 import Select from './ui/Select';
+import { useTrades } from '../context/TradesContext';
+import { balancesBeforeTrades, isOverRisk as exceedsRiskLimit } from '../utils/accountMath';
 
-function getExecutionTag(trade, maxRiskPercent) {
-  const isOverRisk = maxRiskPercent > 0 && trade.result === 'loss' &&
-    Math.abs(trade.pnlPercent || 0) > maxRiskPercent;
+function getExecutionTag(trade, isOverRisk) {
   const mistakeTags = trade.mistakeTags || [];
   const score = trade.executionScore || 0;
 
@@ -37,6 +37,10 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
   const [filterPeriod, setFilterPeriod] = useState('today');
   const [filterResult, setFilterResult] = useState('all');
   const [selectedTrade, setSelectedTrade] = useState(null);
+  // Risk is judged against the account balance before each trade, so it needs
+  // the full history and funding, not just the filtered rows shown here.
+  const { trades: allTrades, deposits } = useTrades();
+  const balanceMap = useMemo(() => balancesBeforeTrades(allTrades, deposits), [allTrades, deposits]);
 
   const getTradeDate = (trade) => trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
   const getCreatedTime = (trade) => {
@@ -138,9 +142,8 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
               {sortedTrades.length > 0 ? (
                 sortedTrades.map((trade) => {
                   const tradeDate = getTradeDate(trade);
-                  const isOverRisk = maxRiskPercent > 0 && trade.result === 'loss' &&
-                    Math.abs(trade.pnlPercent || 0) > maxRiskPercent;
-                  const executionTag = getExecutionTag(trade, maxRiskPercent);
+                  const isOverRisk = exceedsRiskLimit(trade, maxRiskPercent, balanceMap);
+                  const executionTag = getExecutionTag(trade, isOverRisk);
                   const absGain = Math.abs(trade.gainLoss || 0).toFixed(2);
                   const gainPrefix = trade.gainLoss >= 0 ? '+$' : '-$';
 
@@ -235,9 +238,8 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
           {sortedTrades.length > 0 ? (
             sortedTrades.map((trade) => {
               const tradeDate = getTradeDate(trade);
-              const isOverRisk = maxRiskPercent > 0 && trade.result === 'loss' &&
-                Math.abs(trade.pnlPercent || 0) > maxRiskPercent;
-              const executionTag = getExecutionTag(trade, maxRiskPercent);
+              const isOverRisk = exceedsRiskLimit(trade, maxRiskPercent, balanceMap);
+              const executionTag = getExecutionTag(trade, isOverRisk);
               const absGain = Math.abs(trade.gainLoss || 0).toFixed(2);
               const gainPrefix = trade.gainLoss >= 0 ? '+$' : '-$';
 

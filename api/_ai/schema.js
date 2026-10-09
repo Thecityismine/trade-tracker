@@ -46,6 +46,8 @@ const trade = (doc, ctx) => {
     createdAt: toIso(doc.createdAt),
     updatedAt: toIso(doc.updatedAt),
     closedAt: toIso(doc.closedAt),
+    // Only on positions opened before they were closed; occurredAt is the exit.
+    entryDate: toIso(doc.entryDate),
 
     ticker,
     direction,

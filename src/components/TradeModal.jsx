@@ -81,7 +81,11 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   const [removeExistingChart, setRemoveExistingChart] = useState(false);
   const [lastTicker, setLastTicker] = useState('BTC');
   const [loading, setLoading] = useState(false);
-  const [calculatedPnl, setCalculatedPnl] = useState(0);
+  // Closing a position records when it was exited. The entry date stays on
+  // the trade as entryDate; tradeDate becomes the exit, so the P&L lands on
+  // the day it was realized.
+  const isClosingOpenPosition = editTrade?.status === 'open' && !isOpenPosition;
+  const [exitDate, setExitDate] = useState(formatDateForInput(new Date()));
   const [formError, setFormError] = useState('');
   // Result and P&L are entered separately, so nothing stops a losing trade
   // being saved as a win. A mismatch skews win rate, averages and streaks.
@@ -149,25 +153,6 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     setChartPreview(editTrade.chartImageUrl || null);
     setRemoveExistingChart(false);
   }, [editTrade]);
-
-  useEffect(() => {
-    if (formData.entryPrice && formData.exitPrice) {
-      const entry = parseFloat(formData.entryPrice);
-      const exit = parseFloat(formData.exitPrice);
-      const leverage = parseFloat(formData.leverage) || 1;
-
-      let pnl = 0;
-      if (formData.direction === 'long') {
-        pnl = ((exit - entry) / entry) * 100 * leverage;
-      } else {
-        pnl = ((entry - exit) / entry) * 100 * leverage;
-      }
-
-      setCalculatedPnl(pnl);
-    } else {
-      setCalculatedPnl(0);
-    }
-  }, [formData.entryPrice, formData.exitPrice, formData.direction, formData.leverage]);
 
   useEffect(() => {
     const entry = parseFloat(formData.entryPrice);
@@ -305,7 +290,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
         rr: isOpenPosition ? null : riskReward,
         gainLoss: isOpenPosition ? null : parseFloat(formData.gainLoss),
         fee: isOpenPosition ? null : (parseFloat(formData.fee) || 0),
-        pnlPercent: isOpenPosition ? null : calculatedPnl,
+        pnlPercent: isOpenPosition ? null : priceMovePercent,
         result: isOpenPosition ? null : formData.result,
         closedAt: isOpenPosition ? null : (editTrade?.closedAt || serverTimestamp()),
         comment: formData.comment,
@@ -326,10 +311,17 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
           : (editTrade?.planLockedAt || null),
         chartImageUrl,
         chartImageSource,
-        tradeDate: mergeDateWithExistingTime(
-          formData.tradeDate,
-          editTrade ? (editTrade.tradeDate?.toDate?.() || new Date(editTrade.tradeDate)) : new Date()
-        )
+        tradeDate: isClosingOpenPosition
+          ? mergeDateWithExistingTime(exitDate, new Date())
+          : mergeDateWithExistingTime(
+            formData.tradeDate,
+            editTrade ? (editTrade.tradeDate?.toDate?.() || new Date(editTrade.tradeDate)) : new Date()
+          ),
+        // Written once, at close, from the open position's own date. Left
+        // untouched on any later edit.
+        ...(isClosingOpenPosition
+          ? { entryDate: editTrade.entryDate || editTrade.tradeDate || null }
+          : {})
       };
 
       if (editTrade?.id) {
@@ -369,7 +361,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       setChartImage(null);
       setChartPreview(null);
       setRemoveExistingChart(false);
-      setCalculatedPnl(0);
+      setExitDate(formatDateForInput(new Date()));
       setRiskReward(null);
       setPlannedRR(null);
       setTradeStatus('closed');
@@ -570,13 +562,26 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
 
             <div>
               <label className="block text-content-secondary text-sm mb-2">
-                {isOpenPosition ? 'Entry Date' : 'Trade Date'}
+                {isOpenPosition ? 'Entry Date' : (isClosingOpenPosition || editTrade?.entryDate) ? 'Exit Date' : 'Trade Date'}
               </label>
-              <DateField
-                name="tradeDate"
-                value={formData.tradeDate}
-                onChange={(v) => handleInputChange({ target: { name: 'tradeDate', value: v } })}
-              />
+              {isClosingOpenPosition ? (
+                <DateField
+                  name="exitDate"
+                  value={exitDate}
+                  onChange={setExitDate}
+                />
+              ) : (
+                <DateField
+                  name="tradeDate"
+                  value={formData.tradeDate}
+                  onChange={(v) => handleInputChange({ target: { name: 'tradeDate', value: v } })}
+                />
+              )}
+              {isClosingOpenPosition && (
+                <p className="text-xs text-content-muted mt-1">
+                  Opened {parseLocalDate(formData.tradeDate).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}. P&amp;L counts on the exit date.
+                </p>
+              )}
             </div>
 
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
@@ -606,6 +611,9 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                     step="0.01"
                     placeholder="0.00"
                     className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
+                    // A closed trade without an exit saves 0% gain and no R:R,
+                    // and that 0% then feeds daily-goal and risk figures.
+                    required
                   />
                 </div>
               )}
@@ -646,7 +654,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {!isOpenPosition && (
                 <div>
-                  <label className="block text-content-secondary text-sm mb-2">% Gain</label>
+                  <label className="block text-content-secondary text-sm mb-2">% Gain <span className="text-content-muted">(before fees)</span></label>
                   <div
                     className={`w-full border border-line-strong rounded-control px-4 py-2 h-[42px] flex items-center font-medium ${
                       priceMovePercent >= 0 ? 'text-profit' : 'text-loss'
@@ -697,7 +705,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {!isOpenPosition && (
                 <div>
-                  <label className="block text-content-secondary text-sm mb-2">Gain (USD)</label>
+                  <label className="block text-content-secondary text-sm mb-2">Net P&amp;L (USD, after fees)</label>
                   <input
                     type="number"
                     name="gainLoss"

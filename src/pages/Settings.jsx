@@ -8,6 +8,7 @@ import Page from '../components/ui/Page';
 import { Card } from '../components/ui/Surface';
 import DateField from '../components/ui/DateField';
 import { CHART, gridProps, xAxisProps, yAxisProps, tooltipProps, lineProps, usdTick } from '../components/ui/chartTheme';
+import { balancesBeforeTrades, isOverRisk } from '../utils/accountMath';
 
 const SECTIONS = [
   { id: 'account', label: 'Account' },
@@ -160,7 +161,10 @@ function Settings() {
   const riskStatus = (() => {
     const r = parseFloat(maxRisk);
     if (!r || r <= 0) return null;
-    const violations = trades.filter(t => t.result === 'loss' && Math.abs(t.pnlPercent || 0) > r).length;
+    // Against the account balance before each loss, not the leveraged return
+    // on margin, which counted most losses as violations.
+    const balanceMap = balancesBeforeTrades(trades, deposits);
+    const violations = trades.filter(t => isOverRisk(t, r, balanceMap)).length;
     if (violations === 0) return { level: 'green', label: '🟢 Within Rules', violations, bg: 'bg-profit/10 border-profit/15', text: 'text-profit' };
     if (violations <= 3) return { level: 'yellow', label: '🟡 Warning', violations, bg: 'bg-warn/10 border-warn/15', text: 'text-warn' };
     return { level: 'red', label: '🔴 System Violation', violations, bg: 'bg-loss/10 border-loss/15', text: 'text-loss' };

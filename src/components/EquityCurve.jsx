@@ -83,7 +83,7 @@ function EquityCurve({ trades, deposits = [] }) {
         <div className="bg-surface p-3 rounded-card shadow-lg">
           <p className="text-content-primary font-medium">{payload[0].payload.date}</p>
           <p className={`text-sm ${payload[0].value >= 0 ? 'text-profit' : 'text-loss'}`}>
-            P&L: ${payload[0].value.toFixed(2)}
+            Balance: {payload[0].value < 0 ? '-' : ''}${Math.abs(payload[0].value).toFixed(2)}
           </p>
           <p className="text-content-secondary text-xs">
             {payload[0].payload.ticker} · {payload[0].payload.direction === 'long' ? 'Long' : 'Short'}

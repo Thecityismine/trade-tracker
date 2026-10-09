@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Pencil, Trash2, ImageDown, BookMarked } from 'lucide-react';
 import { doc, deleteDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
@@ -6,6 +6,8 @@ import { PLAYBOOK_COLLECTION, addTradeToPlaybook, completedFieldCount, removeFro
 import TradeModal from './TradeModal';
 import { generatePnlImage, downloadCanvas } from '../utils/generatePnlImage';
 import { useDismissable, backdropProps } from '../hooks/useDismissable';
+import { useTrades } from '../context/TradesContext';
+import { accountLossPercent, balancesBeforeTrades, isOverRisk as exceedsRiskLimit } from '../utils/accountMath';
 
 const MISTAKE_TAGS = [
   { id: 'over-risk', label: 'Over-Risk' },
@@ -14,9 +16,7 @@ const MISTAKE_TAGS = [
   { id: 'revenge', label: 'Revenge Trade' },
 ];
 
-function getVerdict(trade, maxRiskPercent, mistakeTags) {
-  const isOverRisk = maxRiskPercent > 0 && trade.result === 'loss' &&
-    Math.abs(trade.pnlPercent || 0) > maxRiskPercent;
+function getVerdict(trade, isOverRisk, mistakeTags) {
   const score = trade.executionScore || 0;
 
   if (isOverRisk || mistakeTags.includes('over-risk')) {
@@ -68,10 +68,9 @@ function getVerdict(trade, maxRiskPercent, mistakeTags) {
   };
 }
 
-function getWhatWentWrong(trade, maxRiskPercent, mistakeTags) {
+function getWhatWentWrong(trade, maxRiskPercent, isOverRisk, mistakeTags) {
   if (trade.result !== 'loss') return [];
   const issues = [];
-  const isOverRisk = maxRiskPercent > 0 && Math.abs(trade.pnlPercent || 0) > maxRiskPercent;
 
   if (isOverRisk) issues.push(`Risk exceeded your ${maxRiskPercent}% limit`);
   if (mistakeTags.includes('fomo')) issues.push('FOMO entry — chased the move late');
@@ -88,10 +87,8 @@ function getWhatWentWrong(trade, maxRiskPercent, mistakeTags) {
   return issues;
 }
 
-function getNextFocus(trade, maxRiskPercent, mistakeTags) {
+function getNextFocus(trade, maxRiskPercent, isOverRisk, mistakeTags) {
   const focuses = [];
-  const isOverRisk = maxRiskPercent > 0 && trade.result === 'loss' &&
-    Math.abs(trade.pnlPercent || 0) > maxRiskPercent;
 
   if (isOverRisk || mistakeTags.includes('over-risk')) {
     focuses.push(`Reduce risk to <${maxRiskPercent || 5}% per trade`);
@@ -119,6 +116,8 @@ function getNextFocus(trade, maxRiskPercent, mistakeTags) {
 function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
   const [isEditing, setIsEditing] = useState(false);
   useDismissable(!isEditing, onClose);
+  const { trades, deposits } = useTrades();
+  const balanceMap = useMemo(() => balancesBeforeTrades(trades, deposits), [trades, deposits]);
   const [deleting, setDeleting] = useState(false);
   const [localMistakeTags, setLocalMistakeTags] = useState(trade.mistakeTags || []);
   const [savingTags, setSavingTags] = useState(false);
@@ -173,18 +172,20 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
   if (!trade) return null;
 
   const tradeDate = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
-  const isOverRisk = maxRiskPercent > 0 && trade.result === 'loss' &&
-    Math.abs(trade.pnlPercent || 0) > maxRiskPercent;
+  // Share of the account the loss took, against the balance before the trade.
+  // pnlPercent is the leveraged return on margin, not account risk.
+  const lossOfAccount = accountLossPercent(trade, balanceMap);
+  const isOverRisk = exceedsRiskLimit(trade, maxRiskPercent, balanceMap);
 
-  const verdict = getVerdict(trade, maxRiskPercent, localMistakeTags);
-  const wrongPoints = getWhatWentWrong(trade, maxRiskPercent, localMistakeTags);
-  const nextFocuses = getNextFocus(trade, maxRiskPercent, localMistakeTags);
+  const verdict = getVerdict(trade, isOverRisk, localMistakeTags);
+  const wrongPoints = getWhatWentWrong(trade, maxRiskPercent, isOverRisk, localMistakeTags);
+  const nextFocuses = getNextFocus(trade, maxRiskPercent, isOverRisk, localMistakeTags);
 
   const absGain = Math.abs(trade.gainLoss || 0).toFixed(2);
   const gainPrefix = trade.gainLoss >= 0 ? '+$' : '-$';
   const rrDisplay = trade.rr != null ? trade.rr.toFixed(2) : '—';
-  const riskUsed = trade.pnlPercent != null
-    ? `${Math.abs(trade.pnlPercent).toFixed(1)}%${isOverRisk ? ' (exceeded)' : ''}`
+  const riskUsed = lossOfAccount !== null
+    ? `${lossOfAccount.toFixed(1)}% of account${isOverRisk ? ' (exceeded)' : ''}`
     : '—';
 
   const toggleMistakeTag = async (tagId) => {

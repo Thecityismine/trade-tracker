@@ -11,6 +11,7 @@ import { db } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
 import Page from '../components/ui/Page';
 import { usePrefersReducedMotion } from '../hooks/usePrefersReducedMotion';
+import { balanceBefore, buildReturnIndex, getTradeDate, maxDrawdownPercent } from '../utils/accountMath';
 
 /**
  * A figure that counts up, unless the viewer has asked it not to.
@@ -135,55 +136,8 @@ function Dashboard({ onNavigate }) {
     });
   };
 
-  const getTradeDate = (trade) => trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
-  const getDepositDate = (deposit) => deposit.date?.toDate?.() || new Date(deposit.date);
-
-  // Shared chronological trade list + funding total, reused by period-% and drawdown calcs below
-  const sortedTrades = [...trades]
-    .filter(t => t.tradeDate)
-    .sort((a, b) => getTradeDate(a) - getTradeDate(b));
-  const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
-
-  /**
-   * A time-weighted return index over deposits and trades on one timeline.
-   *
-   * Deposits move the balance without being performance, which is what breaks
-   * every simpler approach: divide by the opening balance and a year that
-   * received deposits reads as a catastrophic loss; let funding raise the
-   * high-water mark and topping up a losing account manufactures drawdown.
-   *
-   * Compounding each trade's return on the balance that was actually at risk
-   * when it was taken, and letting funding move the balance without touching
-   * the index, is the one model where Year (which spans deposits) stays
-   * comparable to Day (which does not).
-   */
-  const returnIndex = (() => {
-    const events = [];
-    deposits.forEach(d => {
-      const date = getDepositDate(d);
-      if (Number.isNaN(date.getTime())) return;
-      events.push({ date, delta: d.type === 'deposit' ? d.amount : -d.amount, funding: true });
-    });
-    sortedTrades.forEach(t => {
-      const date = getTradeDate(t);
-      if (Number.isNaN(date.getTime())) return;
-      events.push({ date, delta: Number(t.gainLoss) || 0, funding: false });
-    });
-    events.sort((a, b) => a.date - b.date);
-
-    let balance = 0;
-    let index = 1;
-    const points = [];
-    for (const e of events) {
-      // Clamp at 0: a manually-entered loss larger than the balance would
-      // otherwise drive the factor negative and flip the index's sign, which
-      // makes every downstream return and drawdown meaningless.
-      if (!e.funding && balance > 0) index *= Math.max(0, 1 + e.delta / balance);
-      balance += e.delta;
-      points.push({ date: e.date, index });
-    }
-    return points;
-  })();
+  // Shared with Analytics so both pages report the same drawdown.
+  const returnIndex = buildReturnIndex(trades, deposits);
 
   // Index as of `date` — the last point at or before it, or 1 if the account
   // had not started yet.
@@ -225,19 +179,7 @@ function Dashboard({ onNavigate }) {
     return start > 0 ? ((end / start) - 1) * 100 : 0;
   };
 
-  // All-time drawdown of the return index, so funding never registers as either
-  // a loss or a recovery.
-  const maxDrawdown = (() => {
-    let peak = 0;
-    let maxDD = 0;
-    for (const p of returnIndex) {
-      if (p.index > peak) peak = p.index;
-      if (peak > 0 && p.index < peak) {
-        maxDD = Math.max(maxDD, ((peak - p.index) / peak) * 100);
-      }
-    }
-    return maxDD;
-  })();
+  const maxDrawdown = maxDrawdownPercent(returnIndex);
 
   const percentSummary = {
     day: calculatePeriodPercent('day'),
@@ -339,8 +281,11 @@ function Dashboard({ onNavigate }) {
       return !Number.isNaN(d.getTime()) && d >= todayStart;
     });
     const todayLossDollars = todayTrades.filter(t => t.result === 'loss').reduce((s, t) => s + Math.abs(Number(t.gainLoss) || 0), 0);
-    const totalFunded = deposits.reduce((s, d) => s + (d.type === 'deposit' ? d.amount : -d.amount), 0);
-    const todayLossPct = totalFunded > 0 ? (todayLossDollars / totalFunded) * 100 : 0;
+    // Measured against the balance the day started with. Dividing by lifetime
+    // net funding overstated the base once the account had lost money, so the
+    // warning fired late.
+    const dayStartBalance = balanceBefore(trades, deposits, todayStart);
+    const todayLossPct = dayStartBalance > 0 ? (todayLossDollars / dayStartBalance) * 100 : 0;
     const focuses = [];
     if (r > 0) focuses.push(`Max ${r}% risk per trade — no exceptions.`);
     if (maxTrades > 0) {
