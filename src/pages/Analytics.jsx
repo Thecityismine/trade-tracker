@@ -59,12 +59,20 @@ const toNumber = (value) => {
 
 const getTradeDate = (trade) => trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
 
+// Midnight local time on the Monday of the trade's week. Keeping the trade's
+// own time of day here made toISOString() roll evening trades over to the
+// next UTC date, so one week was split across two buckets.
 const getWeekStart = (date) => {
   const d = new Date(date);
   const day = d.getDay();
-  const diff = d.getDate() - day + (day === 0 ? -6 : 1);
-  return new Date(d.setDate(diff));
+  d.setDate(d.getDate() - day + (day === 0 ? -6 : 1));
+  d.setHours(0, 0, 0, 0);
+  return d;
 };
+
+// Bucket key from the local calendar date, never UTC.
+const getWeekKey = (weekStart) =>
+  `${weekStart.getFullYear()}-${String(weekStart.getMonth() + 1).padStart(2, '0')}-${String(weekStart.getDate()).padStart(2, '0')}`;
 
 const getWeekLabel = (startDate) => {
   const weekStart = new Date(startDate);
@@ -294,7 +302,7 @@ function Analytics() {
 
     completedTrades.forEach((trade) => {
       const weekStart = getWeekStart(trade.parsedTradeDate);
-      const key = weekStart.toISOString().split('T')[0];
+      const key = getWeekKey(weekStart);
 
       if (!weekMap.has(key)) {
         weekMap.set(key, {
@@ -338,12 +346,29 @@ function Analytics() {
 
   const maxDrawdown = useMemo(() => {
     if (deposits.length === 0 || completedTrades.length === 0) return 0;
-    const totalFunded = deposits.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
+    // Funding is applied on the timeline, as in EquityCurve. Seeding the
+    // balance with every deposit ever made inflated the early peak and
+    // understated the drop. Each funding event moves the peak by the same
+    // amount, so a withdrawal is not counted as a trading loss and a deposit
+    // does not create a new high.
+    const funding = deposits
+      .map((d) => ({
+        date: d.date?.toDate?.() || new Date(d.date),
+        delta: d.type === 'deposit' ? toNumber(d.amount) : -toNumber(d.amount)
+      }))
+      .filter((f) => !Number.isNaN(f.date.getTime()))
+      .sort((a, b) => a.date - b.date);
     const sorted = [...completedTrades].sort((a, b) => a.parsedTradeDate - b.parsedTradeDate);
-    let peak = totalFunded;
-    let balance = totalFunded;
+    let peak = 0;
+    let balance = 0;
     let maxDD = 0;
+    let nextFunding = 0;
     for (const t of sorted) {
+      while (nextFunding < funding.length && funding[nextFunding].date <= t.parsedTradeDate) {
+        balance += funding[nextFunding].delta;
+        peak += funding[nextFunding].delta;
+        nextFunding++;
+      }
       balance += toNumber(t.gainLoss);
       if (balance > peak) peak = balance;
       if (peak > 0) maxDD = Math.max(maxDD, ((peak - balance) / peak) * 100);
@@ -476,7 +501,7 @@ function Analytics() {
       const date = rawDate?.toDate?.() || new Date(rawDate);
       if (Number.isNaN(date.getTime())) return;
       const weekStart = getWeekStart(date);
-      const key = weekStart.toISOString().split('T')[0];
+      const key = getWeekKey(weekStart);
       if (!weekMap.has(key)) weekMap.set(key, {
         key,
         label: weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),

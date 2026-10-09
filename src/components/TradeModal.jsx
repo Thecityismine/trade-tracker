@@ -83,6 +83,13 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   const [loading, setLoading] = useState(false);
   const [calculatedPnl, setCalculatedPnl] = useState(0);
   const [formError, setFormError] = useState('');
+  // Result and P&L are entered separately, so nothing stops a losing trade
+  // being saved as a win. A mismatch skews win rate, averages and streaks.
+  const enteredGainLoss = parseFloat(formData.gainLoss);
+  const resultSignMismatch = Number.isFinite(enteredGainLoss) && (
+    (formData.result === 'win' && enteredGainLoss < 0) ||
+    (formData.result === 'loss' && enteredGainLoss > 0)
+  );
   const [priceMovePercent, setPriceMovePercent] = useState(0);
   const [riskReward, setRiskReward] = useState(null);
   const [strategies, setStrategies] = useState([]);
@@ -701,6 +708,13 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                     className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                     required
                   />
+                  {resultSignMismatch && (
+                    <p className="text-xs text-caution mt-1">
+                      {formData.result === 'win'
+                        ? 'Marked Win but P&L is negative — double-check.'
+                        : 'Marked Loss but P&L is positive — double-check.'}
+                    </p>
+                  )}
                 </div>
               )}
 
