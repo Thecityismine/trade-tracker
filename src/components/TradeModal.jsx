@@ -705,7 +705,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
             <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
               {!isOpenPosition && (
                 <div>
-                  <label className="block text-content-secondary text-sm mb-2">Net P&amp;L (USD, after fees)</label>
+                  <label className="block text-content-secondary text-sm mb-2">Net P&amp;L Gain</label>
                   <input
                     type="number"
                     name="gainLoss"
