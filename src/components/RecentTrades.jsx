@@ -33,6 +33,14 @@ function getExecutionTag(trade, isOverRisk) {
   return null;
 }
 
+// Every outcome-colored element in a row follows the trade's result, so a
+// losing long reads red and a winning short reads green.
+function isWinningTrade(trade) {
+  if (trade.result === 'win') return true;
+  if (trade.result === 'loss') return false;
+  return (trade.gainLoss || 0) >= 0;
+}
+
 function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
   const [filterPeriod, setFilterPeriod] = useState('today');
   const [filterResult, setFilterResult] = useState('all');
@@ -146,6 +154,8 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
                   const executionTag = getExecutionTag(trade, isOverRisk);
                   const absGain = Math.abs(trade.gainLoss || 0).toFixed(2);
                   const gainPrefix = trade.gainLoss >= 0 ? '+$' : '-$';
+                  const isWin = isWinningTrade(trade);
+                  const outcomeText = isWin ? 'text-profit' : 'text-loss';
 
                   return (
                     <tr
@@ -165,9 +175,9 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
                         <div>
                           <span className="inline-flex items-center gap-2">
                             <span className={`inline-block w-3 h-3 rounded-full ${
-                              trade.direction === 'long' ? 'bg-profit' : 'bg-loss'
+                              isWin ? 'bg-profit' : 'bg-loss'
                             }`} />
-                            <span className={trade.direction === 'long' ? 'text-profit' : 'text-loss'}>
+                            <span className={outcomeText}>
                               {trade.direction === 'long' ? 'Long' : 'Short'}
                             </span>
                           </span>
@@ -180,17 +190,13 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
                           )}
                         </div>
                       </td>
-                      <td className={`py-3 px-2 text-right font-medium ${
-                        trade.pnlPercent >= 0 ? 'text-profit' : 'text-loss'
-                      }`}>
+                      <td className={`py-3 px-2 text-right font-medium ${outcomeText}`}>
                         <span>{trade.pnlPercent?.toFixed(2)}%</span>
                         {isOverRisk && (
                           <span className="ml-1 text-caution text-xs" title="Exceeded risk limit">⚠</span>
                         )}
                       </td>
-                      <td className={`py-3 px-2 text-right font-semibold ${
-                        trade.gainLoss >= 0 ? 'text-profit' : 'text-loss'
-                      }`}>
+                      <td className={`py-3 px-2 text-right font-semibold ${outcomeText}`}>
                         {gainPrefix}{absGain}
                       </td>
                       <td className="py-3 px-2 text-right text-content-secondary text-sm">
@@ -242,6 +248,7 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
               const executionTag = getExecutionTag(trade, isOverRisk);
               const absGain = Math.abs(trade.gainLoss || 0).toFixed(2);
               const gainPrefix = trade.gainLoss >= 0 ? '+$' : '-$';
+              const isWin = isWinningTrade(trade);
 
               return (
                 <div
@@ -260,7 +267,7 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
                     <div className="flex items-center gap-2">
                       <span className="text-content-primary font-semibold">{trade.ticker || 'BTC'}</span>
                       <span className={`text-xs font-bold px-2 py-0.5 rounded-full ${
-                        trade.direction === 'long'
+                        isWin
                           ? 'bg-profit/15 text-profit'
                           : 'bg-loss/15 text-loss'
                       }`}>
@@ -283,12 +290,12 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
                   <div className="flex items-end justify-between">
                     <div>
                       <div className={`text-2xl font-bold leading-tight ${
-                        trade.gainLoss >= 0 ? 'text-profit' : 'text-loss'
+                        isWin ? 'text-profit' : 'text-loss'
                       }`}>
                         {gainPrefix}{absGain}
                       </div>
                       <div className={`flex items-center gap-1 text-sm mt-0.5 ${
-                        trade.pnlPercent >= 0 ? 'text-profit/60' : 'text-loss/60'
+                        isWin ? 'text-profit/60' : 'text-loss/60'
                       }`}>
                         {trade.pnlPercent?.toFixed(2)}%
                         {isOverRisk && (
