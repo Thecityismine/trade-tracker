@@ -86,7 +86,10 @@ function groupByDay(trades) {
   trades.forEach((trade) => {
     const d = trade.tradeDate?.toDate?.() || new Date(trade.tradeDate);
     const key = d.toLocaleDateString('en-US', { month: 'short', day: 'numeric' });
-    if (!map[key]) map[key] = { label: key, date: d, trades: [], pnl: 0 };
+    if (!map[key]) {
+      const start = new Date(d.getFullYear(), d.getMonth(), d.getDate());
+      map[key] = { label: key, date: d, start, trades: [], pnl: 0 };
+    }
     map[key].trades.push(trade);
     map[key].pnl += trade.gainLoss || 0;
   });
@@ -262,6 +265,14 @@ function WeeklyTracker() {
     return funded + pnlBefore;
   };
 
+  // Same basis as Weekly P&L%: day P&L over the account balance at the start of that day.
+  const formatDayPercent = (day) => {
+    const base = getBalanceAtDate(day.start, trades, deposits);
+    if (!(base > 0)) return '';
+    const pct = (day.pnl / base) * 100;
+    return ` (${pct >= 0 ? '+' : ''}${pct.toFixed(2)}%)`;
+  };
+
   const calculateWeeklyStats = (tradesData, depositsData) => {
     const weekMap = new Map();
     const totalFunded = depositsData.reduce((sum, d) => sum + (d.type === 'deposit' ? d.amount : -d.amount), 0);
@@ -421,7 +432,7 @@ function WeeklyTracker() {
                                 <div className="flex items-center justify-between mb-2">
                                   <span className="text-content-secondary text-sm font-semibold">{day.label}</span>
                                   <span className={`text-sm font-semibold ${day.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                                    Day total: {day.pnl >= 0 ? '+$' : '-$'}{Math.abs(day.pnl).toFixed(2)}
+                                    Day total: {day.pnl >= 0 ? '+$' : '-$'}{Math.abs(day.pnl).toFixed(2)}{formatDayPercent(day)}
                                   </span>
                                 </div>
                                 {day.trades.map((trade) => (
@@ -586,7 +597,7 @@ function WeeklyTracker() {
                         <div className="flex items-center justify-between mb-2">
                           <span className="text-content-secondary text-xs font-semibold uppercase tracking-wide">{day.label}</span>
                           <span className={`text-xs font-semibold ${day.pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                            {day.pnl >= 0 ? '+$' : '-$'}{Math.abs(day.pnl).toFixed(2)}
+                            {day.pnl >= 0 ? '+$' : '-$'}{Math.abs(day.pnl).toFixed(2)}{formatDayPercent(day)}
                             <span className="ml-1 opacity-70">{day.pnl >= 0 ? '✓' : '✗'}</span>
                           </span>
                         </div>
