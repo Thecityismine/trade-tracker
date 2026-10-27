@@ -262,7 +262,7 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade, since }) {
                         ${Number(trade.fee || 0).toFixed(2)}
                       </td>
                       <td className="py-3 px-2 text-center">
-                        {trade.chartImageUrl && (
+                        {(trade.chartImageUrl || trade.exitChartImageUrl) && (
                           <ImageIcon size={16} className="inline text-brand/60" />
                         )}
                       </td>
@@ -365,7 +365,7 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade, since }) {
 
                     {/* Right-side indicators */}
                     <div className="flex items-center gap-2">
-                      {trade.chartImageUrl && (
+                      {(trade.chartImageUrl || trade.exitChartImageUrl) && (
                         <ImageIcon size={15} className="text-brand/50" />
                       )}
                       {(trade.executionScore || 0) > 0 && (

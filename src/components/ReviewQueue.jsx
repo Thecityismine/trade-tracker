@@ -181,10 +181,19 @@ function ReviewQueue({ isOpen, onClose, tradeIds }) {
                 {trade.comment && <p className="text-content-secondary"><span className="text-content-muted">Comment: </span>{trade.comment}</p>}
               </div>
             )}
-            {trade.chartImageUrl && (
-              <a href={trade.chartImageUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block text-xs text-brand-hover hover:underline">
-                Open chart screenshot
-              </a>
+            {(trade.chartImageUrl || trade.exitChartImageUrl) && (
+              <div className="mt-3 flex gap-4 text-xs">
+                {trade.chartImageUrl && (
+                  <a href={trade.chartImageUrl} target="_blank" rel="noreferrer" className="text-brand-hover hover:underline">
+                    Open entry chart
+                  </a>
+                )}
+                {trade.exitChartImageUrl && (
+                  <a href={trade.exitChartImageUrl} target="_blank" rel="noreferrer" className="text-brand-hover hover:underline">
+                    Open exit chart
+                  </a>
+                )}
+              </div>
             )}
           </div>
 

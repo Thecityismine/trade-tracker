@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { X, Upload } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, updateDoc, doc, onSnapshot } from 'firebase/firestore';
 import { db, storage } from '../config/firebase';
-import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
+import { DEFAULT_MAX_INLINE_IMAGE_BYTES, MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 import Modal from './ui/Modal';
 import Button from './ui/Button';
 import Select from './ui/Select';
@@ -12,6 +12,65 @@ import { EmotionPicker, TagInput } from './TradeTagFields';
 // The submit button lives in the Modal footer, outside the <form>, so it binds
 // back to it by id.
 const FORM_ID = 'trade-form';
+
+// Two screenshots per trade: the chart when the entry was decided and the
+// chart when it was closed. The entry chart keeps the original chartImageUrl
+// field so trades logged before the split still show their screenshot.
+const CHART_FIELDS = {
+  entry: { url: 'chartImageUrl', source: 'chartImageSource' },
+  exit: { url: 'exitChartImageUrl', source: 'exitChartImageSource' }
+};
+const emptyChart = { file: null, preview: null, remove: false };
+// When Storage is unreachable a chart is stored inline in the trade document,
+// which Firestore caps at 1 MiB. Both inline charts share this many
+// characters, and a data URL is about 1.35 characters per byte of image.
+const INLINE_CHART_BUDGET = 950 * 1024;
+const INLINE_RESERVE = 400 * 1024;
+const inlineChars = (url) => (typeof url === 'string' && url.startsWith('data:') ? url.length : 0);
+const inlineCap = (otherChars) => Math.max(
+  1,
+  Math.min(DEFAULT_MAX_INLINE_IMAGE_BYTES, Math.floor((INLINE_CHART_BUDGET - otherChars) * 0.74))
+);
+
+function ChartSlot({ label, hint, buttonText, chart, onPick, onClear }) {
+  return (
+    <div>
+      <label className="block text-content-secondary text-sm mb-2">
+        {label} {hint && <span className="text-content-muted">{hint}</span>}
+      </label>
+      <div className="space-y-2">
+        <label className="flex items-center justify-center w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-3 cursor-pointer hover:border-brand/50 transition-colors">
+          <Upload size={18} className="mr-2 flex-shrink-0 text-content-secondary" />
+          <span className="truncate text-content-secondary">
+            {chart.file ? chart.file.name : buttonText}
+          </span>
+          <input
+            type="file"
+            accept="image/*"
+            onChange={onPick}
+            className="hidden"
+          />
+        </label>
+        {chart.preview && (
+          <div className="relative">
+            <img
+              src={chart.preview}
+              alt={`${label} preview`}
+              className="w-full rounded-lg"
+            />
+            <button
+              type="button"
+              onClick={onClear}
+              className="absolute top-2 right-2 rounded-full bg-loss/90 p-1 text-canvas transition-colors hover:bg-loss"
+            >
+              <X size={16} />
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
 
 const formatDateForInput = (date) => {
   const year = date.getFullYear();
@@ -79,9 +138,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     ? 'bg-surface border-line text-content-secondary cursor-not-allowed'
     : 'bg-surface-raised border-line-strong text-content-primary focus:outline-none focus:border-brand';
   const [plannedRR, setPlannedRR] = useState(null);
-  const [chartImage, setChartImage] = useState(null);
-  const [chartPreview, setChartPreview] = useState(null);
-  const [removeExistingChart, setRemoveExistingChart] = useState(false);
+  const [charts, setCharts] = useState({ entry: emptyChart, exit: emptyChart });
   const [lastTicker, setLastTicker] = useState('BTC');
   const [loading, setLoading] = useState(false);
   // Closing a position records when it was exited. The entry date stays on
@@ -158,9 +215,10 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       tradeDate: formattedDate
     });
     setTradeStatus(editTrade.status === 'open' ? 'open' : 'closed');
-    setChartImage(null);
-    setChartPreview(editTrade.chartImageUrl || null);
-    setRemoveExistingChart(false);
+    setCharts({
+      entry: { ...emptyChart, preview: editTrade.chartImageUrl || null },
+      exit: { ...emptyChart, preview: editTrade.exitChartImageUrl || null }
+    });
   }, [editTrade]);
 
   useEffect(() => {
@@ -243,24 +301,30 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     setFormData((prev) => ({ ...prev, [name]: value }));
   };
 
-  const handleImageUpload = (e) => {
+  const handleImageUpload = (slot) => (e) => {
     const file = e.target.files[0];
+    // Cleared so picking the same file again after removing it still fires.
+    e.target.value = '';
     if (file) {
       if (file.size > MAX_IMAGE_SIZE_BYTES) {
         setFormError('Image is too large. Please use an image under 10MB.');
-        e.target.value = '';
         return;
       }
 
       setFormError('');
-      setChartImage(file);
-      setRemoveExistingChart(false);
       const reader = new FileReader();
       reader.onloadend = () => {
-        setChartPreview(reader.result);
+        setCharts((prev) => ({ ...prev, [slot]: { file, preview: reader.result, remove: false } }));
       };
       reader.readAsDataURL(file);
     }
+  };
+
+  const clearChart = (slot) => () => {
+    setCharts((prev) => ({
+      ...prev,
+      [slot]: { ...emptyChart, remove: Boolean(editTrade?.[CHART_FIELDS[slot].url]) }
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -269,18 +333,29 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     setLoading(true);
 
     try {
-      let chartImageUrl = removeExistingChart ? null : (editTrade?.chartImageUrl || null);
-      let chartImageSource = removeExistingChart ? null : (editTrade?.chartImageSource || null);
-
-      if (chartImage) {
+      const chartData = {};
+      for (const slot of ['entry', 'exit']) {
+        const { url, source } = CHART_FIELDS[slot];
+        const chart = charts[slot];
+        chartData[url] = chart.remove ? null : (editTrade?.[url] || null);
+        chartData[source] = chart.remove ? null : (editTrade?.[source] || null);
+      }
+      for (const slot of ['entry', 'exit']) {
+        const chart = charts[slot];
+        if (!chart.file) continue;
+        const other = CHART_FIELDS[slot === 'entry' ? 'exit' : 'entry'];
+        const otherChars = slot === 'entry' && charts.exit.file
+          ? INLINE_RESERVE
+          : inlineChars(chartData[other.url]);
         const uploaded = await uploadImageWithFallback({
-          file: chartImage,
+          file: chart.file,
           storage,
           pathPrefix: 'charts',
-          storageTimeoutMs: 10000
+          storageTimeoutMs: 10000,
+          maxInlineBytes: inlineCap(otherChars)
         });
-        chartImageUrl = uploaded.imageUrl;
-        chartImageSource = uploaded.imageSource;
+        chartData[CHART_FIELDS[slot].url] = uploaded.imageUrl;
+        chartData[CHART_FIELDS[slot].source] = uploaded.imageSource;
       }
 
       const tradeData = {
@@ -320,8 +395,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
         planLockedAt: isOpenPosition
           ? (editTrade?.planLockedAt || serverTimestamp())
           : (editTrade?.planLockedAt || null),
-        chartImageUrl,
-        chartImageSource,
+        ...chartData,
         tradeDate: isClosingOpenPosition
           ? mergeDateWithExistingTime(exitDate, new Date())
           : mergeDateWithExistingTime(
@@ -371,9 +445,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
           tradeDate: formatDateForInput(new Date())
         });
       }
-      setChartImage(null);
-      setChartPreview(null);
-      setRemoveExistingChart(false);
+      setCharts({ entry: emptyChart, exit: emptyChart });
       setExitDate(formatDateForInput(new Date()));
       setRiskReward(null);
       setPlannedRR(null);
@@ -769,44 +841,26 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               </div>
             </div>
 
-            <div>
-              <label className="block text-content-secondary text-sm mb-2">Chart Image</label>
-              <div className="space-y-2">
-                <label className="flex items-center justify-center w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-3 cursor-pointer hover:border-brand/50 transition-colors">
-                  <Upload size={18} className="mr-2 text-content-secondary" />
-                  <span className="text-content-secondary">
-                    {chartImage ? chartImage.name : 'Upload Chart'}
-                  </span>
-                  <input
-                    type="file"
-                    accept="image/*"
-                    onChange={handleImageUpload}
-                    className="hidden"
-                  />
-                </label>
-                {chartPreview && (
-                  <div className="relative">
-                    <img
-                      src={chartPreview}
-                      alt="Chart preview"
-                      className="w-full rounded-lg"
-                    />
-                    <button
-                      type="button"
-                      onClick={() => {
-                        setChartImage(null);
-                        setChartPreview(null);
-                        if (editTrade?.chartImageUrl) {
-                          setRemoveExistingChart(true);
-                        }
-                      }}
-                      className="absolute top-2 right-2 rounded-full bg-loss/90 p-1 text-canvas transition-colors hover:bg-loss"
-                    >
-                      <X size={16} />
-                    </button>
-                  </div>
-                )}
-              </div>
+            {/* An open position has no exit yet, so only the entry chart is asked for. */}
+            <div className={isOpenPosition ? '' : 'grid grid-cols-1 gap-4 sm:grid-cols-2'}>
+              <ChartSlot
+                label="Entry chart"
+                hint="(when you decided)"
+                buttonText="Upload entry chart"
+                chart={charts.entry}
+                onPick={handleImageUpload('entry')}
+                onClear={clearChart('entry')}
+              />
+              {!isOpenPosition && (
+                <ChartSlot
+                  label="Exit chart"
+                  hint="(when you closed)"
+                  buttonText="Upload exit chart"
+                  chart={charts.exit}
+                  onPick={handleImageUpload('exit')}
+                  onClear={clearChart('exit')}
+                />
+              )}
             </div>
 
             {isClosingPlannedTrade && (

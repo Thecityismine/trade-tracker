@@ -77,6 +77,7 @@ const trade = (doc, ctx) => {
     comment: text(doc.comment),
     chartPattern: text(doc.chartPattern),
     chartImageUrl: text(doc.chartImageUrl),
+    exitChartImageUrl: text(doc.exitChartImageUrl),
 
     related: compact({ strategyId: text(doc.strategyId), strategyName: text(doc.strategyName) }),
     summary: isOpen

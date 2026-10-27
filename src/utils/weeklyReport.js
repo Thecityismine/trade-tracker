@@ -87,7 +87,7 @@ export function buildReportPayload({ week, strategies, journalEntries, mindsetEn
       chartPattern: trade.chartPattern || null,
       strategy: trade.strategyName || null,
       comment: trade.comment || null,
-      hasChartScreenshot: Boolean(trade.chartImageUrl)
+      hasChartScreenshot: Boolean(trade.chartImageUrl || trade.exitChartImageUrl)
     })),
     strategies: (strategies || [])
       .filter((s) => usedStrategyIds.has(s.id) || s.pinned)
@@ -141,7 +141,9 @@ export function buildReportPayload({ week, strategies, journalEntries, mindsetEn
  */
 export async function buildChartPayload({ week }) {
   const { ordered, refById } = buildTradeRefs(week.trades);
-  const withCharts = ordered.filter((t) => t.chartImageUrl);
+  // The entry chart is sent when there is one, else the exit chart.
+  const chartOf = (t) => t.chartImageUrl || t.exitChartImageUrl;
+  const withCharts = ordered.filter(chartOf);
 
   const losses = withCharts
     .filter((t) => t.result === 'loss')
@@ -167,14 +169,15 @@ export async function buildChartPayload({ week }) {
 
     const chart = { ref: refById.get(trade.id), summary };
 
-    if (trade.chartImageUrl.startsWith('data:')) {
+    const imageUrl = chartOf(trade);
+    if (imageUrl.startsWith('data:')) {
       try {
-        chart.dataUrl = await shrinkImageDataUrl(trade.chartImageUrl);
+        chart.dataUrl = await shrinkImageDataUrl(imageUrl);
       } catch {
         continue;
       }
     } else {
-      chart.url = trade.chartImageUrl;
+      chart.url = imageUrl;
     }
 
     charts.push(chart);

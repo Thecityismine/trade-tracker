@@ -230,7 +230,7 @@ function WeeklyTracker() {
         generating={generatingKey === key}
         chartsPending={chartsPendingKey === key}
         error={reportErrors[key]}
-        hasCharts={week.trades.some((t) => t.chartImageUrl)}
+        hasCharts={week.trades.some((t) => t.chartImageUrl || t.exitChartImageUrl)}
         onGenerate={() => handleGenerateReport(week)}
       />
     );

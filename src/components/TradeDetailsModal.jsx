@@ -488,13 +488,23 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                 </div>
               </div>
 
-              {/* 7. CHART */}
+              {/* 7. CHARTS: when the entry was decided, and when it was closed */}
               {trade.chartImageUrl && (
                 <div>
-                  <h3 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-3">Trade Chart</h3>
+                  <h3 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-3">Entry Chart</h3>
                   <img
                     src={trade.chartImageUrl}
-                    alt="Trade chart"
+                    alt="Chart at entry"
+                    className="w-full rounded-lg"
+                  />
+                </div>
+              )}
+              {trade.exitChartImageUrl && (
+                <div>
+                  <h3 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-3">Exit Chart</h3>
+                  <img
+                    src={trade.exitChartImageUrl}
+                    alt="Chart at exit"
                     className="w-full rounded-lg"
                   />
                 </div>

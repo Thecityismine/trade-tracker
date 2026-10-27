@@ -167,7 +167,8 @@ If you want to use environment variables for Firebase config:
   pnlPercent: -4.69,
   result: "win" | "loss" | "open",
   comment: "...",
-  chartImageUrl: "https://...",
+  chartImageUrl: "https://...",      // chart when the entry was decided
+  exitChartImageUrl: "https://...",  // chart when the trade was closed
   tradeDate: Timestamp,
   createdAt: Timestamp
 }
