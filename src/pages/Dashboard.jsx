@@ -1,6 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
 import CountUp from 'react-countup';
-import { Pin, DollarSign, Target, Scale, Sigma, Receipt, TrendingDown, Sun, CalendarDays, Percent, ClipboardCheck } from 'lucide-react';
+import { Pin, DollarSign, Target, Scale, Sigma, Receipt, TrendingDown, Sun, CalendarDays, Percent, ClipboardCheck, Flame, ListChecks } from 'lucide-react';
 import EquityCurve from '../components/EquityCurve';
 import RecentTrades from '../components/RecentTrades';
 import OpenPositions from '../components/OpenPositions';
@@ -8,6 +8,7 @@ import TradeModal from '../components/TradeModal';
 import ReviewQueue from '../components/ReviewQueue';
 import { reviewQueue } from '../utils/review';
 import { decidedWinRate } from '../utils/outcome';
+import { useRoutines } from '../hooks/useRoutines';
 import { collection, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
@@ -198,6 +199,7 @@ function Dashboard({ onNavigate }) {
   // Always opens on the current week; the switch changes it for this visit.
   const [range, setRange] = useState('week');
   const [pinnedNotes, setPinnedNotes] = useState([]);
+  const { routines } = useRoutines();
   // Ids fixed when the review opens; null while closed.
   const [reviewIds, setReviewIds] = useState(null);
   const [appSettings, setAppSettings] = useState({});
@@ -596,6 +598,30 @@ function Dashboard({ onNavigate }) {
               </button>
             )}
           </div>
+
+          {routines.length > 0 && (
+            <div className="space-y-1.5 border-t border-line pt-4">
+              {routines.map((r) => (
+                <button
+                  key={r.id}
+                  type="button"
+                  onClick={() => onNavigate?.('routines')}
+                  className="flex w-full items-center justify-between gap-3 rounded-control py-1 text-left hover:opacity-80"
+                >
+                  <span className="flex min-w-0 items-center gap-2">
+                    <ListChecks size={16} className={r.complete ? 'text-profit' : 'text-content-muted'} aria-hidden="true" />
+                    <span className={`truncate text-sm ${r.complete ? 'text-content-muted line-through' : 'text-content-primary'}`}>{r.name}</span>
+                  </span>
+                  <span className="flex flex-shrink-0 items-center gap-2 text-xs tabular-nums">
+                    <span className={r.complete ? 'text-profit' : 'text-content-muted'}>{r.doneCount}/{r.steps.length}</span>
+                    <span className={`inline-flex items-center gap-0.5 ${r.streak > 0 ? 'text-warn' : 'text-content-muted'}`}>
+                      <Flame size={12} aria-hidden="true" />{r.streak}
+                    </span>
+                  </span>
+                </button>
+              ))}
+            </div>
+          )}
 
           {lastTen.length > 0 && (
             <div className="border-t border-line pt-4">

@@ -13,6 +13,7 @@ import {
   Eye,
   Bell,
   Settings as SettingsIcon,
+  ListChecks,
 } from 'lucide-react';
 
 // Single source of truth for routing, the sidebar, the contextual top bar and
@@ -41,6 +42,7 @@ export const NAV_GROUPS = [
     items: [
       { id: 'mindset', label: 'Mindset', icon: BookOpen, key: 'i', title: 'Trading Mindset', description: 'Confidence, discipline and state of mind' },
       { id: 'notebook', label: 'Notebook', icon: StickyNote, key: 'n', title: 'Notebook', description: 'Notes, playbooks and recurring mistakes' },
+      { id: 'routines', label: 'Routines', icon: ListChecks, key: 'r', title: 'Routines', description: 'Daily and weekly review checklists' },
     ],
   },
   {

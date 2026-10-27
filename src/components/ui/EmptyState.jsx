@@ -5,7 +5,7 @@ import Button from './Button';
  * and an optional primary action. No box — it sits directly on the canvas,
  * which is what stops empty screens reading as a grid of containers.
  */
-function EmptyState({ icon: Icon, title, description, actionLabel, onAction, className = '' }) {
+function EmptyState({ icon: Icon, title, description, actionLabel, onAction, action, className = '' }) {
   return (
     <div className={`flex flex-col items-center px-6 py-14 text-center ${className}`}>
       {Icon && (
@@ -22,6 +22,8 @@ function EmptyState({ icon: Icon, title, description, actionLabel, onAction, cla
           {actionLabel}
         </Button>
       )}
+      {/* For more than one action — pass the buttons themselves. */}
+      {action && <div className="mt-5">{action}</div>}
     </div>
   );
 }
