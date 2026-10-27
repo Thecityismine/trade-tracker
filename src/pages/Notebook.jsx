@@ -1,6 +1,6 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore';
-import { Plus, Search, X, Pencil, Trash2, Pin, PinOff, Copy, Upload, StickyNote } from 'lucide-react';
+import { Plus, Search, X, Pencil, Trash2, Pin, PinOff, Copy, Upload, StickyNote, BarChart3, Receipt, LayoutTemplate } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { db, storage } from '../config/firebase';
@@ -11,6 +11,9 @@ import EmptyState from '../components/ui/EmptyState';
 import Select from '../components/ui/Select';
 import { useDismissable } from '../hooks/useDismissable';
 import { useToast } from '../components/ui/Toast';
+import { useTrades } from '../context/TradesContext';
+import { getTradeDate } from '../utils/accountMath';
+import { NOTE_TEMPLATES, statsSnapshot, tradeCard } from '../utils/noteEmbeds';
 
 const CATEGORY_OPTIONS = [
   { id: 'all', label: 'All' },
@@ -326,6 +329,46 @@ function Notebook() {
 
   const handleInputChange = (field, value) => {
     setFormData((prev) => ({ ...prev, [field]: value }));
+  };
+
+  // Insert menu: drop a stats snapshot, a trade card or a template at the
+  // cursor. Each is plain Markdown, frozen when inserted.
+  const { trades } = useTrades();
+  const contentRef = useRef(null);
+  const [insertMenu, setInsertMenu] = useState(null); // null | 'trade' | 'template'
+  const recentTrades = useMemo(
+    () => trades
+      .filter((t) => t.result === 'win' || t.result === 'loss')
+      .sort((a, b) => getTradeDate(b) - getTradeDate(a))
+      .slice(0, 40),
+    [trades]
+  );
+
+  const insertAtCursor = (text) => {
+    const el = contentRef.current;
+    setFormData((prev) => {
+      const content = prev.content || '';
+      const start = el ? el.selectionStart : content.length;
+      const end = el ? el.selectionEnd : content.length;
+      // Blocks start on their own line.
+      const before = content.slice(0, start);
+      const lead = before && !before.endsWith('\n\n') ? (before.endsWith('\n') ? '\n' : '\n\n') : '';
+      const next = before + lead + text + content.slice(end);
+      const caret = (before + lead + text).length;
+      requestAnimationFrame(() => {
+        if (!el) return;
+        el.focus();
+        el.setSelectionRange(caret, caret);
+      });
+      return { ...prev, content: next };
+    });
+    setInsertMenu(null);
+  };
+
+  const applyTemplate = (template) => {
+    const now = new Date();
+    setFormData((prev) => ({ ...prev, title: prev.title.trim() ? prev.title : template.title(now) }));
+    insertAtCursor(template.body);
   };
 
   const handleImageUpload = (e) => {
@@ -761,8 +804,80 @@ function Notebook() {
               </div>
 
               <div>
-                <label className="block text-content-secondary text-sm mb-2">Content (Markdown)</label>
+                <div className="mb-2 flex flex-wrap items-center justify-between gap-2">
+                  <label className="block text-content-secondary text-sm">Content (Markdown)</label>
+                  <div className="flex flex-wrap gap-1.5">
+                    <button
+                      type="button"
+                      onClick={() => insertAtCursor(statsSnapshot(trades))}
+                      className="inline-flex items-center gap-1.5 rounded-chip border border-line-strong bg-surface-raised px-2.5 py-1 text-xs text-content-secondary hover:text-content-primary"
+                    >
+                      <BarChart3 size={13} /> Stats snapshot
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInsertMenu((m) => (m === 'trade' ? null : 'trade'))}
+                      aria-expanded={insertMenu === 'trade'}
+                      className={`inline-flex items-center gap-1.5 rounded-chip border px-2.5 py-1 text-xs hover:text-content-primary ${insertMenu === 'trade' ? 'border-brand text-content-primary bg-brand-muted' : 'border-line-strong bg-surface-raised text-content-secondary'}`}
+                    >
+                      <Receipt size={13} /> Trade
+                    </button>
+                    <button
+                      type="button"
+                      onClick={() => setInsertMenu((m) => (m === 'template' ? null : 'template'))}
+                      aria-expanded={insertMenu === 'template'}
+                      className={`inline-flex items-center gap-1.5 rounded-chip border px-2.5 py-1 text-xs hover:text-content-primary ${insertMenu === 'template' ? 'border-brand text-content-primary bg-brand-muted' : 'border-line-strong bg-surface-raised text-content-secondary'}`}
+                    >
+                      <LayoutTemplate size={13} /> Template
+                    </button>
+                  </div>
+                </div>
+
+                {insertMenu === 'trade' && (
+                  <div className="mb-2 max-h-56 overflow-y-auto rounded-lg border border-line-strong bg-surface-raised">
+                    {recentTrades.length === 0 ? (
+                      <p className="px-3 py-2 text-sm text-content-muted">No closed trades yet.</p>
+                    ) : recentTrades.map((t) => {
+                      const pnl = Number(t.gainLoss) || 0;
+                      return (
+                        <button
+                          key={t.id}
+                          type="button"
+                          onClick={() => insertAtCursor(tradeCard(t))}
+                          className="flex w-full items-center justify-between gap-3 border-b border-line px-3 py-2 text-left text-sm last:border-b-0 hover:bg-surface-hover"
+                        >
+                          <span className="text-content-secondary">
+                            {getTradeDate(t).toLocaleString('en-US', { month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' })}
+                            {' · '}
+                            <span className={t.direction === 'short' ? 'text-loss' : 'text-profit'}>{t.direction === 'short' ? 'Short' : 'Long'}</span>
+                            {t.comment ? <span className="text-content-muted"> · {t.comment.slice(0, 40)}</span> : null}
+                          </span>
+                          <span className={`tabular-nums font-medium ${pnl >= 0 ? 'text-profit' : 'text-loss'}`}>
+                            {pnl < 0 ? '-' : '+'}${Math.abs(pnl).toFixed(2)}
+                          </span>
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+
+                {insertMenu === 'template' && (
+                  <div className="mb-2 flex flex-wrap gap-2 rounded-lg border border-line-strong bg-surface-raised p-2">
+                    {NOTE_TEMPLATES.map((tpl) => (
+                      <button
+                        key={tpl.id}
+                        type="button"
+                        onClick={() => applyTemplate(tpl)}
+                        className="rounded-chip bg-surface px-3 py-1.5 text-sm text-content-secondary hover:text-content-primary"
+                      >
+                        {tpl.label}
+                      </button>
+                    ))}
+                  </div>
+                )}
+
                 <textarea
+                  ref={contentRef}
                   rows="14"
                   value={formData.content}
                   onChange={(e) => handleInputChange('content', e.target.value)}
@@ -888,7 +1003,13 @@ function Notebook() {
                         ? <code className="bg-black/40 rounded px-1 py-0.5 text-brand-hover text-sm" {...props} />
                         : <code className="block bg-black/50 rounded p-3 text-brand-hover text-sm overflow-x-auto mb-3" {...props} />
                     ),
-                    a: ({ node, ...props }) => <a className="text-brand underline" target="_blank" rel="noreferrer" {...props} />
+                    a: ({ node, ...props }) => <a className="text-brand underline" target="_blank" rel="noreferrer" {...props} />,
+                    table: ({ node, ...props }) => (
+                      <div className="mb-3 overflow-x-auto"><table className="w-full text-sm tabular-nums" {...props} /></div>
+                    ),
+                    th: ({ node, ...props }) => <th className="border-b border-line-strong px-2 py-1.5 text-left font-medium text-content-secondary" {...props} />,
+                    td: ({ node, ...props }) => <td className="border-b border-line px-2 py-1.5 text-content-primary" {...props} />,
+                    strong: ({ node, ...props }) => <strong className="text-content-primary font-semibold" {...props} />
                   }}
                 >
                   {activeNote.content || ''}
