@@ -8,7 +8,7 @@ import { Menu, Plus } from 'lucide-react';
 function TopBar({ title, description, onOpenMobileNav, onAddTrade, hintG }) {
   return (
     <header className="sticky top-0 z-30 border-b border-line bg-canvas/85 backdrop-blur">
-      <div className="mx-auto flex h-16 max-w-[1280px] items-center gap-3 px-5 lg:px-8">
+      <div className="flex h-16 items-center gap-3 px-4 sm:px-6 lg:px-8 2xl:px-10">
         <button
           onClick={onOpenMobileNav}
           className="-ml-1 rounded-control p-2 text-content-secondary hover:bg-surface-hover hover:text-content-primary lg:hidden"

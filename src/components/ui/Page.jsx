@@ -5,7 +5,7 @@
  * Page identity — title and description — lives in the TopBar, driven by
  * src/config/nav.js, so pages never render their own <h1>. This component owns
  * the vertical rhythm and the toolbar/actions row that sits above the content.
- * Max width and gutters come from <main> in App.jsx.
+ * Gutters come from <main> in App.jsx; pages run full width.
  */
 function Page({ toolbar, actions, actionsClassName = 'flex-shrink-0', children, className = '' }) {
   return (

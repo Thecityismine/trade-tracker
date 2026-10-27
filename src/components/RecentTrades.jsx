@@ -41,7 +41,13 @@ function isWinningTrade(trade) {
   return (trade.gainLoss || 0) >= 0;
 }
 
-function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
+/**
+ * `since` lets a parent own the date range: pass a Date to show trades from
+ * then on, or null for all time. Left undefined, the card keeps its own
+ * period dropdown.
+ */
+function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade, since }) {
+  const rangeControlled = since !== undefined;
   const [filterPeriod, setFilterPeriod] = useState('today');
   const [filterResult, setFilterResult] = useState('all');
   const [selectedTrade, setSelectedTrade] = useState(null);
@@ -66,6 +72,8 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
 
     const now = new Date();
     const tradeDate = getTradeDate(trade);
+
+    if (rangeControlled) return since === null || tradeDate >= since;
 
     switch (filterPeriod) {
       case 'today':
@@ -97,7 +105,7 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
         <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-4 gap-3">
           <h2 className="text-xl font-bold text-content-primary">Recent Trades</h2>
           <div className="flex gap-2">
-            <Select
+            {!rangeControlled && <Select
               className="w-36"
               value={filterPeriod}
               onChange={setFilterPeriod}
@@ -107,7 +115,7 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade }) {
                 { value: 'month', label: 'This Month' },
                 { value: 'all', label: 'All Time' },
               ]}
-            />
+            />}
             <Select
               className="w-36"
               value={filterResult}

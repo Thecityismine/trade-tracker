@@ -61,7 +61,9 @@ export default {
         chip: '8px',
       },
       boxShadow: {
-        'elev-1': '0 1px 2px rgba(0,0,0,0.4), 0 1px 3px rgba(0,0,0,0.3)',
+        // Cards: a lit top edge and hairline ring so surfaces read as raised
+        // panels on the near-black canvas, plus a soft drop below.
+        'elev-1': 'inset 0 1px 0 rgba(255,255,255,0.05), 0 0 0 1px rgba(255,255,255,0.06), 0 10px 24px -12px rgba(0,0,0,0.7), 0 2px 4px rgba(0,0,0,0.35)',
         'elev-2': '0 4px 12px rgba(0,0,0,0.45), 0 2px 4px rgba(0,0,0,0.3)',
         'elev-3': '0 16px 40px rgba(0,0,0,0.55), 0 4px 12px rgba(0,0,0,0.4)',
       },
