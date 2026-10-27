@@ -8,6 +8,7 @@ import { generatePnlImage, downloadCanvas } from '../utils/generatePnlImage';
 import { useDismissable, backdropProps } from '../hooks/useDismissable';
 import { useTrades } from '../context/TradesContext';
 import { accountLossPercent, balancesBeforeTrades, isOverRisk as exceedsRiskLimit } from '../utils/accountMath';
+import { emotionLabel } from '../utils/tradeTags';
 
 const MISTAKE_TAGS = [
   { id: 'over-risk', label: 'Over-Risk' },
@@ -317,7 +318,7 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
               </div>
 
               {/* 3. EXECUTION */}
-              {((trade.executionScore || 0) > 0 || trade.chartPattern || trade.strategyName) && (
+              {((trade.executionScore || 0) > 0 || trade.chartPattern || trade.strategyName || trade.emotion || trade.tags?.length > 0) && (
                 <div>
                   <h3 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-3">Execution</h3>
                   <div className="grid grid-cols-2 gap-3">
@@ -343,6 +344,22 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                       <div className="bg-surface-raised rounded-control p-4 col-span-2">
                         <div className="text-content-muted text-xs mb-1">Strategy</div>
                         <div className="text-brand-hover font-medium text-sm mt-1">{trade.strategyName}</div>
+                      </div>
+                    )}
+                    {trade.emotion && (
+                      <div className="bg-surface-raised rounded-control p-4">
+                        <div className="text-content-muted text-xs mb-1">Going in, felt</div>
+                        <div className="text-content-primary font-medium text-sm mt-1">{emotionLabel(trade.emotion) || trade.emotion}</div>
+                      </div>
+                    )}
+                    {trade.tags?.length > 0 && (
+                      <div className={`bg-surface-raised rounded-control p-4 ${trade.emotion ? '' : 'col-span-2'}`}>
+                        <div className="text-content-muted text-xs mb-1">Tags</div>
+                        <div className="mt-1 flex flex-wrap gap-1.5">
+                          {trade.tags.map((tag) => (
+                            <span key={tag} className="rounded-full bg-brand-muted px-2 py-0.5 text-xs text-brand-hover">{tag}</span>
+                          ))}
+                        </div>
                       </div>
                     )}
                   </div>

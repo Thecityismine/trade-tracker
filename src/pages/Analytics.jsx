@@ -20,6 +20,7 @@ import {
 } from 'recharts';
 import { db } from '../config/firebase';
 import { buildReturnIndex, maxDrawdownPercent } from '../utils/accountMath';
+import { emotionLabel, normalizeTag, performanceBy } from '../utils/tradeTags';
 
 const COLORS = {
   positive: '#22c55e',
@@ -94,6 +95,55 @@ const getWeekLabel = (startDate) => {
 
   return `${weekStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - ${weekEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 };
+
+/**
+ * One row per group — an emotion or a tag — worst net P&L first, so what is
+ * costing money sits at the top.
+ */
+function BreakdownCard({ title, description, firstColumn, rows, emptyText }) {
+  return (
+    <div className="bg-surface rounded-card p-6 shadow-elev-1">
+      <h3 className="text-lg font-bold text-content-primary mb-1">{title}</h3>
+      <p className="text-content-secondary text-sm mb-4">{description}</p>
+      {rows.length === 0 ? (
+        <p className="text-sm text-content-muted">{emptyText}</p>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full text-sm">
+            <thead>
+              <tr className="text-content-secondary border-b border-line">
+                <th className="text-left py-2 pr-4 font-medium">{firstColumn}</th>
+                <th className="text-center py-2 px-2 font-medium">Trades</th>
+                <th className="text-right py-2 px-2 font-medium">Win Rate</th>
+                <th className="text-right py-2 px-2 font-medium">Avg</th>
+                <th className="text-right py-2 px-2 font-medium">Fees</th>
+                <th className="text-right py-2 pl-2 font-medium">Net P&amp;L</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.key} className="border-t border-line hover:bg-surface-raised transition-colors">
+                  <td className={`py-2 pr-4 font-medium ${r.isUntagged ? 'text-content-muted italic' : 'text-content-primary'}`}>
+                    {r.label}
+                  </td>
+                  <td className="text-center py-2 px-2 text-content-secondary">{r.trades}</td>
+                  <td className={`text-right py-2 px-2 font-medium ${r.winRate >= 50 ? 'text-profit' : 'text-loss'}`}>
+                    {r.winRate.toFixed(0)}%
+                  </td>
+                  <td className={`text-right py-2 px-2 ${r.avg >= 0 ? 'text-profit' : 'text-loss'}`}>{signedUsd(r.avg)}</td>
+                  <td className="text-right py-2 px-2 text-content-muted">{usd(-r.fees)}</td>
+                  <td className={`text-right py-2 pl-2 font-bold ${r.net >= 0 ? 'text-profit' : 'text-loss'}`}>
+                    {signedUsd(r.net)}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      )}
+    </div>
+  );
+}
 
 function Analytics() {
   const { trades, deposits } = useTrades();
@@ -421,6 +471,23 @@ function Analytics() {
       .map(p => ({ ...p, trades: p.wins + p.losses, winRate: (p.wins + p.losses) > 0 ? (p.wins / (p.wins + p.losses)) * 100 : 0 }))
       .sort((a, b) => b.totalPnl - a.totalPnl);
   }, [completedTrades]);
+
+  const emotionPerformance = useMemo(
+    () => performanceBy(completedTrades, (t) => [t.emotion], { untaggedLabel: 'Not recorded' })
+      .map((r) => ({ ...r, label: r.isUntagged ? r.key : (emotionLabel(r.key) || r.key) })),
+    [completedTrades]
+  );
+  const tagPerformance = useMemo(
+    () => performanceBy(
+      completedTrades,
+      (t) => [...new Set((Array.isArray(t.tags) ? t.tags : []).map(normalizeTag))],
+      { untaggedLabel: 'Untagged' }
+    ).map((r) => ({ ...r, label: r.key })),
+    [completedTrades]
+  );
+  // Only worth showing once at least one trade carries the field.
+  const hasEmotionData = emotionPerformance.some((r) => !r.isUntagged);
+  const hasTagData = tagPerformance.some((r) => !r.isUntagged);
 
   const behavioralPatterns = useMemo(() => {
     const insights = [];
@@ -758,6 +825,22 @@ function Analytics() {
               </div>
             </div>
           )}
+
+          <BreakdownCard
+            title="Performance by Emotion"
+            description="How you felt going into the trade, and what it paid."
+            firstColumn="Emotion"
+            rows={hasEmotionData ? emotionPerformance : []}
+            emptyText="Pick how you felt going in when you log a trade, and this fills in."
+          />
+
+          <BreakdownCard
+            title="Performance by Tag"
+            description="A trade with several tags counts toward each of them."
+            firstColumn="Tag"
+            rows={hasTagData ? tagPerformance : []}
+            emptyText="Add tags to your trades — setups, sessions, mistakes — to see which ones make money."
+          />
 
           {behavioralPatterns.length > 0 && (
             <div className="bg-surface rounded-card p-6 shadow-elev-1">
