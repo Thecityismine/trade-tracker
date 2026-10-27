@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { ImageIcon, BarChart2, Plus } from 'lucide-react';
+import { ImageIcon, BarChart2, Plus, ArrowDown, ArrowUp, ArrowUpDown } from 'lucide-react';
 import TradeDetailsModal from './TradeDetailsModal';
 import Select from './ui/Select';
 import { useTrades } from '../context/TradesContext';
@@ -41,6 +41,23 @@ function isWinningTrade(trade) {
   return (trade.gainLoss || 0) >= 0;
 }
 
+/** Sortable numeric column header. Lives at module level so a click doesn't remount it and drop focus. */
+function SortHeader({ label, sortKey, sort, onSort }) {
+  const active = sort?.key === sortKey;
+  return (
+    <th className="text-right py-3 px-2" aria-sort={active ? (sort.dir === 'desc' ? 'descending' : 'ascending') : 'none'}>
+      <button
+        type="button"
+        onClick={() => onSort(sortKey)}
+        className={`inline-flex items-center gap-1 hover:text-content-primary ${active ? 'text-content-primary' : ''}`}
+      >
+        {label}
+        {active ? (sort.dir === 'desc' ? <ArrowDown size={13} /> : <ArrowUp size={13} />) : <ArrowUpDown size={13} className="opacity-40" />}
+      </button>
+    </th>
+  );
+}
+
 /**
  * `since` lets a parent own the date range: pass a Date to show trades from
  * then on, or null for all time. Left undefined, the card keeps its own
@@ -51,6 +68,8 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade, since }) {
   const [filterPeriod, setFilterPeriod] = useState('today');
   const [filterResult, setFilterResult] = useState('all');
   const [selectedTrade, setSelectedTrade] = useState(null);
+  // null = newest first (the default). Otherwise { key, dir } on a numeric column.
+  const [sort, setSort] = useState(null);
   // Risk is judged against the account balance before each trade, so it needs
   // the full history and funding, not just the filtered rows shown here.
   const { trades: allTrades, deposits } = useTrades();
@@ -91,13 +110,35 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade, since }) {
     }
   });
 
-  const sortedTrades = [...filteredTrades].sort((a, b) => {
+  const newestFirst = (a, b) => {
     const createdTimeDiff = getCreatedTime(b) - getCreatedTime(a);
     if (createdTimeDiff !== 0) return createdTimeDiff;
     const tradeTimeDiff = getTradeDate(b).getTime() - getTradeDate(a).getTime();
     if (tradeTimeDiff !== 0) return tradeTimeDiff;
     return (b.id || '').localeCompare(a.id || '');
+  };
+  const sortedTrades = [...filteredTrades].sort((a, b) => {
+    if (!sort) return newestFirst(a, b);
+    const va = Number(a[sort.key]) || 0;
+    const vb = Number(b[sort.key]) || 0;
+    return (sort.dir === 'desc' ? vb - va : va - vb) || newestFirst(a, b);
   });
+
+  // Click cycles a column: highest first → lowest first → back to newest first.
+  const cycleSort = (key) => setSort((cur) => {
+    if (!cur || cur.key !== key) return { key, dir: 'desc' };
+    if (cur.dir === 'desc') return { key, dir: 'asc' };
+    return null;
+  });
+  const SORT_OPTIONS = [
+    { value: 'newest', label: 'Newest first' },
+    { value: 'pnlPercent:desc', label: 'Best P&L %' },
+    { value: 'pnlPercent:asc', label: 'Worst P&L %' },
+    { value: 'gainLoss:desc', label: 'Biggest gain' },
+    { value: 'gainLoss:asc', label: 'Biggest loss' },
+    { value: 'fee:desc', label: 'Highest fee' },
+  ];
+  const sortValue = sort ? `${sort.key}:${sort.dir}` : 'newest';
 
   return (
     <>
@@ -126,6 +167,16 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade, since }) {
                 { value: 'loss', label: 'Losses' },
               ]}
             />
+            <Select
+              className="w-36 md:hidden"
+              value={sortValue}
+              onChange={(v) => {
+                if (v === 'newest') return setSort(null);
+                const [key, dir] = v.split(':');
+                setSort({ key, dir });
+              }}
+              options={SORT_OPTIONS}
+            />
           </div>
         </div>
 
@@ -147,9 +198,9 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade, since }) {
                 <th className="text-left py-3 px-2">Date</th>
                 <th className="text-left py-3 px-2">Ticker</th>
                 <th className="text-left py-3 px-2">Direction</th>
-                <th className="text-right py-3 px-2">P&L%</th>
-                <th className="text-right py-3 px-2">Gain / Loss</th>
-                <th className="text-right py-3 px-2">Fee</th>
+                <SortHeader label="P&L%" sortKey="pnlPercent" sort={sort} onSort={cycleSort} />
+                <SortHeader label="Gain / Loss" sortKey="gainLoss" sort={sort} onSort={cycleSort} />
+                <SortHeader label="Fee" sortKey="fee" sort={sort} onSort={cycleSort} />
                 <th className="text-center py-3 px-2">Chart</th>
                 <th className="text-left py-3 px-2">Comment</th>
               </tr>
