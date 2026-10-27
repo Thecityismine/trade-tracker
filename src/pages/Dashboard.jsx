@@ -330,9 +330,17 @@ function Dashboard({ onNavigate }) {
     });
     const parts = [`This week: ${percentSummary.week >= 0 ? '+' : ''}${percentSummary.week.toFixed(1)}%`];
     if (bestDay) parts.push(`Best day: ${bestDay}`);
-    if (streak >= 2 && streakType) parts.push(`Streak: ${streak} ${streakType}${streak !== 1 ? 's' : ''}`);
+    if (streak >= 2 && streakType) parts.push(`Streak: ${streak} ${streakType === 'win' ? 'wins' : 'losses'}`);
     return parts.join(' · ');
   })();
+
+  // The last ten closed trades, oldest to newest — the market's recent
+  // feedback at a glance. A run of red is the cue to size down.
+  const lastTen = trades
+    .filter(t => t.result === 'win' || t.result === 'loss')
+    .sort((a, b) => getTradeDate(a) - getTradeDate(b))
+    .slice(-10);
+  const lastTenWins = lastTen.filter(t => t.result === 'win').length;
 
   const dashGoal = (() => {
     const goalAmt = parseFloat(appSettings.goalAmount) || 0;
@@ -560,6 +568,34 @@ function Dashboard({ onNavigate }) {
               {todaysFocus.map((item, i) => (
                 <p key={i} className="text-sm text-content-primary">→ {item}</p>
               ))}
+            </div>
+          )}
+
+          {lastTen.length > 0 && (
+            <div className="border-t border-line pt-4">
+              <div className="mb-2 flex items-center justify-between">
+                <p className="text-xs text-content-muted">Last {lastTen.length} trades</p>
+                <p className={`text-xs font-bold tabular-nums ${lastTenWins * 2 >= lastTen.length ? 'text-profit' : 'text-loss'}`}>
+                  {lastTenWins}W · {lastTen.length - lastTenWins}L
+                </p>
+              </div>
+              <div className="flex items-center gap-1.5" role="list" aria-label="Last trades, oldest to newest">
+                {lastTen.map((t) => {
+                  const win = t.result === 'win';
+                  const pnl = Number(t.gainLoss) || 0;
+                  const label = `${getTradeDate(t).toLocaleDateString()} · ${win ? 'Win' : 'Loss'} · ${money(pnl, true)}`;
+                  return (
+                    <span
+                      key={t.id}
+                      role="listitem"
+                      title={label}
+                      aria-label={label}
+                      className={`h-3.5 flex-1 rounded-full ${win ? 'bg-profit shadow-[0_0_8px_rgba(52,211,153,0.35)]' : 'bg-loss/80'}`}
+                    />
+                  );
+                })}
+              </div>
+              <p className="mt-1.5 text-[11px] text-content-muted">Oldest → newest</p>
             </div>
           )}
 
