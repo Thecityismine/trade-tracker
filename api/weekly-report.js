@@ -116,10 +116,15 @@ async function handler(req, res) {
   }
 
   try {
-    const response = await client.messages.create({
-      model: 'claude-opus-5',
-      max_tokens: 12000,
+    const response = await client.beta.messages.create({
+      model: 'claude-opus-5-5',
+      // Thinking is always on and counts toward this limit.
+      max_tokens: 16000,
       system: SYSTEM_PROMPT,
+      // On a safety-classifier decline the API retries on a fallback model
+      // within the same call instead of returning a bare refusal.
+      betas: ['server-side-fallback-2026-07-01'],
+      fallbacks: 'default',
       output_config: {
         effort: 'high',
         format: { type: 'json_schema', schema: REPORT_SCHEMA }
