@@ -1,11 +1,13 @@
 import { createContext, useContext, useEffect, useMemo, useState } from 'react';
-import { collection, onSnapshot, orderBy, query } from 'firebase/firestore';
+import { collection, doc, onSnapshot, orderBy, query } from 'firebase/firestore';
 import { db } from '../config/firebase';
+import { DEFAULT_BREAK_EVEN_PERCENT, withOutcomes } from '../utils/outcome';
 
 const TradesContext = createContext({
   trades: [],
   openTrades: [],
   deposits: [],
+  breakEvenPercent: DEFAULT_BREAK_EVEN_PERCENT,
   loading: true,
   error: null
 });
@@ -16,6 +18,14 @@ export function TradesProvider({ children }) {
   const [tradesLoaded, setTradesLoaded] = useState(false);
   const [depositsLoaded, setDepositsLoaded] = useState(false);
   const [error, setError] = useState(null);
+  const [breakEvenPercent, setBreakEvenPercent] = useState(DEFAULT_BREAK_EVEN_PERCENT);
+
+  useEffect(() => {
+    return onSnapshot(doc(db, 'settings', 'user'), (snap) => {
+      const v = snap.exists() ? snap.data().breakEvenPercent : undefined;
+      setBreakEvenPercent(v ?? DEFAULT_BREAK_EVEN_PERCENT);
+    });
+  }, []);
 
   useEffect(() => {
     const q = query(collection(db, 'trades'), orderBy('tradeDate', 'desc'));
@@ -58,12 +68,18 @@ export function TradesProvider({ children }) {
   // would land in the stats as a $0 trade. Trades logged before open-position
   // tracking existed have no `status` at all, so anything that isn't
   // explicitly open counts as closed.
-  const trades = useMemo(() => allTrades.filter((t) => t.status !== 'open'), [allTrades]);
+  //
+  // Each closed trade also carries `outcome` — win, loss or scratch — so every
+  // page classifies small results the same way.
+  const trades = useMemo(
+    () => withOutcomes(allTrades.filter((t) => t.status !== 'open'), deposits, breakEvenPercent),
+    [allTrades, deposits, breakEvenPercent]
+  );
   const openTrades = useMemo(() => allTrades.filter((t) => t.status === 'open'), [allTrades]);
 
   return (
     <TradesContext.Provider
-      value={{ trades, openTrades, deposits, loading: !tradesLoaded || !depositsLoaded, error }}
+      value={{ trades, openTrades, deposits, breakEvenPercent, loading: !tradesLoaded || !depositsLoaded, error }}
     >
       {children}
     </TradesContext.Provider>

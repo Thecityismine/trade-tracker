@@ -7,6 +7,7 @@ import OpenPositions from '../components/OpenPositions';
 import TradeModal from '../components/TradeModal';
 import ReviewQueue from '../components/ReviewQueue';
 import { reviewQueue } from '../utils/review';
+import { decidedWinRate } from '../utils/outcome';
 import { collection, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
@@ -102,8 +103,11 @@ function tradesSince(trades, since) {
 }
 
 function summarize(list) {
-  const wins = list.filter(t => t.result === 'win');
-  const losses = list.filter(t => t.result === 'loss');
+  // `outcome`, not `result`: a scratch is neither a win nor a loss, so it is
+  // left out of win rate but its dollars still count toward P&L.
+  const wins = list.filter(t => t.outcome === 'win');
+  const losses = list.filter(t => t.outcome === 'loss');
+  const scratches = list.filter(t => t.outcome === 'scratch');
 
   const totalPnl = list.reduce((sum, t) => sum + (t.gainLoss || 0), 0);
   // gainLoss is recorded net of fees, so gross is the figure before costs.
@@ -111,13 +115,15 @@ function summarize(list) {
   // number alone.
   const fees = list.reduce((sum, t) => sum + (t.fee || 0), 0);
   const grossPnl = totalPnl + fees;
-  const totalWins = wins.reduce((sum, t) => sum + (t.gainLoss || 0), 0);
-  const totalLosses = Math.abs(losses.reduce((sum, t) => sum + (t.gainLoss || 0), 0));
+  // Profit factor is by dollars, so it sums every positive and negative
+  // trade, scratches included.
+  const totalWins = list.reduce((sum, t) => sum + Math.max(0, t.gainLoss || 0), 0);
+  const totalLosses = Math.abs(list.reduce((sum, t) => sum + Math.min(0, t.gainLoss || 0), 0));
 
-  const winRate = list.length > 0 ? (wins.length / list.length) * 100 : 0;
-  const avgWin = wins.length > 0 ? totalWins / wins.length : 0;
-  const avgLoss = losses.length > 0 ? totalLosses / losses.length : 0;
-  const expectancy = ((winRate / 100) * avgWin) - ((1 - winRate / 100) * avgLoss);
+  const winRate = decidedWinRate(wins.length, losses.length);
+  // Average net per trade. With every trade a win or a loss this equals the
+  // win-rate formula; it stays correct once scratches are in the mix.
+  const expectancy = list.length > 0 ? totalPnl / list.length : 0;
 
   // null, not 0: a period with no losing trades has an undefined profit factor.
   // Reporting it as 0.00 renders a flawless run as the worst possible score.
@@ -131,6 +137,7 @@ function summarize(list) {
     winRate,
     wins: wins.length,
     losses: losses.length,
+    scratches: scratches.length,
     expectancy,
     profitFactor,
   };
@@ -277,10 +284,10 @@ function Dashboard({ onNavigate }) {
       return !Number.isNaN(d.getTime()) && d >= todayStart;
     });
     if (todayTrades.length > 0) {
-      const wins = todayTrades.filter(t => t.result === 'win').length;
-      const losses = todayTrades.filter(t => t.result === 'loss').length;
+      const wins = todayTrades.filter(t => t.outcome === 'win').length;
+      const losses = todayTrades.filter(t => t.outcome === 'loss').length;
       const pnl = todayTrades.reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
-      const wr = Math.round(wins / todayTrades.length * 100);
+      const wr = Math.round(decidedWinRate(wins, losses));
       let note = '';
       if (wins > 0 && losses === 0) note = ' Clean session — excellent discipline.';
       else if (losses > wins) note = ' More losses than wins — review your setups and reset for tomorrow.';
@@ -297,9 +304,10 @@ function Dashboard({ onNavigate }) {
       return !Number.isNaN(d.getTime()) && d >= weekStart;
     });
     if (weekTrades.length === 0) return 'No trades this week yet. Stay patient and wait for your setup.';
-    const wWins = weekTrades.filter(t => t.result === 'win').length;
+    const wWins = weekTrades.filter(t => t.outcome === 'win').length;
+    const wLosses = weekTrades.filter(t => t.outcome === 'loss').length;
     const wPnl = weekTrades.reduce((sum, t) => sum + (Number(t.gainLoss) || 0), 0);
-    return `No trades today. This week: ${weekTrades.length} trade${weekTrades.length !== 1 ? 's' : ''} · ${wWins}W / ${weekTrades.length - wWins}L · ${wPnl >= 0 ? '+' : '-'}$${Math.abs(wPnl).toFixed(2)}.`;
+    return `No trades today. This week: ${weekTrades.length} trade${weekTrades.length !== 1 ? 's' : ''} · ${wWins}W / ${wLosses}L · ${wPnl >= 0 ? '+' : '-'}$${Math.abs(wPnl).toFixed(2)}.`;
   })();
 
   const weekBanner = (() => {
@@ -323,14 +331,15 @@ function Dashboard({ onNavigate }) {
     const dayEntries = Object.entries(dayPnl);
     const bestEntry = dayEntries.reduce((a, b) => Number(b[1]) > Number(a[1]) ? b : a, dayEntries[0]);
     const bestDay = bestEntry && Number(bestEntry[1]) > 0 ? DAY_NAMES[+bestEntry[0]] : null;
+    // Scratches neither extend nor break a streak.
     const sortedAll = [...trades]
-      .filter(t => t.result === 'win' || t.result === 'loss')
+      .filter(t => t.outcome === 'win' || t.outcome === 'loss')
       .sort((a, b) => getTradeDate(a) - getTradeDate(b));
     let streak = 0;
     let streakType = null;
     sortedAll.forEach(t => {
-      if (t.result === streakType) streak++;
-      else { streak = 1; streakType = t.result; }
+      if (t.outcome === streakType) streak++;
+      else { streak = 1; streakType = t.outcome; }
     });
     const parts = [`This week: ${percentSummary.week >= 0 ? '+' : ''}${percentSummary.week.toFixed(1)}%`];
     if (bestDay) parts.push(`Best day: ${bestDay}`);
@@ -346,7 +355,9 @@ function Dashboard({ onNavigate }) {
     .filter(t => t.result === 'win' || t.result === 'loss')
     .sort((a, b) => getTradeDate(a) - getTradeDate(b))
     .slice(-10);
-  const lastTenWins = lastTen.filter(t => t.result === 'win').length;
+  const lastTenWins = lastTen.filter(t => t.outcome === 'win').length;
+  const lastTenLosses = lastTen.filter(t => t.outcome === 'loss').length;
+  const lastTenScratches = lastTen.length - lastTenWins - lastTenLosses;
 
   const dashGoal = (() => {
     const goalAmt = parseFloat(appSettings.goalAmount) || 0;
@@ -414,7 +425,10 @@ function Dashboard({ onNavigate }) {
     if (completed.length < 5) return null;
     const wins = completed.filter(t => t.result === 'win');
     const losses = completed.filter(t => t.result === 'loss');
-    const winRate = (wins.length / completed.length) * 100;
+    const winRate = decidedWinRate(
+      completed.filter(t => t.outcome === 'win').length,
+      completed.filter(t => t.outcome === 'loss').length
+    );
     const longs = completed.filter(t => t.direction !== 'short');
     const shorts = completed.filter(t => t.direction === 'short');
     const dirBias = longs.length >= shorts.length ? 'long-biased' : 'short-biased';
@@ -495,17 +509,17 @@ function Dashboard({ onNavigate }) {
           icon={DollarSign}
           hint={RANGE_LABELS[range]}
           tone={toneOf(metrics.totalPnl)}
-          sub={`${metrics.wins}W · ${metrics.losses}L · ${selectedReturn >= 0 ? '+' : ''}${selectedReturn.toFixed(1)}%`}
+          sub={`${metrics.wins}W · ${metrics.losses}L${metrics.scratches ? ` · ${metrics.scratches}S` : ''} · ${selectedReturn >= 0 ? '+' : ''}${selectedReturn.toFixed(1)}%`}
         >
           <AnimatedNumber value={metrics.totalPnl} decimals={2} duration={countDuration} formattingFn={(v) => money(v)} />
         </Kpi>
         <Kpi
           label="Win rate"
           icon={Target}
-          tone={metrics.count === 0 ? 'text-content-muted' : metrics.winRate >= 50 ? 'text-profit' : 'text-loss'}
-          sub={`${metrics.count} trade${metrics.count === 1 ? '' : 's'}`}
+          tone={metrics.wins + metrics.losses === 0 ? 'text-content-muted' : metrics.winRate >= 50 ? 'text-profit' : 'text-loss'}
+          sub={`${metrics.count} trade${metrics.count === 1 ? '' : 's'}${metrics.scratches ? `, ${metrics.scratches} scratch${metrics.scratches === 1 ? '' : 'es'}` : ''}`}
         >
-          {metrics.count === 0
+          {metrics.wins + metrics.losses === 0
             ? '--'
             : <AnimatedNumber value={metrics.winRate} suffix="%" decimals={1} duration={countDuration} />}
         </Kpi>
@@ -601,22 +615,26 @@ function Dashboard({ onNavigate }) {
             <div className="border-t border-line pt-4">
               <div className="mb-2 flex items-center justify-between">
                 <p className="text-xs text-content-muted">Last {lastTen.length} trades</p>
-                <p className={`text-xs font-bold tabular-nums ${lastTenWins * 2 >= lastTen.length ? 'text-profit' : 'text-loss'}`}>
-                  {lastTenWins}W · {lastTen.length - lastTenWins}L
+                <p className={`text-xs font-bold tabular-nums ${lastTenWins >= lastTenLosses ? 'text-profit' : 'text-loss'}`}>
+                  {lastTenWins}W · {lastTenLosses}L{lastTenScratches > 0 ? ` · ${lastTenScratches}S` : ''}
                 </p>
               </div>
               <div className="flex items-center gap-1.5" role="list" aria-label="Last trades, oldest to newest">
                 {lastTen.map((t) => {
-                  const win = t.result === 'win';
                   const pnl = Number(t.gainLoss) || 0;
-                  const label = `${getTradeDate(t).toLocaleDateString()} · ${win ? 'Win' : 'Loss'} · ${money(pnl, true)}`;
+                  const word = t.outcome === 'win' ? 'Win' : t.outcome === 'loss' ? 'Loss' : 'Scratch';
+                  const label = `${getTradeDate(t).toLocaleDateString()} · ${word} · ${money(pnl, true)}`;
                   return (
                     <span
                       key={t.id}
                       role="listitem"
                       title={label}
                       aria-label={label}
-                      className={`h-3.5 flex-1 rounded-full ${win ? 'bg-profit shadow-[0_0_8px_rgba(52,211,153,0.35)]' : 'bg-loss/80'}`}
+                      className={`h-3.5 flex-1 rounded-full ${
+                        t.outcome === 'win'
+                          ? 'bg-profit shadow-[0_0_8px_rgba(52,211,153,0.35)]'
+                          : t.outcome === 'loss' ? 'bg-loss/80' : 'bg-content-muted/50'
+                      }`}
                     />
                   );
                 })}
@@ -682,7 +700,9 @@ function Dashboard({ onNavigate }) {
             <p className={`text-3xl font-bold tabular-nums leading-none ${toneOf(monthMetrics.totalPnl)}`}>
               {money(monthMetrics.totalPnl)}
             </p>
-            <p className="mb-4 mt-1 text-sm text-content-muted">{monthMetrics.wins}W · {monthMetrics.losses}L</p>
+            <p className="mb-4 mt-1 text-sm text-content-muted">
+              {monthMetrics.wins}W · {monthMetrics.losses}L{monthMetrics.scratches ? ` · ${monthMetrics.scratches} scratch` : ''}
+            </p>
             <div className="space-y-1.5">
               <div className="flex items-center justify-between text-sm">
                 <span className="text-content-muted">Gross</span>

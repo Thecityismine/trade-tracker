@@ -21,6 +21,7 @@ import {
 import { db } from '../config/firebase';
 import { buildReturnIndex, maxDrawdownPercent } from '../utils/accountMath';
 import { emotionLabel, normalizeTag, performanceBy } from '../utils/tradeTags';
+import { decidedWinRate } from '../utils/outcome';
 
 const COLORS = {
   positive: '#22c55e',
@@ -173,30 +174,29 @@ function Analytics() {
 
   const directionStats = useMemo(() => {
     const initial = {
-      long: { direction: 'Long', wins: 0, losses: 0, totalPnl: 0, totalPnlPercent: 0 },
-      short: { direction: 'Short', wins: 0, losses: 0, totalPnl: 0, totalPnlPercent: 0 }
+      long: { direction: 'Long', trades: 0, wins: 0, losses: 0, totalPnl: 0, totalPnlPercent: 0 },
+      short: { direction: 'Short', trades: 0, wins: 0, losses: 0, totalPnl: 0, totalPnlPercent: 0 }
     };
 
     completedTrades.forEach((trade) => {
       const key = trade.direction === 'short' ? 'short' : 'long';
       const target = initial[key];
+      target.trades += 1;
 
-      if (trade.result === 'win') {
-        target.wins += 1;
-      } else {
-        target.losses += 1;
-      }
+      // Scratches count as trades (and their P&L counts) but are neither.
+      if (trade.outcome === 'win') target.wins += 1;
+      else if (trade.outcome === 'loss') target.losses += 1;
 
       target.totalPnl += toNumber(trade.gainLoss);
       target.totalPnlPercent += toNumber(trade.pnlPercent);
     });
 
     return Object.values(initial).map((item) => {
-      const tradesCount = item.wins + item.losses;
+      const tradesCount = item.trades;
       return {
         ...item,
         tradesCount,
-        winRate: tradesCount > 0 ? (item.wins / tradesCount) * 100 : 0,
+        winRate: decidedWinRate(item.wins, item.losses),
         avgPnlPercent: tradesCount > 0 ? item.totalPnlPercent / tradesCount : 0
       };
     });
@@ -229,23 +229,21 @@ function Analytics() {
       target.totalPnl += toNumber(trade.gainLoss);
       target.totalPnlPercent += toNumber(trade.pnlPercent);
 
-      if (trade.result === 'win') {
-        target.wins += 1;
-      } else {
-        target.losses += 1;
-      }
+      // Scratches count as trades (and their P&L counts) but are neither.
+      if (trade.outcome === 'win') target.wins += 1;
+      else if (trade.outcome === 'loss') target.losses += 1;
     });
 
     return Array.from(bucketMap.values()).map((item) => ({
       ...item,
-      winRate: item.trades > 0 ? (item.wins / item.trades) * 100 : 0,
+      winRate: decidedWinRate(item.wins, item.losses),
       avgPnlPercent: item.trades > 0 ? item.totalPnlPercent / item.trades : 0
     }));
   }, [completedTrades]);
 
   const avgWinLossStats = useMemo(() => {
-    const wins = completedTrades.filter((trade) => trade.result === 'win');
-    const losses = completedTrades.filter((trade) => trade.result === 'loss');
+    const wins = completedTrades.filter((trade) => trade.outcome === 'win');
+    const losses = completedTrades.filter((trade) => trade.outcome === 'loss');
 
     const avgWinUsd = wins.length > 0
       ? wins.reduce((sum, trade) => sum + toNumber(trade.gainLoss), 0) / wins.length
@@ -289,7 +287,10 @@ function Analytics() {
   }, [completedTrades]);
 
   const streakStats = useMemo(() => {
-    const sortedTrades = [...completedTrades].sort((a, b) => a.parsedTradeDate - b.parsedTradeDate);
+    // Scratches neither extend nor break a streak.
+    const sortedTrades = completedTrades
+      .filter((t) => t.outcome === 'win' || t.outcome === 'loss')
+      .sort((a, b) => a.parsedTradeDate - b.parsedTradeDate);
 
     let currentType = null;
     let currentCount = 0;
@@ -297,14 +298,14 @@ function Analytics() {
     let maxLossStreak = 0;
 
     sortedTrades.forEach((trade) => {
-      if (trade.result === currentType) {
+      if (trade.outcome === currentType) {
         currentCount += 1;
       } else {
-        currentType = trade.result;
+        currentType = trade.outcome;
         currentCount = 1;
       }
 
-      if (trade.result === 'win') {
+      if (trade.outcome === 'win') {
         maxWinStreak = Math.max(maxWinStreak, currentCount);
       } else {
         maxLossStreak = Math.max(maxLossStreak, currentCount);
@@ -343,11 +344,9 @@ function Analytics() {
       target.totalPnlPercent += toNumber(trade.pnlPercent);
       target.trades += 1;
 
-      if (trade.result === 'win') {
-        target.wins += 1;
-      } else {
-        target.losses += 1;
-      }
+      // Scratches count as trades (and their P&L counts) but are neither.
+      if (trade.outcome === 'win') target.wins += 1;
+      else if (trade.outcome === 'loss') target.losses += 1;
     });
 
     return Array.from(monthMap.values())
@@ -355,7 +354,7 @@ function Analytics() {
       .slice(-12)
       .map((month) => ({
         ...month,
-        winRate: month.trades > 0 ? (month.wins / month.trades) * 100 : 0,
+        winRate: decidedWinRate(month.wins, month.losses),
         avgPnlPercent: month.trades > 0 ? month.totalPnlPercent / month.trades : 0
       }));
   }, [completedTrades]);
@@ -385,11 +384,9 @@ function Analytics() {
       target.totalPnlPercent += toNumber(trade.pnlPercent);
       target.trades += 1;
 
-      if (trade.result === 'win') {
-        target.wins += 1;
-      } else {
-        target.losses += 1;
-      }
+      // Scratches count as trades (and their P&L counts) but are neither.
+      if (trade.outcome === 'win') target.wins += 1;
+      else if (trade.outcome === 'loss') target.losses += 1;
     });
 
     return Array.from(weekMap.values()).sort((a, b) => a.startDate - b.startDate);
@@ -460,15 +457,16 @@ function Analytics() {
       if (!trade.chartPattern?.trim()) return;
       const key = trade.chartPattern.trim().toLowerCase();
       if (!patternMap.has(key)) {
-        patternMap.set(key, { name: trade.chartPattern.trim(), wins: 0, losses: 0, totalPnl: 0 });
+        patternMap.set(key, { name: trade.chartPattern.trim(), trades: 0, wins: 0, losses: 0, totalPnl: 0 });
       }
       const p = patternMap.get(key);
-      if (trade.result === 'win') p.wins++;
-      else p.losses++;
+      p.trades++;
+      if (trade.outcome === 'win') p.wins++;
+      else if (trade.outcome === 'loss') p.losses++;
       p.totalPnl += toNumber(trade.gainLoss);
     });
     return Array.from(patternMap.values())
-      .map(p => ({ ...p, trades: p.wins + p.losses, winRate: (p.wins + p.losses) > 0 ? (p.wins / (p.wins + p.losses)) * 100 : 0 }))
+      .map(p => ({ ...p, winRate: decidedWinRate(p.wins, p.losses) }))
       .sort((a, b) => b.totalPnl - a.totalPnl);
   }, [completedTrades]);
 
@@ -497,13 +495,14 @@ function Analytics() {
     const dayMap = {};
     completedTrades.forEach(t => {
       const d = t.parsedTradeDate.getDay();
-      if (!dayMap[d]) dayMap[d] = { wins: 0, losses: 0, pnl: 0 };
-      if (t.result === 'win') dayMap[d].wins++;
-      else dayMap[d].losses++;
+      if (!dayMap[d]) dayMap[d] = { trades: 0, wins: 0, losses: 0, pnl: 0 };
+      dayMap[d].trades++;
+      if (t.outcome === 'win') dayMap[d].wins++;
+      else if (t.outcome === 'loss') dayMap[d].losses++;
       dayMap[d].pnl += toNumber(t.gainLoss);
     });
     const days = Object.entries(dayMap)
-      .map(([d, s]) => ({ day: +d, name: DAY_NAMES[+d], ...s, trades: s.wins + s.losses }))
+      .map(([d, s]) => ({ day: +d, name: DAY_NAMES[+d], ...s }))
       .filter(d => d.trades >= 2);
 
     if (days.length >= 2) {
@@ -513,13 +512,15 @@ function Analytics() {
       if (worst.pnl < 0 && worst.day !== best.day) insights.push({ type: 'warning', text: `${worst.name} is your worst day (${usd(worst.pnl)} total) — consider smaller size on ${worst.name}.` });
     }
 
-    const sorted = [...completedTrades].sort((a, b) => a.parsedTradeDate - b.parsedTradeDate);
+    const sorted = completedTrades
+      .filter((t) => t.outcome === 'win' || t.outcome === 'loss')
+      .sort((a, b) => a.parsedTradeDate - b.parsedTradeDate);
     let streak = 0;
     let checksAfter3 = 0;
     let lossesAfter3 = 0;
     sorted.forEach(t => {
-      if (streak >= 3) { checksAfter3++; if (t.result === 'loss') lossesAfter3++; }
-      streak = t.result === 'win' ? streak + 1 : 0;
+      if (streak >= 3) { checksAfter3++; if (t.outcome === 'loss') lossesAfter3++; }
+      streak = t.outcome === 'win' ? streak + 1 : 0;
     });
     if (checksAfter3 >= 3 && lossesAfter3 / checksAfter3 >= 0.6) {
       insights.push({ type: 'warning', text: `You tend to lose after 3+ consecutive wins (${Math.round(lossesAfter3 / checksAfter3 * 100)}% of the time) — watch for overconfidence.` });
@@ -588,8 +589,10 @@ function Analytics() {
   }, [mindsetTrend]);
 
   const totalClosedTrades = completedTrades.length;
-  const totalWins = completedTrades.filter((trade) => trade.result === 'win').length;
-  const overallWinRate = totalClosedTrades > 0 ? (totalWins / totalClosedTrades) * 100 : 0;
+  const totalWins = completedTrades.filter((trade) => trade.outcome === 'win').length;
+  const totalLosses = completedTrades.filter((trade) => trade.outcome === 'loss').length;
+  const totalScratches = totalClosedTrades - totalWins - totalLosses;
+  const overallWinRate = decidedWinRate(totalWins, totalLosses);
 
   return (
     <Page>
@@ -601,7 +604,7 @@ function Analytics() {
           label="Overall Win Rate"
           value={`${overallWinRate.toFixed(2)}%`}
           tone={overallWinRate >= 50 ? 'profit' : 'loss'}
-          hint={`Across ${totalClosedTrades} closed trades`}
+          hint={`${totalWins}W / ${totalLosses}L across ${totalClosedTrades} closed trades${totalScratches ? ` · ${totalScratches} scratches left out` : ''}`}
         />
         <StatTile label="Closed Trades" value={totalClosedTrades} />
         <StatTile label="Max Drawdown" value={`-${maxDrawdown.toFixed(2)}%`} tone="loss" />

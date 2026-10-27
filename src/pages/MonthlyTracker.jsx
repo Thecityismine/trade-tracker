@@ -322,10 +322,12 @@ function MonthlyTracker() {
 
       const month = monthMap.get(monthKey);
       month.trades.push(trade);
-      if (trade.result === 'win') {
+      // `outcome`: a scratch is in the trade list and P&L but neither a
+      // win nor a loss.
+      if (trade.outcome === 'win') {
         month.wins++;
         month.totalWinPercent += Math.max(0, trade.pnlPercent || 0);
-      } else if (trade.result === 'loss') {
+      } else if (trade.outcome === 'loss') {
         month.losses++;
         month.totalLossPercentAbs += Math.abs(Math.min(0, trade.pnlPercent || 0));
       }
@@ -334,11 +336,12 @@ function MonthlyTracker() {
     });
 
     const months = Array.from(monthMap.values()).map((month) => {
-      const totalTrades = month.wins + month.losses;
-      const winRate = totalTrades > 0 ? (month.wins / totalTrades) * 100 : 0;
+      const totalTrades = month.trades.length;
+      const decided = month.wins + month.losses;
+      const winRate = decided > 0 ? (month.wins / decided) * 100 : 0;
       const avgWin = month.wins > 0 ? month.totalWinPercent / month.wins : 0;
       const avgLoss = month.losses > 0 ? -(month.totalLossPercentAbs / month.losses) : 0;
-      const expectancyPercent = totalTrades > 0
+      const expectancyPercent = decided > 0
         ? ((winRate / 100) * avgWin) + ((1 - winRate / 100) * avgLoss)
         : 0;
       const profitFactor = month.totalLossPercentAbs > 0

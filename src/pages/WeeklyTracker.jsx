@@ -61,8 +61,9 @@ function getStreakNote(trades) {
   let maxStreak = 0;
   let cur = 0;
   sorted.forEach((t) => {
-    if (t.result === 'loss') { cur++; maxStreak = Math.max(maxStreak, cur); }
-    else cur = 0;
+    // Scratches neither extend nor break a run of losses.
+    if (t.outcome === 'loss') { cur++; maxStreak = Math.max(maxStreak, cur); }
+    else if (t.outcome === 'win') cur = 0;
   });
   if (maxStreak >= 3) return `${maxStreak} consecutive losses this week — check if you chased entries`;
   return null;
@@ -306,10 +307,12 @@ function WeeklyTracker() {
 
       const week = weekMap.get(weekKey);
       week.trades.push(trade);
-      if (trade.result === 'win') {
+      // `outcome`: a scratch is in the trade list and P&L but neither a
+      // win nor a loss.
+      if (trade.outcome === 'win') {
         week.wins++;
         week.totalWinPercent += Math.max(0, trade.pnlPercent || 0);
-      } else if (trade.result === 'loss') {
+      } else if (trade.outcome === 'loss') {
         week.losses++;
         week.totalLossPercentAbs += Math.abs(Math.min(0, trade.pnlPercent || 0));
       }
@@ -318,11 +321,12 @@ function WeeklyTracker() {
     });
 
     const weeks = Array.from(weekMap.values()).map((week) => {
-      const totalTrades = week.wins + week.losses;
-      const winRate = totalTrades > 0 ? (week.wins / totalTrades) * 100 : 0;
+      const totalTrades = week.trades.length;
+      const decided = week.wins + week.losses;
+      const winRate = decided > 0 ? (week.wins / decided) * 100 : 0;
       const avgWin = week.wins > 0 ? week.totalWinPercent / week.wins : 0;
       const avgLoss = week.losses > 0 ? -(week.totalLossPercentAbs / week.losses) : 0;
-      const expectancy = totalTrades > 0
+      const expectancy = decided > 0
         ? ((winRate / 100) * avgWin) + ((1 - winRate / 100) * avgLoss)
         : 0;
       const profitFactor = week.totalLossPercentAbs > 0
@@ -472,7 +476,7 @@ function WeeklyTracker() {
             const streakNote = getStreakNote(week.trades);
             const nextFocus = getNextWeekFocus(week);
             const dayGroups = groupByDay(week.trades);
-            const totalTrades = week.wins + week.losses;
+            const totalTrades = week.trades.length;
             const absGain = Math.abs(week.pnl).toFixed(2);
             const gainPrefix = week.pnl >= 0 ? '+$' : '-$';
 

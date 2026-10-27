@@ -47,8 +47,10 @@ export function performanceBy(trades, keysOf, { untaggedLabel = null } = {}) {
     if (!groups.has(key)) groups.set(key, { key, trades: 0, wins: 0, losses: 0, net: 0, fees: 0 });
     const g = groups.get(key);
     g.trades++;
-    if (t.result === 'win') g.wins++;
-    else g.losses++;
+    // `outcome` (set in TradesContext) so scratches stay out of win rate.
+    const outcome = t.outcome || t.result;
+    if (outcome === 'win') g.wins++;
+    else if (outcome === 'loss') g.losses++;
     g.net += Number(t.gainLoss) || 0;
     g.fees += Number(t.fee) || 0;
   };
@@ -67,7 +69,7 @@ export function performanceBy(trades, keysOf, { untaggedLabel = null } = {}) {
   return [...groups.values()]
     .map((g) => ({
       ...g,
-      winRate: g.trades > 0 ? (g.wins / g.trades) * 100 : 0,
+      winRate: (g.wins + g.losses) > 0 ? (g.wins / (g.wins + g.losses)) * 100 : 0,
       avg: g.trades > 0 ? g.net / g.trades : 0,
       isUntagged: g.key === untaggedLabel,
     }))

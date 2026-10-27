@@ -9,6 +9,7 @@ import { Card } from '../components/ui/Surface';
 import DateField from '../components/ui/DateField';
 import { CHART, gridProps, xAxisProps, yAxisProps, tooltipProps, lineProps, usdTick } from '../components/ui/chartTheme';
 import { balancesBeforeTrades, isOverRisk } from '../utils/accountMath';
+import { DEFAULT_BREAK_EVEN_PERCENT } from '../utils/outcome';
 
 const SECTIONS = [
   { id: 'account', label: 'Account' },
@@ -50,6 +51,7 @@ function Settings() {
   const [maxTradesPerDay, setMaxTradesPerDay] = useState('');
   const [maxDailyLoss, setMaxDailyLoss] = useState('');
   const [dailyPnlGoal, setDailyPnlGoal] = useState('');
+  const [breakEven, setBreakEven] = useState(String(DEFAULT_BREAK_EVEN_PERCENT));
   const [savingSettings, setSavingSettings] = useState(false);
   const [settingsSaved, setSettingsSaved] = useState(false);
   const [section, setSection] = useState('account');
@@ -64,6 +66,7 @@ function Settings() {
         setMaxTradesPerDay(data.maxTradesPerDay?.toString() || '');
         setMaxDailyLoss(data.maxDailyLossPercent?.toString() || '');
         setDailyPnlGoal(data.dailyPnlGoalPercent?.toString() || '');
+        setBreakEven(String(data.breakEvenPercent ?? DEFAULT_BREAK_EVEN_PERCENT));
       }
     });
   }, []);
@@ -100,7 +103,10 @@ function Settings() {
       maxRiskPercent: parseFloat(maxRisk) || null,
       maxTradesPerDay: parseInt(maxTradesPerDay) || null,
       maxDailyLossPercent: parseFloat(maxDailyLoss) || null,
-      dailyPnlGoalPercent: parseFloat(dailyPnlGoal) || null
+      dailyPnlGoalPercent: parseFloat(dailyPnlGoal) || null,
+      // 0, not null: an empty field means scratches are switched off, and a
+      // missing value would fall back to the default.
+      breakEvenPercent: Math.max(0, parseFloat(breakEven) || 0)
     }, { merge: true });
     setSavingSettings(false);
     setSettingsSaved(true);
@@ -550,6 +556,19 @@ function Settings() {
                 placeholder="e.g. 5"
               />
               <p className="text-content-muted text-xs mt-1">Stop trading when daily loss hits this %.</p>
+            </div>
+            <div>
+              <label className="text-content-secondary text-xs block mb-1">Scratch Band (± % of account)</label>
+              <input
+                type="number"
+                min="0"
+                step="0.1"
+                value={breakEven}
+                onChange={e => setBreakEven(e.target.value)}
+                className="w-full bg-surface-raised border border-line-strong rounded-lg px-3 py-2 text-content-primary focus:outline-none focus:border-brand"
+                placeholder="e.g. 0.5"
+              />
+              <p className="text-content-muted text-xs mt-1">A trade whose net P&amp;L is within this % of the balance before it counts as a scratch, not a win or loss. 0 turns it off.</p>
             </div>
           </div>
 
