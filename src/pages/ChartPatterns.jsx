@@ -5,7 +5,6 @@ import { db, storage } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 import Page from '../components/ui/Page';
-import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
 import Select from '../components/ui/Select';
 import { useDismissable, backdropProps } from '../hooks/useDismissable';
@@ -335,11 +334,7 @@ function ChartPatterns() {
 
   return (
     <Page
-      actions={
-        <Button icon={Plus} onClick={openAddModal}>
-          Add Pattern
-        </Button>
-      }
+      primaryAction={{ label: 'Add Pattern', icon: Plus, onClick: openAddModal }}
     >
       {/* Filters */}
       <div className="bg-surface rounded-card px-4 py-3 space-y-3 shadow-elev-1">

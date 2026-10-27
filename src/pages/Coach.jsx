@@ -3,7 +3,6 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { ArrowUp, RotateCcw, Sparkles } from 'lucide-react';
 import Page from '../components/ui/Page';
-import Button from '../components/ui/Button';
 import { useTrades } from '../context/TradesContext';
 import { askCoach, buildCoachContext, useCoachSources } from '../utils/coach';
 
@@ -75,9 +74,7 @@ function Coach() {
 
   return (
     <Page
-      actions={turns.length > 0 && (
-        <Button variant="secondary" icon={RotateCcw} onClick={reset} disabled={busy}>New conversation</Button>
-      )}
+      primaryAction={turns.length > 0 && { label: 'New conversation', icon: RotateCcw, onClick: reset, disabled: busy, variant: 'secondary' }}
     >
       <div className="mx-auto flex w-full max-w-3xl flex-col gap-4">
         {turns.length === 0 && (

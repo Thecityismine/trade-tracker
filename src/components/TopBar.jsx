@@ -1,9 +1,36 @@
 import { Menu, Plus } from 'lucide-react';
 
+/** Where a page's primary actions render — see `primaryAction` on <Page>. */
+export const TOPBAR_ACTIONS_ID = 'topbar-actions';
+
 /**
- * Slim contextual header. Holds the page identity, and the primary action only
- * on pages that pass one — logging a trade belongs to the dashboard, not to
- * every screen in the app.
+ * A primary action in the top bar. Icon and label from `sm` up; icon only on
+ * phones, so it never takes a row of its own.
+ */
+export function TopBarAction({ icon: Icon = Plus, label, onClick, disabled = false, variant = 'primary', iconClassName = '' }) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      disabled={disabled}
+      aria-label={label}
+      title={label}
+      className={`flex items-center gap-1.5 rounded-control px-3 py-2 text-sm font-medium transition-colors active:scale-95 disabled:opacity-50 disabled:active:scale-100 ${
+        variant === 'secondary'
+          ? 'border border-line bg-surface-raised text-content-primary hover:bg-surface-hover'
+          : 'bg-brand text-content-primary hover:bg-brand-hover'
+      }`}
+    >
+      <Icon size={16} className={iconClassName} aria-hidden="true" />
+      <span className="hidden sm:inline">{label}</span>
+    </button>
+  );
+}
+
+/**
+ * Slim contextual header. Holds the page identity and, on the right, the
+ * page's primary actions: the dashboard's New Trade, or whatever a page passes
+ * as `primaryAction`, rendered into the slot below.
  */
 function TopBar({ title, description, onOpenMobileNav, onAddTrade, hintG }) {
   return (
@@ -30,15 +57,9 @@ function TopBar({ title, description, onOpenMobileNav, onAddTrade, hintG }) {
           </span>
         )}
 
-        {onAddTrade && (
-          <button
-            onClick={onAddTrade}
-            className="flex items-center gap-1.5 rounded-control bg-brand px-3 py-2 text-sm font-medium text-content-primary transition-colors hover:bg-brand-hover active:scale-95"
-          >
-            <Plus size={16} />
-            <span className="hidden sm:inline">New Trade</span>
-          </button>
-        )}
+        <div id={TOPBAR_ACTIONS_ID} className="flex flex-shrink-0 items-center gap-2 empty:hidden" />
+
+        {onAddTrade && <TopBarAction label="New Trade" onClick={onAddTrade} />}
       </div>
     </header>
   );

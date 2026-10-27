@@ -6,7 +6,6 @@ import remarkGfm from 'remark-gfm';
 import { db, storage } from '../config/firebase';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 import Page from '../components/ui/Page';
-import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
 import Select from '../components/ui/Select';
 import { useDismissable } from '../hooks/useDismissable';
@@ -544,11 +543,7 @@ function Notebook() {
 
   return (
     <Page
-      actions={
-        <Button icon={Plus} onClick={openAddModal}>
-          New Note
-        </Button>
-      }
+      primaryAction={{ label: 'New Note', icon: Plus, onClick: openAddModal }}
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-surface rounded-card p-4 shadow-elev-1">

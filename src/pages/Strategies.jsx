@@ -19,7 +19,6 @@ import { db, storage } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 import Page from '../components/ui/Page';
-import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
 import Select from '../components/ui/Select';
 import { useDismissable } from '../hooks/useDismissable';
@@ -688,11 +687,7 @@ function Strategies() {
 
   return (
     <Page
-      actions={
-        <Button icon={Plus} onClick={openAddStrategy}>
-          New Strategy
-        </Button>
-      }
+      primaryAction={{ label: 'New Strategy', icon: Plus, onClick: openAddStrategy }}
     >
       {/* Overall stats */}
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">

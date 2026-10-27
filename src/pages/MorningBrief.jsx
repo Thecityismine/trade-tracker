@@ -1,7 +1,6 @@
 import { useState, useEffect } from 'react';
 import { RefreshCw, ExternalLink, AlertCircle } from 'lucide-react';
 import Page from '../components/ui/Page';
-import Button from '../components/ui/Button';
 import { SkeletonText } from '../components/ui/Skeleton';
 
 const FEEDS = [
@@ -184,12 +183,13 @@ function MorningBrief() {
           </p>
         )
       }
-      actions={
-        <Button onClick={loadAll} disabled={loading}>
-          <RefreshCw size={14} className={loading ? 'animate-spin' : ''} />
-          {loading ? 'Loading…' : 'Refresh'}
-        </Button>
-      }
+      primaryAction={{
+        label: loading ? 'Loading…' : 'Refresh',
+        icon: RefreshCw,
+        iconClassName: loading ? 'animate-spin' : '',
+        onClick: loadAll,
+        disabled: loading,
+      }}
     >
       <div className="grid md:grid-cols-2 gap-4">
         {FEEDS.map((feed) => {

@@ -249,7 +249,7 @@ function Routines({ onNavigate }) {
   });
 
   return (
-    <Page actions={<Button icon={Plus} onClick={() => setEditing({})}>New routine</Button>}>
+    <Page primaryAction={{ label: 'New routine', icon: Plus, onClick: () => setEditing({}) }}>
       {!loaded ? (
         <p className="text-sm text-content-muted">Loading routines…</p>
       ) : routines.length === 0 ? (

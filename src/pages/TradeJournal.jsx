@@ -4,7 +4,6 @@ import { Plus, Search, X, Pencil, Trash2, ImageIcon, Upload, FileText } from 'lu
 import { db, storage } from '../config/firebase';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 import Page from '../components/ui/Page';
-import Button from '../components/ui/Button';
 import EmptyState from '../components/ui/EmptyState';
 import Select from '../components/ui/Select';
 import DateField from '../components/ui/DateField';
@@ -317,11 +316,7 @@ function TradeJournal() {
 
   return (
     <Page
-      actions={
-        <Button icon={Plus} onClick={openAddModal}>
-          New Journal Entry
-        </Button>
-      }
+      primaryAction={{ label: 'New Journal Entry', icon: Plus, onClick: openAddModal }}
     >
       <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
         <div className="bg-surface rounded-card p-4 shadow-elev-1">
