@@ -318,7 +318,7 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
               </div>
 
               {/* 3. EXECUTION */}
-              {((trade.executionScore || 0) > 0 || trade.chartPattern || trade.strategyName || trade.emotion || trade.tags?.length > 0) && (
+              {((trade.executionScore || 0) > 0 || trade.chartPattern || trade.strategyName || trade.emotion || trade.tags?.length > 0 || trade.reviewNote) && (
                 <div>
                   <h3 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-3">Execution</h3>
                   <div className="grid grid-cols-2 gap-3">
@@ -360,6 +360,12 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                             <span key={tag} className="rounded-full bg-brand-muted px-2 py-0.5 text-xs text-brand-hover">{tag}</span>
                           ))}
                         </div>
+                      </div>
+                    )}
+                    {trade.reviewNote && (
+                      <div className="bg-surface-raised rounded-control p-4 col-span-2">
+                        <div className="text-content-muted text-xs mb-1">Lesson from review</div>
+                        <div className="text-content-primary text-sm mt-1 whitespace-pre-wrap">{trade.reviewNote}</div>
                       </div>
                     )}
                   </div>

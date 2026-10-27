@@ -1,10 +1,12 @@
 import { useState, useEffect, useMemo } from 'react';
 import CountUp from 'react-countup';
-import { Pin, DollarSign, Target, Scale, Sigma, Receipt, TrendingDown, Sun, CalendarDays, Percent } from 'lucide-react';
+import { Pin, DollarSign, Target, Scale, Sigma, Receipt, TrendingDown, Sun, CalendarDays, Percent, ClipboardCheck } from 'lucide-react';
 import EquityCurve from '../components/EquityCurve';
 import RecentTrades from '../components/RecentTrades';
 import OpenPositions from '../components/OpenPositions';
 import TradeModal from '../components/TradeModal';
+import ReviewQueue from '../components/ReviewQueue';
+import { reviewQueue } from '../utils/review';
 import { collection, onSnapshot, doc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
@@ -203,6 +205,8 @@ function Dashboard({ onNavigate }) {
     try { localStorage.setItem(RANGE_STORAGE_KEY, next); } catch { /* remembered range is a nicety only */ }
   };
   const [pinnedNotes, setPinnedNotes] = useState([]);
+  // Ids fixed when the review opens; null while closed.
+  const [reviewIds, setReviewIds] = useState(null);
   const [appSettings, setAppSettings] = useState({});
 
   // Fetch settings from Firebase
@@ -333,6 +337,8 @@ function Dashboard({ onNavigate }) {
     if (streak >= 2 && streakType) parts.push(`Streak: ${streak} ${streakType === 'win' ? 'wins' : 'losses'}`);
     return parts.join(' · ');
   })();
+
+  const toReview = reviewQueue(trades);
 
   // The last ten closed trades, oldest to newest — the market's recent
   // feedback at a glance. A run of red is the cue to size down.
@@ -571,6 +577,26 @@ function Dashboard({ onNavigate }) {
             </div>
           )}
 
+          <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
+            <div className="flex min-w-0 items-center gap-2">
+              <ClipboardCheck size={16} className={toReview.length ? 'text-warn' : 'text-profit'} aria-hidden="true" />
+              <p className="truncate text-sm text-content-primary">
+                {toReview.length
+                  ? `${toReview.length} trade${toReview.length === 1 ? '' : 's'} to review`
+                  : 'All trades reviewed'}
+              </p>
+            </div>
+            {toReview.length > 0 && (
+              <button
+                type="button"
+                onClick={() => setReviewIds(toReview.map((t) => t.id))}
+                className="flex-shrink-0 rounded-control bg-brand px-3 py-1.5 text-xs font-medium text-content-primary transition-colors hover:bg-brand-hover"
+              >
+                Start review
+              </button>
+            )}
+          </div>
+
           {lastTen.length > 0 && (
             <div className="border-t border-line pt-4">
               <div className="mb-2 flex items-center justify-between">
@@ -757,6 +783,10 @@ function Dashboard({ onNavigate }) {
           isOpen={isModalOpen}
           onClose={() => setIsModalOpen(false)}
         />
+      )}
+
+      {reviewIds && (
+        <ReviewQueue isOpen tradeIds={reviewIds} onClose={() => setReviewIds(null)} />
       )}
 
       {/* Closing a position reuses the same modal, prefilled — flipping the

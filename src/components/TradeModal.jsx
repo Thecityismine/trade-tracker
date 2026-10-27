@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from 'react';
+import { useState, useEffect } from 'react';
 import { X, Upload } from 'lucide-react';
 import { collection, addDoc, serverTimestamp, getDocs, query, orderBy, limit, updateDoc, doc, onSnapshot } from 'firebase/firestore';
 import { db, storage } from '../config/firebase';
@@ -7,8 +7,7 @@ import Modal from './ui/Modal';
 import Button from './ui/Button';
 import Select from './ui/Select';
 import DateField from './ui/DateField';
-import { useTrades } from '../context/TradesContext';
-import { EMOTIONS, collectTags, normalizeTag } from '../utils/tradeTags';
+import { EmotionPicker, TagInput } from './TradeTagFields';
 
 // The submit button lives in the Modal footer, outside the <form>, so it binds
 // back to it by id.
@@ -101,24 +100,10 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   const [priceMovePercent, setPriceMovePercent] = useState(0);
   const [riskReward, setRiskReward] = useState(null);
   const [strategies, setStrategies] = useState([]);
-  const { trades: allTrades } = useTrades();
-  const knownTags = useMemo(() => collectTags(allTrades), [allTrades]);
-  const [tagDraft, setTagDraft] = useState('');
   // Emotion is part of the entry plan. Once a position was opened with one it
   // stays fixed at close; a planned trade logged before emotions existed can
   // still have one filled in.
   const emotionLocked = isClosingPlannedTrade && Boolean(editTrade?.emotion);
-
-  const addTag = (raw) => {
-    const tag = normalizeTag(raw);
-    if (!tag) return;
-    setFormData((prev) => (prev.tags.includes(tag) ? prev : { ...prev, tags: [...prev.tags, tag] }));
-    setTagDraft('');
-  };
-  const removeTag = (tag) => setFormData((prev) => ({ ...prev, tags: prev.tags.filter((t) => t !== tag) }));
-  const tagSuggestions = knownTags
-    .filter((t) => !formData.tags.includes(t) && (!tagDraft || t.includes(normalizeTag(tagDraft))))
-    .slice(0, 8);
 
   useEffect(() => {
     loadLastTicker();
@@ -916,89 +901,19 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               <label className="block text-content-secondary text-sm mb-2">
                 Going in, I felt <span className="text-content-muted">(optional)</span>
               </label>
-              <div className="flex flex-wrap gap-2" role="radiogroup" aria-label="Emotion going into the trade">
-                {EMOTIONS.map((e) => {
-                  const selected = formData.emotion === e.id;
-                  return (
-                    <button
-                      key={e.id}
-                      type="button"
-                      role="radio"
-                      aria-checked={selected}
-                      disabled={emotionLocked && !selected}
-                      onClick={() => !emotionLocked && setFormData((prev) => ({ ...prev, emotion: selected ? '' : e.id }))}
-                      className={`rounded-full px-3 py-1.5 text-sm transition-colors ${
-                        selected
-                          ? 'bg-brand text-content-primary'
-                          : 'bg-surface-raised border border-line-strong text-content-secondary hover:text-content-primary disabled:opacity-40 disabled:hover:text-content-secondary'
-                      }`}
-                    >
-                      {e.label}
-                    </button>
-                  );
-                })}
-              </div>
-              {emotionLocked && (
-                <p className="text-xs text-content-muted mt-1">Recorded when you opened this position.</p>
-              )}
+              <EmotionPicker
+                value={formData.emotion}
+                locked={emotionLocked}
+                onChange={(emotion) => setFormData((prev) => ({ ...prev, emotion }))}
+              />
             </div>
 
             <div>
               <label className="block text-content-secondary text-sm mb-2">Tags <span className="text-content-muted">(optional)</span></label>
-              <div className="flex flex-wrap items-center gap-2 rounded-lg border border-line-strong bg-surface-raised px-2 py-2 focus-within:border-brand">
-                {formData.tags.map((tag) => (
-                  <span key={tag} className="flex items-center gap-1 rounded-full bg-brand-muted px-2.5 py-1 text-xs text-brand-hover">
-                    {tag}
-                    <button
-                      type="button"
-                      onClick={() => removeTag(tag)}
-                      aria-label={`Remove tag ${tag}`}
-                      className="text-brand-hover/70 hover:text-content-primary"
-                    >
-                      <X size={12} />
-                    </button>
-                  </span>
-                ))}
-                <input
-                  type="text"
-                  value={tagDraft}
-                  onChange={(e) => {
-                    // Split on commas here rather than on the keypress, so
-                    // pasted "a, b, c" becomes three tags too.
-                    const parts = e.target.value.split(',');
-                    if (parts.length === 1) { setTagDraft(parts[0]); return; }
-                    parts.slice(0, -1).forEach(addTag);
-                    setTagDraft(parts[parts.length - 1]);
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter') {
-                      e.preventDefault();
-                      addTag(tagDraft);
-                    } else if (e.key === 'Backspace' && !tagDraft && formData.tags.length) {
-                      removeTag(formData.tags[formData.tags.length - 1]);
-                    }
-                  }}
-                  onBlur={() => addTag(tagDraft)}
-                  placeholder={formData.tags.length ? '' : 'news catalyst, london open, oversized…'}
-                  className="min-w-[8rem] flex-1 bg-transparent px-1 py-0.5 text-sm text-content-primary focus:outline-none"
-                />
-              </div>
-              {tagSuggestions.length > 0 && (
-                <div className="mt-2 flex flex-wrap gap-1.5">
-                  {tagSuggestions.map((tag) => (
-                    <button
-                      key={tag}
-                      type="button"
-                      onMouseDown={(e) => e.preventDefault()}
-                      onClick={() => addTag(tag)}
-                      className="rounded-full border border-line px-2.5 py-0.5 text-xs text-content-muted hover:border-line-strong hover:text-content-primary"
-                    >
-                      + {tag}
-                    </button>
-                  ))}
-                </div>
-              )}
-              <p className="text-xs text-content-muted mt-1">Press Enter or comma to add.</p>
+              <TagInput
+                value={formData.tags}
+                onChange={(tags) => setFormData((prev) => ({ ...prev, tags }))}
+              />
             </div>
 
             <div>
