@@ -63,17 +63,6 @@ const RANGE_LABELS = {
   all: 'all time',
 };
 
-const RANGE_STORAGE_KEY = 'dashboard.range';
-
-function readStoredRange() {
-  try {
-    const stored = localStorage.getItem(RANGE_STORAGE_KEY);
-    return RANGES.some((r) => r.id === stored) ? stored : 'month';
-  } catch {
-    return 'month';
-  }
-}
-
 /** First moment of the range, or null for all time. Weeks start Monday. */
 function rangeStart(range, now = new Date()) {
   switch (range) {
@@ -171,7 +160,7 @@ function Kpi({ label, hint, icon: Icon, tone = 'text-content-primary', sub, chil
         )}
       </div>
       <p className={`-mt-1 truncate text-xl font-bold tabular-nums xl:text-2xl ${tone}`}>{children}</p>
-      {sub && <p className="mt-0.5 truncate text-xs text-content-muted">{sub}</p>}
+      {sub && <p className="mt-0.5 text-xs leading-snug text-content-muted">{sub}</p>}
     </div>
   );
 }
@@ -206,11 +195,8 @@ function Dashboard({ onNavigate }) {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [closingTrade, setClosingTrade] = useState(null);
   const { trades, openTrades, deposits, loading: dataLoading, error: dataError } = useTrades();
-  const [range, setRangeState] = useState(readStoredRange);
-  const setRange = (next) => {
-    setRangeState(next);
-    try { localStorage.setItem(RANGE_STORAGE_KEY, next); } catch { /* remembered range is a nicety only */ }
-  };
+  // Always opens on the current week; the switch changes it for this visit.
+  const [range, setRange] = useState('week');
   const [pinnedNotes, setPinnedNotes] = useState([]);
   // Ids fixed when the review opens; null while closed.
   const [reviewIds, setReviewIds] = useState(null);
