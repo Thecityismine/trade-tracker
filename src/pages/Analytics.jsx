@@ -22,6 +22,7 @@ import { db } from '../config/firebase';
 import { buildReturnIndex, maxDrawdownPercent } from '../utils/accountMath';
 import { emotionLabel, normalizeTag, performanceBy } from '../utils/tradeTags';
 import { decidedWinRate } from '../utils/outcome';
+import { rDistribution } from '../utils/rMultiple';
 
 const COLORS = {
   positive: '#22c55e',
@@ -470,6 +471,8 @@ function Analytics() {
       .sort((a, b) => b.totalPnl - a.totalPnl);
   }, [completedTrades]);
 
+  const rStats = useMemo(() => rDistribution(completedTrades), [completedTrades]);
+
   const emotionPerformance = useMemo(
     () => performanceBy(completedTrades, (t) => [t.emotion], { untaggedLabel: 'Not recorded' })
       .map((r) => ({ ...r, label: r.isUntagged ? r.key : (emotionLabel(r.key) || r.key) })),
@@ -828,6 +831,66 @@ function Analytics() {
               </div>
             </div>
           )}
+
+          <div className="bg-surface rounded-card p-6 shadow-elev-1">
+            <h3 className="text-lg font-bold text-content-primary mb-1">R-Multiple Distribution</h3>
+            <p className="text-content-secondary text-sm mb-4">
+              Each trade's result in units of planned risk (price move ÷ stop distance, before fees).
+            </p>
+            {rStats.count === 0 ? (
+              <p className="text-sm text-content-muted">Log a stop loss on your trades to see this.</p>
+            ) : (
+              <>
+                <div className="w-full h-60">
+                  <ResponsiveContainer width="100%" height="100%">
+                    <BarChart data={rStats.buckets}>
+                      <CartesianGrid {...gridProps} />
+                      <XAxis dataKey="label" {...xAxisProps} interval={0} tick={{ ...xAxisProps.tick, fontSize: 11 }} />
+                      <YAxis {...yAxisProps} allowDecimals={false} />
+                      <Tooltip {...tooltipProps} formatter={(value) => [value, 'Trades']} />
+                      <Bar dataKey="count" {...barProps}>
+                        {rStats.buckets.map((b) => (
+                          <Cell key={b.label} fill={b.positive ? CHART.profit : CHART.loss} />
+                        ))}
+                      </Bar>
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mt-4">
+                  <div className="bg-surface-raised rounded-control p-3">
+                    <p className="text-xs text-content-muted">Avg R</p>
+                    <p className={`text-lg font-bold tabular-nums ${rStats.avgR >= 0 ? 'text-profit' : 'text-loss'}`}>
+                      {rStats.avgR >= 0 ? '+' : ''}{rStats.avgR.toFixed(2)}R
+                    </p>
+                  </div>
+                  <div className="bg-surface-raised rounded-control p-3">
+                    <p className="text-xs text-content-muted">Trades with a stop</p>
+                    <p className="text-lg font-bold tabular-nums text-content-primary">
+                      {rStats.count}
+                      <span className="text-xs font-normal text-content-muted"> / {totalClosedTrades}</span>
+                    </p>
+                  </div>
+                  <div className="bg-surface-raised rounded-control p-3">
+                    <p className="text-xs text-content-muted">Reached 2R+</p>
+                    <p className="text-lg font-bold tabular-nums text-profit">
+                      {((rStats.atLeast2R / rStats.count) * 100).toFixed(0)}%
+                    </p>
+                  </div>
+                  <div className="bg-surface-raised rounded-control p-3">
+                    <p className="text-xs text-content-muted">Lost past the stop</p>
+                    <p className={`text-lg font-bold tabular-nums ${rStats.beyondStop > 0 ? 'text-loss' : 'text-content-primary'}`}>
+                      {rStats.beyondStop}
+                    </p>
+                  </div>
+                </div>
+                {rStats.beyondStop > 0 && (
+                  <p className="text-xs text-content-muted mt-3">
+                    {rStats.beyondStop} loss{rStats.beyondStop === 1 ? '' : 'es'} ran past -1R — slippage, a moved stop, or a stop that wasn't honoured.
+                  </p>
+                )}
+              </>
+            )}
+          </div>
 
           <BreakdownCard
             title="Performance by Emotion"
