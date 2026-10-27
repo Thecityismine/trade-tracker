@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { ArrowRight, Check, SkipForward } from 'lucide-react';
+import { ArrowRight, Check, ShieldCheck, SkipForward } from 'lucide-react';
 import { doc, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { useTrades } from '../context/TradesContext';
@@ -8,6 +8,15 @@ import Modal from './ui/Modal';
 import Button from './ui/Button';
 import { useToast } from './ui/Toast';
 import { EmotionPicker, TagInput } from './TradeTagFields';
+import { buildRules, checkTradeRules, compactTrade, useCoachSources } from '../utils/coach';
+
+const VERDICTS = {
+  fits: { label: 'Fits your rules', tone: 'text-profit', ring: 'border-profit/30 bg-profit-soft' },
+  partial: { label: 'Partly fits', tone: 'text-warn', ring: 'border-warn/30 bg-warn-soft' },
+  breaks: { label: 'Breaks your rules', tone: 'text-loss', ring: 'border-loss/30 bg-loss-soft' },
+  no_match: { label: 'Matches none of your setups', tone: 'text-warn', ring: 'border-warn/30 bg-warn-soft' },
+  no_rules: { label: 'No written rules apply', tone: 'text-content-secondary', ring: 'border-line bg-surface-raised' },
+};
 
 const money = (v) => `${v < 0 ? '-' : '+'}$${Math.abs(v).toFixed(2)}`;
 
@@ -36,6 +45,9 @@ function ReviewQueue({ isOpen, onClose, tradeIds }) {
   const [form, setForm] = useState({ emotion: '', tags: [], reviewNote: '' });
   const [saving, setSaving] = useState(false);
   const [reviewedCount, setReviewedCount] = useState(0);
+  const sources = useCoachSources();
+  // Rule-check results by trade id, so stepping back and forth keeps them.
+  const [checks, setChecks] = useState({});
 
   const tradeId = tradeIds[cursor];
   const trade = trades.find((t) => t.id === tradeId) || null;
@@ -57,6 +69,22 @@ function ReviewQueue({ isOpen, onClose, tradeIds }) {
   }, [isOpen]);
 
   const next = () => setCursor((c) => c + 1);
+
+  const runRuleCheck = async () => {
+    if (!trade) return;
+    const id = trade.id;
+    setChecks((c) => ({ ...c, [id]: { loading: true } }));
+    try {
+      // Check with what's in the form now, saved or not.
+      const snapshot = compactTrade({ ...trade, emotion: form.emotion, tags: form.tags, reviewNote: form.reviewNote }, 'this trade');
+      const { result } = await checkTradeRules({ trade: snapshot, rules: buildRules(sources) });
+      setChecks((c) => ({ ...c, [id]: { result } }));
+    } catch (err) {
+      setChecks((c) => ({ ...c, [id]: { error: err.message || 'The rule check failed.' } }));
+    }
+  };
+  const check = trade ? checks[trade.id] : null;
+  const verdict = check?.result ? VERDICTS[check.result.verdict] || VERDICTS.no_rules : null;
 
   const saveAndNext = async () => {
     if (!trade) return next();
@@ -157,6 +185,45 @@ function ReviewQueue({ isOpen, onClose, tradeIds }) {
               <a href={trade.chartImageUrl} target="_blank" rel="noreferrer" className="mt-3 inline-block text-xs text-brand-hover hover:underline">
                 Open chart screenshot
               </a>
+            )}
+          </div>
+
+          <div>
+            {!check?.result && (
+              <button
+                type="button"
+                onClick={runRuleCheck}
+                disabled={check?.loading}
+                className="inline-flex items-center gap-2 rounded-control border border-line-strong bg-surface-raised px-3 py-2 text-sm text-content-secondary hover:border-brand/50 hover:text-content-primary disabled:opacity-60"
+              >
+                <ShieldCheck size={15} className={check?.loading ? 'animate-pulse text-brand' : 'text-brand'} />
+                {check?.loading ? 'Checking against your rules…' : 'Check against my rules'}
+              </button>
+            )}
+            {check?.error && <p className="mt-2 text-sm text-loss">{check.error}</p>}
+            {check?.result && verdict && (
+              <div className={`rounded-lg border p-4 ${verdict.ring}`}>
+                <p className={`flex items-center gap-2 text-sm font-semibold ${verdict.tone}`}>
+                  <ShieldCheck size={15} /> {verdict.label}
+                  {check.result.matchedSetup && (
+                    <span className="font-normal text-content-secondary">· {check.result.matchedSetup}</span>
+                  )}
+                </p>
+                <p className="mt-1 text-sm text-content-primary">{check.result.summary}</p>
+                {check.result.violations.length > 0 && (
+                  <ul className="mt-2 space-y-1.5">
+                    {check.result.violations.map((v, i) => (
+                      <li key={i} className="text-sm">
+                        <span className="text-loss">✕ {v.rule}</span>
+                        <span className="block text-content-secondary">{v.evidence}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                {check.result.unverifiable.length > 0 && (
+                  <p className="mt-2 text-xs text-content-muted">Couldn't check from the data: {check.result.unverifiable.join('; ')}</p>
+                )}
+              </div>
             )}
           </div>
 

@@ -28,6 +28,7 @@ const WhaleTracker = lazy(() => import('./pages/WhaleTracker'));
 const MorningBrief = lazy(() => import('./pages/MorningBrief'));
 const Alarms = lazy(() => import('./pages/Alarms'));
 const Routines = lazy(() => import('./pages/Routines'));
+const Coach = lazy(() => import('./pages/Coach'));
 
 const RAIL_KEY = 'tt:sidebar-collapsed';
 
@@ -117,6 +118,8 @@ function App() {
         return <TradeJournal />;
       case 'notebook':
         return <Notebook />;
+      case 'coach':
+        return <Coach />;
       case 'routines':
         return <Routines onNavigate={setActiveTab} />;
       case 'mindset':

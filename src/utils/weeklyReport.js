@@ -183,7 +183,8 @@ export async function buildChartPayload({ week }) {
   return { weekLabel: week.weekLabel, charts };
 }
 
-async function postJson(path, body) {
+/** Signed-in POST to one of the app's /api endpoints. */
+export async function postJson(path, body) {
   const user = auth.currentUser;
   if (!user) {
     throw new Error('You need to be signed in to generate a report.');

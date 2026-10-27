@@ -14,6 +14,7 @@ import {
   Bell,
   Settings as SettingsIcon,
   ListChecks,
+  Sparkles,
 } from 'lucide-react';
 
 // Single source of truth for routing, the sidebar, the contextual top bar and
@@ -26,6 +27,7 @@ export const NAV_GROUPS = [
       { id: 'analytics', label: 'Analytics', icon: TrendingUp, key: 'a', title: 'Analytics', description: 'Where your edge comes from' },
       { id: 'weekly', label: 'Weekly', icon: Calendar, key: 'w', title: 'Weekly Tracker', description: 'Week by week performance and AI reviews' },
       { id: 'monthly', label: 'Monthly', icon: CalendarDays, key: 'm', title: 'Monthly Tracker', description: 'Monthly stats and calendar' },
+      { id: 'coach', label: 'Coach', icon: Sparkles, key: 'c', title: 'AI Coach', description: 'Ask questions about your own trading' },
     ],
   },
   {
