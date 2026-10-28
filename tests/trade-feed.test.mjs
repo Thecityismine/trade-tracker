@@ -115,6 +115,21 @@ test('feed filters, sorts oldest first and caps to the newest', () => {
   assert.equal(capped.trades[0].id, 'oct27');
 });
 
+test('charts=links drops inline screenshots but keeps Storage links and the inline flag', () => {
+  const inline = 'data:image/png;base64,' + 'A'.repeat(1000);
+  const docs = [{ ...opened, chartImageUrl: inline }];
+
+  const full = buildFeed(docs).trades[0];
+  assert.equal(full.entryChartUrl, inline, 'default is unchanged');
+  assert.equal(full.entryChartInline, true);
+
+  const lean = buildFeed(docs, { charts: 'links' }).trades[0];
+  assert.equal(lean.entryChartUrl, null);
+  assert.equal(lean.entryChartInline, true);
+  assert.equal(lean.exitChartUrl, opened.exitChartImageUrl, 'Storage links stay');
+  assert.equal(lean.exitChartInline, false);
+});
+
 test('tracker link is built from the app URL when known', () => {
   assert.equal(feedTrade(opened, { appUrl: 'https://app.example' }).trackerUrl, 'https://app.example/#journal');
   assert.equal(feedTrade(opened).trackerUrl, null);

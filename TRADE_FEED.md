@@ -55,6 +55,7 @@ open the gateway. The endpoint uses the gateway's Firestore service account
 | `ids` | `abc,def` | Specific trades. This is how a deep link is resolved. |
 | `since` / `until` | `2026-10-01`, ISO time | Against the trade's time (entry → exit → logged). A bare `until` date includes that whole day. |
 | `limit` | `500` | Default 1000, max 2000. Keeps the newest. |
+| `charts` | `links` | Leave out screenshots stored inside the trade (see below). The full feed drops from ~13 MB to ~300 KB. Use it for lists, then fetch one trade with `?ids=<id>` (without `charts`) for its images. |
 
 ## Response
 
@@ -88,6 +89,8 @@ open the gateway. The endpoint uses the gateway's Firestore service account
       "comment": "Need to cut losers quicker…",
       "entryChartUrl": "https://firebasestorage.googleapis.com/…",
       "exitChartUrl": "https://firebasestorage.googleapis.com/…",
+      "entryChartInline": false,
+      "exitChartInline": false,
       "trackerUrl": "https://<tracker>/#journal"
     }
   ]
@@ -107,6 +110,12 @@ open the gateway. The endpoint uses the gateway's Firestore service account
   `hyperliquid`, `bitunix`, `asterdex`, `zoomex` or `bingx`. Both are optional
   and `null` on trades logged before they existed (added 2026-10-28, additive
   to v1).
+- `entryChartUrl` / `exitChartUrl` are usually Firebase Storage links. When
+  an upload failed, the tracker kept the image in the trade itself, and the
+  field is a `data:` URL instead (65 trades, 12.7 MB in all, as of
+  2026-10-28). `entryChartInline` / `exitChartInline` say which. With
+  `charts=links` those fields are `null` while the flag stays `true`.
+  (Added 2026-10-28, additive to v1. The default output is unchanged.)
 - `asset` is whatever ticker was logged. Today it is BTC or ETH. A chart should
   skip assets it doesn't carry.
 
@@ -160,13 +169,15 @@ curl -H "Authorization: Bearer $TRADE_FEED_KEY" "https://<tracker>/api/trade-fee
 
 ## Phases
 
-1. **Tracker (done):** the feed, this contract and the "Open in Chart Lab"
-   links in trade details and the Review Queue. Until phase 2 ships, the link
-   opens Chart Lab without the trade.
-2. **Chart Lab:** `/api/trades` (server-side proxy with a cache), a "My trades"
-   layer (entry and exit markers, plus stop and target lines for the selected
-   trade), opening at a trade from the deep link, and a review mode that steps
-   through trades.
+1. **Tracker (done 2026-10-28):** the feed, this contract and the "Open in
+   Chart Lab" links in trade details and the Review Queue.
+2. **Chart Lab (done 2026-10-28):** `/api/trades` (server-side proxy with an
+   in-memory cache; Upstash was skipped because a 60 s key would expire before
+   an idle instance goes cold), a "My trades" layer (entry and exit markers,
+   plus stop and target lines and a card for the selected trade), opening at
+   a trade from the deep link, and a review mode with an indicator readout at
+   each entry. Like every Chart Lab layer, the toggle isn't remembered between
+   visits; a deep link turns it on.
 3. **Both:** Chart Lab works out the indicator readings at each entry (Skyline,
    WaveTrend, divergences). The tracker stores them on the trade so the coach
    can use them. That gives this contract a second, still read-only direction,

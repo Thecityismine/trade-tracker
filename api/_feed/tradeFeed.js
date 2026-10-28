@@ -112,7 +112,20 @@ function rMultiple(doc) {
   return Number.isFinite(r) ? Number(r.toFixed(2)) : null;
 }
 
-export function feedTrade(doc, { appUrl = '', timeZone = DEFAULT_SCREENSHOT_TZ } = {}) {
+const isInline = (url) => Boolean(url && url.startsWith('data:'));
+
+/**
+ * A screenshot whose Storage upload failed is saved in the trade itself as a
+ * data: URL — 65 of them made up 12.7 of the feed's 12.9 MB. With
+ * `linksOnly`, those come back null (the *Inline flag says one exists) so a
+ * list fetch stays small; fetch the trade by id for the image itself.
+ */
+function chart(url, linksOnly) {
+  const value = text(url);
+  return linksOnly && isInline(value) ? null : value;
+}
+
+export function feedTrade(doc, { appUrl = '', timeZone = DEFAULT_SCREENSHOT_TZ, linksOnly = false } = {}) {
   const isOpen = doc.status === 'open';
   const { entry, exit, loggedAt } = times(doc, timeZone);
   const asset = (text(doc.ticker) || 'BTC').toUpperCase();
@@ -138,8 +151,10 @@ export function feedTrade(doc, { appUrl = '', timeZone = DEFAULT_SCREENSHOT_TZ }
     strategy: text(doc.strategyId) ? { id: doc.strategyId, name: text(doc.strategyName) } : null,
     entryReason: text(doc.entryReason),
     comment: text(doc.comment),
-    entryChartUrl: text(doc.chartImageUrl),
-    exitChartUrl: text(doc.exitChartImageUrl),
+    entryChartUrl: chart(doc.chartImageUrl, linksOnly),
+    exitChartUrl: chart(doc.exitChartImageUrl, linksOnly),
+    entryChartInline: isInline(text(doc.chartImageUrl)),
+    exitChartInline: isInline(text(doc.exitChartImageUrl)),
     // Hash-routed SPA with no per-trade route; the journal lists every trade.
     trackerUrl: appUrl ? `${appUrl}/#journal` : null,
   };
@@ -151,7 +166,8 @@ const sortTime = (t) => Date.parse(t.entry.time || t.exit?.time || t.loggedAt ||
  * Filters (all optional): `asset`, `status` (open | closed), `ids`
  * (comma-separated), `since` / `until` (ISO or YYYY-MM-DD, against the
  * trade's entry time, falling back to exit/logged), `limit` (default 1000,
- * max 2000). Oldest first, so a chart can walk it left to right.
+ * max 2000), `charts=links` (leave out screenshots stored inline). Oldest
+ * first, so a chart can walk it left to right.
  */
 export function buildFeed(docs, params = {}, options = {}) {
   const asset = text(params.asset)?.toUpperCase() || null;
@@ -164,7 +180,8 @@ export function buildFeed(docs, params = {}, options = {}) {
     : null;
   const limit = Math.min(Math.max(parseInt(params.limit, 10) || 1000, 1), 2000);
 
-  let trades = docs.map((doc) => feedTrade(doc, options));
+  const linksOnly = params.charts === 'links';
+  let trades = docs.map((doc) => feedTrade(doc, { ...options, linksOnly }));
   if (asset) trades = trades.filter((t) => t.asset === asset);
   if (status) trades = trades.filter((t) => t.status === status);
   if (ids) trades = trades.filter((t) => ids.has(t.id));
