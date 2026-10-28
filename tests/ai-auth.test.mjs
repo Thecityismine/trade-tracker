@@ -61,3 +61,22 @@ test('responses are never cached', () => {
   rejectUnauthorized(req({ authorization: 'Bearer super-secret-value', 'x-forwarded-for': '1.1.1.1' }), res, '/t');
   assert.equal(res.headers['Cache-Control'], 'no-store');
 });
+
+test('a guard on another key ignores the gateway key, and the other way round', () => {
+  process.env.TRADE_FEED_KEY = 'feed-only-key';
+  const feedOpts = { keyEnv: 'TRADE_FEED_KEY' };
+  const h = (k) => req({ authorization: `Bearer ${k}`, 'x-forwarded-for': '7.7.7.7' });
+
+  let res = mockRes();
+  assert.equal(rejectUnauthorized(h('super-secret-value'), res, '/f', feedOpts), true);
+  assert.equal(res.statusCode, 401);
+  assert.match(res.body.error, /TRADE_FEED_KEY/);
+
+  res = mockRes();
+  assert.equal(rejectUnauthorized(h('feed-only-key'), res, '/f', feedOpts), false);
+
+  res = mockRes();
+  assert.equal(rejectUnauthorized(h('feed-only-key'), res, '/t'), true, 'feed key must not open the gateway');
+  assert.equal(res.statusCode, 401);
+  delete process.env.TRADE_FEED_KEY;
+});

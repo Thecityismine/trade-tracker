@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Pencil, Trash2, ImageDown, BookMarked } from 'lucide-react';
+import { Pencil, Trash2, ImageDown, BookMarked, CandlestickChart, ArrowUpRight } from 'lucide-react';
 import { doc, deleteDoc, onSnapshot, updateDoc } from 'firebase/firestore';
 import { db } from '../config/firebase';
 import { PLAYBOOK_COLLECTION, addTradeToPlaybook, completedFieldCount, removeFromPlaybook } from '../utils/playbook';
@@ -9,6 +9,7 @@ import { useDismissable, backdropProps } from '../hooks/useDismissable';
 import { useTrades } from '../context/TradesContext';
 import { accountLossPercent, balancesBeforeTrades, isOverRisk as exceedsRiskLimit } from '../utils/accountMath';
 import { emotionLabel } from '../utils/tradeTags';
+import { chartLabUrl } from '../utils/chartLab';
 
 const MISTAKE_TAGS = [
   { id: 'over-risk', label: 'Over-Risk' },
@@ -488,7 +489,22 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                 </div>
               </div>
 
-              {/* 7. CHARTS: when the entry was decided, and when it was closed */}
+              {/* 7. CHARTS: the trade replayed on Chart Lab with your indicators,
+                  then the screenshots from when the entry was decided and when
+                  it was closed */}
+              <a
+                href={chartLabUrl(trade)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center justify-between gap-3 rounded-control border border-line-strong bg-surface-raised px-4 py-3 text-sm text-content-primary transition-colors hover:border-brand/50"
+              >
+                <span className="flex items-center gap-2">
+                  <CandlestickChart size={16} className="text-brand" aria-hidden="true" />
+                  Open in Chart Lab
+                  <span className="hidden text-content-muted sm:inline">· entry and exit on your indicators</span>
+                </span>
+                <ArrowUpRight size={15} className="text-content-muted" aria-hidden="true" />
+              </a>
               {trade.chartImageUrl && (
                 <div>
                   <h3 className="text-content-muted text-xs font-semibold uppercase tracking-wider mb-3">Entry Chart</h3>

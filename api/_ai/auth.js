@@ -61,8 +61,12 @@ export function audit(req, { route, outcome, detail = null }) {
 /**
  * Guards an AI endpoint: bearer key, rate limit, CORS preflight, audit line.
  * Returns true when the caller has been answered and the handler should stop.
+ *
+ * `keyEnv` names the env var holding the expected key. The trade feed uses
+ * its own (TRADE_FEED_KEY) so Chart Lab can read trades without holding the
+ * gateway key, which reads every collection.
  */
-export function rejectUnauthorized(req, res, route) {
+export function rejectUnauthorized(req, res, route, { keyEnv = 'AI_GATEWAY_KEY' } = {}) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Headers', 'Authorization, Content-Type, Mcp-Session-Id, Mcp-Protocol-Version');
   res.setHeader('Access-Control-Allow-Methods', 'GET, POST, OPTIONS');
@@ -73,10 +77,10 @@ export function rejectUnauthorized(req, res, route) {
     return true;
   }
 
-  const expected = process.env.AI_GATEWAY_KEY;
+  const expected = process.env[keyEnv];
   if (!expected) {
     audit(req, { route, outcome: 'misconfigured' });
-    res.status(500).json({ error: 'AI_GATEWAY_KEY is not configured on the server.' });
+    res.status(500).json({ error: `${keyEnv} is not configured on the server.` });
     return true;
   }
 
@@ -85,7 +89,7 @@ export function rejectUnauthorized(req, res, route) {
 
   if (!presented || !constantTimeEquals(presented, expected)) {
     audit(req, { route, outcome: 'denied' });
-    res.status(401).json({ error: 'Unauthorized. Send Authorization: Bearer <AI_GATEWAY_KEY>.' });
+    res.status(401).json({ error: `Unauthorized. Send Authorization: Bearer <${keyEnv}>.` });
     return true;
   }
 

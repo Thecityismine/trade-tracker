@@ -9,6 +9,7 @@ import Button from './ui/Button';
 import { useToast } from './ui/Toast';
 import { EmotionPicker, TagInput } from './TradeTagFields';
 import { buildRules, checkTradeRules, compactTrade, useCoachSources } from '../utils/coach';
+import { chartLabUrl } from '../utils/chartLab';
 
 const VERDICTS = {
   fits: { label: 'Fits your rules', tone: 'text-profit', ring: 'border-profit/30 bg-profit-soft' },
@@ -181,20 +182,21 @@ function ReviewQueue({ isOpen, onClose, tradeIds }) {
                 {trade.comment && <p className="text-content-secondary"><span className="text-content-muted">Comment: </span>{trade.comment}</p>}
               </div>
             )}
-            {(trade.chartImageUrl || trade.exitChartImageUrl) && (
-              <div className="mt-3 flex gap-4 text-xs">
-                {trade.chartImageUrl && (
-                  <a href={trade.chartImageUrl} target="_blank" rel="noreferrer" className="text-brand-hover hover:underline">
-                    Open entry chart
-                  </a>
-                )}
-                {trade.exitChartImageUrl && (
-                  <a href={trade.exitChartImageUrl} target="_blank" rel="noreferrer" className="text-brand-hover hover:underline">
-                    Open exit chart
-                  </a>
-                )}
-              </div>
-            )}
+            <div className="mt-3 flex flex-wrap gap-x-4 gap-y-1 text-xs">
+              <a href={chartLabUrl(trade)} target="_blank" rel="noopener noreferrer" className="text-brand-hover hover:underline">
+                Open in Chart Lab
+              </a>
+              {trade.chartImageUrl && (
+                <a href={trade.chartImageUrl} target="_blank" rel="noreferrer" className="text-brand-hover hover:underline">
+                  Open entry chart
+                </a>
+              )}
+              {trade.exitChartImageUrl && (
+                <a href={trade.exitChartImageUrl} target="_blank" rel="noreferrer" className="text-brand-hover hover:underline">
+                  Open exit chart
+                </a>
+              )}
+            </div>
           </div>
 
           <div>
