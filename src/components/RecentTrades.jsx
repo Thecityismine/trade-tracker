@@ -267,7 +267,9 @@ function RecentTrades({ trades, maxRiskPercent = 0, onAddTrade, since }) {
                         )}
                       </td>
                       <td className="py-3 px-2 text-content-secondary text-sm">
-                        <span className="block truncate" title={trade.comment || ''}>
+                        {/* Two lines before clipping — one cut off the
+                            lesson in most comments. Hover shows the rest. */}
+                        <span className="line-clamp-2" title={trade.comment || ''}>
                           {trade.comment?.trim() ? trade.comment : '-'}
                         </span>
                       </td>

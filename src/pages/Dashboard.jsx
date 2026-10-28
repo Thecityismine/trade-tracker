@@ -416,28 +416,40 @@ function Dashboard({ onNavigate }) {
     };
   })();
 
+  // All-time read-out. Leads with whatever is costing the most: on this
+  // account that is usually fees, which a wins-vs-losses comparison hides
+  // because gainLoss is already net of them.
   const performanceIdentity = (() => {
-    const completed = trades.filter(t => t.result === 'win' || t.result === 'loss');
-    if (completed.length < 5) return null;
-    const wins = completed.filter(t => t.result === 'win');
-    const losses = completed.filter(t => t.result === 'loss');
-    const winRate = decidedWinRate(
-      completed.filter(t => t.outcome === 'win').length,
-      completed.filter(t => t.outcome === 'loss').length
-    );
-    const longs = completed.filter(t => t.direction !== 'short');
-    const shorts = completed.filter(t => t.direction === 'short');
-    const dirBias = longs.length >= shorts.length ? 'long-biased' : 'short-biased';
-    const execLabel = winRate >= 65 ? 'disciplined execution' : winRate >= 50 ? 'inconsistent execution' : 'poor execution';
-    const longPnl = longs.reduce((s, t) => s + (Number(t.gainLoss) || 0), 0);
-    const shortPnl = shorts.reduce((s, t) => s + (Number(t.gainLoss) || 0), 0);
-    const edgeSide = longs.length > 0 && shorts.length > 0 ? (shortPnl > longPnl ? 'Short' : 'Long') : null;
-    const weakSide = edgeSide === 'Short' ? 'Long' : 'Short';
-    const edgeDiff = Math.abs(shortPnl - longPnl);
-    const totalWinDollar = wins.reduce((s, t) => s + (Number(t.gainLoss) || 0), 0);
-    const totalLossDollar = losses.reduce((s, t) => s + Math.abs(Number(t.gainLoss) || 0), 0);
+    if (trades.length < 5) return null;
+    const all = summarize(trades);
+    const lines = [];
+
+    if (all.grossPnl > 0 && all.totalPnl < 0) {
+      lines.push(`Main issue: fees. You made ${money(all.grossPnl, true)} before costs and paid ${money(all.fees)} in fees (${((all.fees / all.grossPnl) * 100).toFixed(0)}% of gross) — the entries work, the trade count doesn't.`);
+    } else if (all.grossPnl <= 0) {
+      lines.push(`Main issue: losing before fees (${money(all.grossPnl, true)} gross), then ${money(all.fees)} in fees on top. Cut size until the setups pay.`);
+    } else if (all.grossPnl > 0 && all.fees / all.grossPnl >= 0.5) {
+      lines.push(`Fees take ${((all.fees / all.grossPnl) * 100).toFixed(0)}% of your gross edge (${money(all.fees)} of ${money(all.grossPnl, true)}).`);
+    } else if (all.winRate < 50) {
+      lines.push(`Win rate at ${all.winRate.toFixed(0)}% — focus on entry quality over trade frequency.`);
+    }
+
+    // Net per side, with counts, so a side with more trades doesn't look
+    // better or worse just for being traded more.
+    const side = (dir) => trades.filter(t => (t.direction === 'short') === (dir === 'short'));
+    const sides = ['long', 'short'].map((dir) => {
+      const list = side(dir);
+      const net = list.reduce((s, t) => s + (Number(t.gainLoss) || 0), 0);
+      return { dir, count: list.length, net, avg: list.length ? net / list.length : 0 };
+    }).filter(x => x.count > 0);
+    if (sides.length) {
+      lines.push(sides
+        .map(x => `${x.dir === 'short' ? 'Shorts' : 'Longs'}: ${x.count} trades, ${money(x.net, true)} (${money(x.avg, true)}/trade)`)
+        .join(' · ') + '.');
+    }
+
     const patternMap = {};
-    completed.forEach(t => {
+    trades.forEach(t => {
       if (!t.chartPattern?.trim()) return;
       const key = t.chartPattern.trim().toLowerCase();
       if (!patternMap[key]) patternMap[key] = { name: t.chartPattern.trim(), pnl: 0, count: 0 };
@@ -445,12 +457,10 @@ function Dashboard({ onNavigate }) {
       patternMap[key].count++;
     });
     const patterns = Object.values(patternMap).filter(p => p.count >= 2).sort((a, b) => b.pnl - a.pnl);
-    const bestPattern = patterns[0];
-    const lines = [`You are a ${dirBias} trader with ${execLabel}.`];
-    if (edgeSide && edgeDiff > 0.01) lines.push(`Edge identified: ${edgeSide} setups outperform ${weakSide} by $${edgeDiff.toFixed(2)}.`);
-    if (totalLossDollar > totalWinDollar) lines.push(`Main issue: Losses ($${totalLossDollar.toFixed(2)}) exceed wins ($${totalWinDollar.toFixed(2)}) — tighten your risk management.`);
-    else if (winRate < 50) lines.push(`Win rate at ${winRate.toFixed(0)}% — focus on entry quality over trade frequency.`);
-    if (bestPattern) lines.push(`Strongest setup: ${bestPattern.name} across ${bestPattern.count} trades (${bestPattern.pnl >= 0 ? '+' : ''}$${bestPattern.pnl.toFixed(2)}).`);
+    const best = patterns[0];
+    const worst = patterns.length > 1 ? patterns[patterns.length - 1] : null;
+    if (best) lines.push(`Strongest setup: ${best.name} across ${best.count} trades (${money(best.pnl, true)}).`);
+    if (worst && worst.pnl < 0) lines.push(`Weakest setup: ${worst.name} across ${worst.count} trades (${money(worst.pnl, true)}).`);
     return lines;
   })();
 
@@ -525,12 +535,14 @@ function Dashboard({ onNavigate }) {
           tone={
             metrics.profitFactor === null
               ? (metrics.wins > 0 ? 'text-profit' : 'text-content-muted')
+              : metrics.profitFactor === 0 ? 'text-content-muted'
               : metrics.profitFactor >= 1 ? 'text-profit' : 'text-loss'
           }
-          sub="Wins ÷ losses"
+          sub={metrics.profitFactor === 0 ? 'No winning trades' : 'Wins ÷ losses'}
         >
           {metrics.profitFactor === null
             ? (metrics.wins > 0 ? '∞' : '--')
+            : metrics.profitFactor === 0 ? '--'
             : <AnimatedNumber value={metrics.profitFactor} decimals={2} duration={countDuration} />}
         </Kpi>
         <Kpi
@@ -555,13 +567,13 @@ function Dashboard({ onNavigate }) {
             metrics.fees === 0
               ? 'No fees'
               : rangeFeeShare === null
-                ? `Gross ${money(metrics.grossPnl, true)}, no edge`
+                ? `${money(metrics.fees)} fees on ${money(metrics.grossPnl, true)} gross`
                 : `${money(-metrics.fees)} fees · ${money(metrics.grossPnl, true)} gross`
           }
         >
           {rangeFeeShare !== null
             ? `${rangeFeeShare.toFixed(0)}%`
-            : metrics.fees > 0 ? money(-metrics.fees) : '--'}
+            : metrics.fees > 0 ? 'No edge' : '--'}
         </Kpi>
         {/* The only all-time figure in the strip — say so, or it reads as the
             selected range's drawdown. */}
@@ -620,7 +632,10 @@ function Dashboard({ onNavigate }) {
           )}
           {performanceIdentity && (
             <div className={`order-6 rounded-card bg-surface p-4 shadow-elev-1 md:p-5 ${pinnedNotes.length > 0 ? '' : 'lg:col-span-3'}`}>
-              <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-brand">Performance Identity</p>
+              <p className="mb-3 flex items-baseline justify-between gap-2 text-xs font-semibold uppercase tracking-wider text-brand">
+                Performance Identity
+                <span className="font-normal normal-case tracking-normal text-content-muted">all time</span>
+              </p>
               <div className="space-y-1.5">
                 {performanceIdentity.map((line, i) => (
                   <p key={i} className="text-sm leading-relaxed text-content-secondary">{line}</p>
