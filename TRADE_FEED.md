@@ -114,7 +114,7 @@ open the gateway. The endpoint uses the gateway's Firestore service account
 
 | Value | From | How to plot |
 |---|---|---|
-| `screenshot` | TradingView screenshot filename, converted from `screenshotTimeZone` | Solid marker |
+| `screenshot` | TradingView screenshot filename, converted from `screenshotTimeZone`. For the entry, only used when taken before (or within 5 minutes after) the position was opened in the app; a later one was really taken at the exit, and `app` is used instead. | Solid marker |
 | `app` | When the position was opened or closed in the tracker | Solid marker |
 | `screenshot-unverified` | The only screenshot on an older trade. It may have been taken at the exit. | Faint marker, snap by price |
 | `logged` | Exit only: when a finished trade was entered. It's an upper bound. | Faint marker, snap by price |

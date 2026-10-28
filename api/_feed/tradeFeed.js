@@ -76,9 +76,16 @@ function times(doc, timeZone) {
   // whenever — often at the exit. Trusted as an entry time only when the
   // trade was opened in the app (plan locked) or also has an exit chart.
   const entryShotTrusted = Boolean(entryShot && (doc.planLockedAt || doc.exitChartImageUrl || isOpen));
+  // The decision chart comes before the position is opened in the app. One
+  // taken well after it (Oct 26: opened 13:43, "entry" chart 14:21, closed
+  // 14:22) is really an exit chart, and the app time is the better entry.
+  const ENTRY_SHOT_GRACE_MS = 5 * 60_000;
+  const entryShotAfterOpen = Boolean(
+    entryShot && openedInApp && Date.parse(entryShot) > Date.parse(openedInApp) + ENTRY_SHOT_GRACE_MS
+  );
 
   const entry =
-    entryShotTrusted ? { time: entryShot, source: 'screenshot' }
+    entryShotTrusted && !entryShotAfterOpen ? { time: entryShot, source: 'screenshot' }
     : openedInApp ? { time: openedInApp, source: 'app' }
     : entryShot ? { time: entryShot, source: 'screenshot-unverified' }
     : { time: null, source: 'unknown' };

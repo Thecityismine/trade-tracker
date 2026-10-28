@@ -43,6 +43,20 @@ test('every trade has the same keys, timeframe and exchange included', () => {
   assert.equal(bare.exchange, null);
 });
 
+test('an "entry" chart taken well after opening in the app loses to the app time', () => {
+  // Oct 26: opened 13:43 UTC, entry chart named 10:21 New York (14:21 UTC), closed 14:22.
+  const t = feedTrade({
+    ...opened,
+    entryDate: ts('2026-10-26T13:43:45Z'), tradeDate: ts('2026-10-26T14:22:48Z'),
+    chartImageUrl: shot('BTCUSDC.P_2026-10-26_10-21-10'), exitChartImageUrl: null,
+  });
+  assert.deepEqual(t.entry, { price: 80383, time: '2026-10-26T13:43:45.000Z', timeSource: 'app' });
+
+  // A chart up to 5 minutes after opening still counts as the decision chart.
+  const close = feedTrade({ ...opened, entryDate: ts('2026-10-27T12:55:00Z') });
+  assert.equal(close.entry.timeSource, 'screenshot');
+});
+
 test('without screenshots, app times are used', () => {
   const t = feedTrade({ ...opened, chartImageUrl: null, exitChartImageUrl: null });
   assert.deepEqual(t.entry, { price: 80383, time: '2026-10-27T13:27:02.000Z', timeSource: 'app' });
