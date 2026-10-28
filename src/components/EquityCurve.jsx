@@ -1,10 +1,16 @@
-import { useState } from 'react';
 import { AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { CHART, gridProps, xAxisProps, yAxisProps, tooltipProps, lineProps, usdTick } from './ui/chartTheme';
 
-function EquityCurve({ trades, deposits = [] }) {
-  const [timeframe, setTimeframe] = useState('all');
-
+/**
+ * Account balance after each trade. `since` (a Date, or null for all time)
+ * comes from the dashboard's range picker, so the curve always shows the same
+ * window as the KPIs beside it. `rangeLabel` names that window in the header.
+ *
+ * The card fills the height its parent gives it — the dashboard stretches it
+ * to line up with the Today rail — and never shrinks the chart below a
+ * readable minimum.
+ */
+function EquityCurve({ trades, deposits = [], since = null, rangeLabel = 'all time' }) {
   // Calculate cumulative P&L for equity curve
   const calculateEquityCurve = () => {
     if (!trades || trades.length === 0) return [];
@@ -48,46 +54,32 @@ function EquityCurve({ trades, deposits = [] }) {
       };
     });
 
-    // Filter by timeframe
-    const now = new Date();
-    let filtered = data;
+    if (!since) return data;
 
-    switch (timeframe) {
-      case 'daily':
-        const yesterday = new Date(now);
-        yesterday.setDate(yesterday.getDate() - 1);
-        filtered = data.filter(d => d.fullDate >= yesterday);
-        break;
-      case 'weekly':
-        const lastWeek = new Date(now);
-        lastWeek.setDate(lastWeek.getDate() - 7);
-        filtered = data.filter(d => d.fullDate >= lastWeek);
-        break;
-      case 'monthly':
-        const lastMonth = new Date(now);
-        lastMonth.setMonth(lastMonth.getMonth() - 1);
-        filtered = data.filter(d => d.fullDate >= lastMonth);
-        break;
-      default:
-        filtered = data;
-    }
-
-    return filtered;
+    const inRange = data.filter(d => d.fullDate >= since);
+    if (inRange.length === 0) return [];
+    // Start from the balance going into the range, so a single trade still
+    // draws a line and the first trade's move is visible.
+    const before = data.filter(d => d.fullDate < since).pop();
+    return before ? [{ ...before, date: 'Start', isStart: true }, ...inRange] : inRange;
   };
 
   const data = calculateEquityCurve();
 
   const CustomTooltip = ({ active, payload }) => {
     if (active && payload && payload.length) {
+      const point = payload[0].payload;
       return (
         <div className="bg-surface p-3 rounded-card shadow-lg">
-          <p className="text-content-primary font-medium">{payload[0].payload.date}</p>
+          <p className="text-content-primary font-medium">{point.isStart ? 'Start of range' : point.date}</p>
           <p className={`text-sm ${payload[0].value >= 0 ? 'text-profit' : 'text-loss'}`}>
             Balance: {payload[0].value < 0 ? '-' : ''}${Math.abs(payload[0].value).toFixed(2)}
           </p>
-          <p className="text-content-secondary text-xs">
-            {payload[0].payload.ticker} · {payload[0].payload.direction === 'long' ? 'Long' : 'Short'}
-          </p>
+          {!point.isStart && (
+            <p className="text-content-secondary text-xs">
+              {point.ticker} · {point.direction === 'long' ? 'Long' : 'Short'}
+            </p>
+          )}
         </div>
       );
     }
@@ -95,56 +87,45 @@ function EquityCurve({ trades, deposits = [] }) {
   };
 
   return (
-    <div className="bg-surface rounded-card p-4 md:p-6 shadow-elev-1">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-6 space-y-3 md:space-y-0">
+    <div className="flex h-full w-full flex-col bg-surface rounded-card p-4 md:p-6 shadow-elev-1">
+      <div className="mb-6 flex items-baseline justify-between gap-3">
         <h2 className="text-xl font-bold text-content-primary">Equity Curve</h2>
-        
-        <div className="flex space-x-2 overflow-x-auto">
-          {['daily', 'weekly', 'monthly', 'all'].map((tf) => (
-            <button
-              key={tf}
-              onClick={() => setTimeframe(tf)}
-              className={`px-4 py-2 rounded-lg text-sm font-medium transition-colors whitespace-nowrap ${
-                timeframe === tf
-                  ? 'bg-brand text-content-primary'
-                  : 'bg-surface-raised text-content-secondary hover:text-content-primary'
-              }`}
-            >
-              {tf.charAt(0).toUpperCase() + tf.slice(1)}
-            </button>
-          ))}
-        </div>
+        <p className="text-xs text-content-muted">{rangeLabel}</p>
       </div>
 
-      <div className="w-full h-64 md:h-80">
-        {data.length > 0 ? (
-          <ResponsiveContainer width="100%" height="100%">
-            <AreaChart data={data}>
-              <defs>
-                <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
-                  <stop offset="5%" stopColor={CHART.brand} stopOpacity={0.18} />
-                  <stop offset="95%" stopColor={CHART.brand} stopOpacity={0} />
-                </linearGradient>
-              </defs>
-              <CartesianGrid {...gridProps} />
-              <XAxis dataKey="date" {...xAxisProps} />
-              <YAxis {...yAxisProps} tickFormatter={usdTick} />
-              <Tooltip content={<CustomTooltip />} cursor={tooltipProps.cursor} />
-              <Area
-                type="monotone"
-                dataKey="pnl"
-                stroke={CHART.brand}
-                fill="url(#equityGradient)"
-                activeDot={{ r: 4, fill: CHART.brand }}
-                {...lineProps}
-              />
-            </AreaChart>
-          </ResponsiveContainer>
-        ) : (
-          <div className="flex items-center justify-center h-full text-content-muted">
-            No trades to display
-          </div>
-        )}
+      {/* The chart is positioned absolutely so the card can stretch to any
+          height; min-h keeps it readable when nothing stretches it. */}
+      <div className="relative min-h-[16rem] w-full flex-1 md:min-h-[20rem]">
+        <div className="absolute inset-0">
+          {data.length > 0 ? (
+            <ResponsiveContainer width="100%" height="100%">
+              <AreaChart data={data}>
+                <defs>
+                  <linearGradient id="equityGradient" x1="0" y1="0" x2="0" y2="1">
+                    <stop offset="5%" stopColor={CHART.brand} stopOpacity={0.18} />
+                    <stop offset="95%" stopColor={CHART.brand} stopOpacity={0} />
+                  </linearGradient>
+                </defs>
+                <CartesianGrid {...gridProps} />
+                <XAxis dataKey="date" {...xAxisProps} />
+                <YAxis {...yAxisProps} tickFormatter={usdTick} domain={['auto', 'auto']} />
+                <Tooltip content={<CustomTooltip />} cursor={tooltipProps.cursor} />
+                <Area
+                  type="monotone"
+                  dataKey="pnl"
+                  stroke={CHART.brand}
+                  fill="url(#equityGradient)"
+                  activeDot={{ r: 4, fill: CHART.brand }}
+                  {...lineProps}
+                />
+              </AreaChart>
+            </ResponsiveContainer>
+          ) : (
+            <div className="flex items-center justify-center h-full text-content-muted">
+              No trades {rangeLabel}
+            </div>
+          )}
+        </div>
       </div>
     </div>
   );

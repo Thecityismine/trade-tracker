@@ -179,11 +179,11 @@ function CardLabel({ icon: Icon, children, right, className = 'text-content-mute
   );
 }
 
-function ProgressBar({ value, done }) {
+function ProgressBar({ value, done, tone }) {
   return (
     <div className="h-2 w-full overflow-hidden rounded-full bg-white/5">
       <div
-        className={`h-2 rounded-full transition-all duration-700 ${done ? 'bg-profit' : 'bg-brand'}`}
+        className={`h-2 rounded-full transition-all duration-700 ${tone || (done ? 'bg-profit' : 'bg-brand')}`}
         style={{ width: `${value}%` }}
       />
     </div>
@@ -389,23 +389,31 @@ function Dashboard({ onNavigate }) {
     return focuses;
   })();
 
+  // Today's result as account %, the same basis as Returns > Day. Summing
+  // each trade's own P&L% measured the position, not the account, so a
+  // −30% position move on a ~7% account loss read as −30% against the goal.
+  // Once the day is red, the bar switches to the daily loss limit (if one
+  // is set) — chasing the goal from below is the wrong prompt.
   const dailyGoalProgress = (() => {
     const goal = parseFloat(appSettings.dailyPnlGoalPercent);
+    const lossLimit = parseFloat(appSettings.maxDailyLossPercent);
+    const dayPct = percentSummary.day;
+    if (dayPct < 0 && lossLimit > 0) {
+      const used = Math.abs(dayPct);
+      return {
+        mode: 'loss', dayPct, limit: lossLimit,
+        progress: Math.min(100, (used / lossLimit) * 100),
+        remaining: Math.max(0, lossLimit - used),
+        hit: used >= lossLimit,
+      };
+    }
     if (!goal || goal <= 0) return null;
-    // Trade-return basis: sums today's per-trade P&L% (the same number the trades table shows),
-    // not account-equity growth like percentSummary.day.
-    const now = new Date();
-    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
-    const dayPct = trades
-      .filter(t => {
-        const d = getTradeDate(t);
-        return !Number.isNaN(d.getTime()) && d >= todayStart && d <= now;
-      })
-      .reduce((sum, t) => sum + (Number(t.pnlPercent) || 0), 0);
-    const progress = Math.min(100, Math.max(0, (dayPct / goal) * 100));
-    const remaining = Math.max(0, goal - dayPct);
-    const hit = dayPct >= goal;
-    return { goal, dayPct, progress, remaining, hit };
+    return {
+      mode: 'goal', dayPct, goal,
+      progress: Math.min(100, Math.max(0, (dayPct / goal) * 100)),
+      remaining: Math.max(0, goal - dayPct),
+      hit: dayPct >= goal,
+    };
   })();
 
   const performanceIdentity = (() => {
@@ -562,218 +570,33 @@ function Dashboard({ onNavigate }) {
         </Kpi>
       </div>
 
-      {/* Equity curve beside today's rail */}
-      <div className="grid gap-4 lg:grid-cols-3 lg:gap-5">
-        <div className="min-w-0 lg:col-span-2">
-          <EquityCurve trades={trades} deposits={deposits} />
-        </div>
-
-        <div className="card-glow glow-brand space-y-4 rounded-card bg-surface p-4 shadow-elev-1 md:p-5">
-          <CardLabel icon={Sun} className="text-brand">Today</CardLabel>
-
-          {todaysFocus && (
-            <div className="space-y-1">
-              {todaysFocus.map((item, i) => (
-                <p key={i} className="text-sm text-content-primary">→ {item}</p>
-              ))}
-            </div>
-          )}
-
-          <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
-            <div className="flex min-w-0 items-center gap-2">
-              <ClipboardCheck size={16} className={toReview.length ? 'text-warn' : 'text-profit'} aria-hidden="true" />
-              <p className="truncate text-sm text-content-primary">
-                {toReview.length
-                  ? `${toReview.length} trade${toReview.length === 1 ? '' : 's'} to review`
-                  : 'All trades reviewed'}
-              </p>
-            </div>
-            {toReview.length > 0 && (
-              <button
-                type="button"
-                onClick={() => setReviewIds(toReview.map((t) => t.id))}
-                className="flex-shrink-0 rounded-control bg-brand px-3 py-1.5 text-xs font-medium text-content-primary transition-colors hover:bg-brand-hover"
-              >
-                Start review
-              </button>
-            )}
+      {/* From 1700px the page is two independent columns — charts and trades
+          and the reference cards on the left, today's rail and the month on
+          the right — so a tall card on one side never leaves a hole on the
+          other. Below that the column wrappers are `display: contents`,
+          their cards flow straight into the 3-column grid, and `order`
+          interleaves them: equity beside the rail, then the month, then the
+          trades table at full width (its fixed columns overflow 2/3 of a
+          1536px screen). */}
+      <div className="grid gap-4 lg:grid-cols-3 lg:gap-5 min-[1700px]:flex">
+        <div className="contents min-[1700px]:flex min-[1700px]:min-w-0 min-[1700px]:flex-[2_2_0%] min-[1700px]:flex-col min-[1700px]:gap-5">
+          {/* Stretches to the rail's height beside it, and at 1700px+ takes
+              the height the left column has spare, up to a cap. */}
+          <div className="order-1 flex min-w-0 lg:col-span-2 min-[1700px]:max-h-[40rem] min-[1700px]:flex-1">
+            <EquityCurve trades={trades} deposits={deposits} since={since} rangeLabel={RANGE_LABELS[range]} />
           </div>
 
-          {routines.length > 0 && (
-            <div className="space-y-1.5 border-t border-line pt-4">
-              {routines.map((r) => (
-                <button
-                  key={r.id}
-                  type="button"
-                  onClick={() => onNavigate?.('routines')}
-                  className="flex w-full items-center justify-between gap-3 rounded-control py-1 text-left hover:opacity-80"
-                >
-                  <span className="flex min-w-0 items-center gap-2">
-                    <ListChecks size={16} className={r.complete ? 'text-profit' : 'text-content-muted'} aria-hidden="true" />
-                    <span className={`truncate text-sm ${r.complete ? 'text-content-muted line-through' : 'text-content-primary'}`}>{r.name}</span>
-                  </span>
-                  <span className="flex flex-shrink-0 items-center gap-2 text-xs tabular-nums">
-                    <span className={r.complete ? 'text-profit' : 'text-content-muted'}>{r.doneCount}/{r.steps.length}</span>
-                    <span className={`inline-flex items-center gap-0.5 ${r.streak > 0 ? 'text-warn' : 'text-content-muted'}`}>
-                      <Flame size={12} aria-hidden="true" />{r.streak}
-                    </span>
-                  </span>
-                </button>
-              ))}
-            </div>
-          )}
-
-          {lastTen.length > 0 && (
-            <div className="border-t border-line pt-4">
-              <div className="mb-2 flex items-center justify-between">
-                <p className="text-xs text-content-muted">Last {lastTen.length} trades</p>
-                <p className={`text-xs font-bold tabular-nums ${lastTenWins >= lastTenLosses ? 'text-profit' : 'text-loss'}`}>
-                  {lastTenWins}W · {lastTenLosses}L{lastTenScratches > 0 ? ` · ${lastTenScratches}S` : ''}
-                </p>
-              </div>
-              <div className="flex items-center gap-1.5" role="list" aria-label="Last trades, oldest to newest">
-                {lastTen.map((t) => {
-                  const pnl = Number(t.gainLoss) || 0;
-                  const word = t.outcome === 'win' ? 'Win' : t.outcome === 'loss' ? 'Loss' : 'Scratch';
-                  const label = `${getTradeDate(t).toLocaleDateString()} · ${word} · ${money(pnl, true)}`;
-                  return (
-                    <span
-                      key={t.id}
-                      role="listitem"
-                      title={label}
-                      aria-label={label}
-                      className={`h-3.5 flex-1 rounded-full ${
-                        t.outcome === 'win'
-                          ? 'bg-profit shadow-[0_0_8px_rgba(52,211,153,0.35)]'
-                          : t.outcome === 'loss' ? 'bg-loss/80' : 'bg-content-muted/50'
-                      }`}
-                    />
-                  );
-                })}
-              </div>
-              <p className="mt-1.5 text-[11px] text-content-muted">Oldest → newest</p>
-            </div>
-          )}
-
-          {dailyGoalProgress && (
-            <div className="border-t border-line pt-4">
-              <div className="mb-1.5 flex items-center justify-between">
-                <p className="text-xs text-content-muted">Daily goal</p>
-                <p className={`text-xs font-bold tabular-nums ${dailyGoalProgress.hit ? 'text-profit' : 'text-content-secondary'}`}>
-                  {dailyGoalProgress.dayPct >= 0 ? '+' : ''}{dailyGoalProgress.dayPct.toFixed(1)}% / +{dailyGoalProgress.goal}%
-                </p>
-              </div>
-              <ProgressBar value={dailyGoalProgress.progress} done={dailyGoalProgress.hit} />
-              <p className={`mt-1 text-xs ${dailyGoalProgress.hit ? 'text-profit' : 'text-content-muted'}`}>
-                {dailyGoalProgress.hit
-                  ? '✓ Daily goal reached — protect your gains.'
-                  : `${dailyGoalProgress.remaining.toFixed(1)}% remaining to hit today's target`}
-              </p>
-            </div>
-          )}
-
-          {(aiCoachSummary || weekBanner) && (
-            <div className="space-y-1.5 border-t border-line pt-4">
-              <p className="text-xs font-semibold uppercase tracking-wider text-brand">Daily coach</p>
-              {aiCoachSummary && <p className="text-sm leading-relaxed text-content-primary">{aiCoachSummary}</p>}
-              {weekBanner && <p className="text-xs text-content-muted">{weekBanner}</p>}
-            </div>
-          )}
-
-          {dashGoal && (
-            <div className="border-t border-line pt-4">
-              <div className="mb-1.5 flex items-baseline justify-between">
-                <p className="text-xs text-content-muted">Account goal</p>
-                <p className="text-xs tabular-nums text-content-secondary">${dashGoal.balance.toFixed(2)} / ${dashGoal.goalAmt.toFixed(2)}</p>
-              </div>
-              <ProgressBar value={dashGoal.progress} done={dashGoal.progress >= 100} />
-              <div className="mt-1 flex justify-between text-xs text-content-muted">
-                <span>{dashGoal.progress.toFixed(1)}% complete</span>
-                {dashGoal.progress >= 100
-                  ? <span className="text-profit">Goal reached!</span>
-                  : <span>${dashGoal.remaining.toFixed(2)} to go</span>}
-              </div>
-            </div>
-          )}
-        </div>
-      </div>
-
-      {/* Recent trades beside the monthly breakdown. The trades table needs
-          the width — its fixed columns overflow 2/3 of a 1536px screen — so
-          the two only sit side by side from 1700px. */}
-      <div className="grid gap-4 lg:gap-5 min-[1700px]:grid-cols-3">
-        <div className="grid gap-4 md:grid-cols-2 lg:gap-5 min-[1700px]:order-2 min-[1700px]:grid-cols-1 min-[1700px]:content-start">
-          {/* Gross / fees / net for the calendar month, whatever the range.
-              The net figure alone hides how much of the edge the costs eat. */}
-          <div className={`card-glow ${monthMetrics.totalPnl >= 0 ? 'glow-profit' : 'glow-loss'} rounded-card bg-surface p-4 shadow-elev-1 md:p-5`}>
-            <CardLabel icon={CalendarDays} right={<p className="text-xs text-content-muted">{monthLabel}</p>}>
-              Monthly P&amp;L
-            </CardLabel>
-            <p className={`text-3xl font-bold tabular-nums leading-none ${toneOf(monthMetrics.totalPnl)}`}>
-              {money(monthMetrics.totalPnl)}
-            </p>
-            <p className="mb-4 mt-1 text-sm text-content-muted">
-              {monthMetrics.wins}W · {monthMetrics.losses}L{monthMetrics.scratches ? ` · ${monthMetrics.scratches} scratch` : ''}
-            </p>
-            <div className="space-y-1.5">
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-content-muted">Gross</span>
-                <span className={`tabular-nums font-medium ${toneOf(monthMetrics.grossPnl)}`}>{money(monthMetrics.grossPnl, true)}</span>
-              </div>
-              <div className="flex items-center justify-between text-sm">
-                <span className="text-content-muted">Fees</span>
-                <span className="tabular-nums font-medium text-loss">{money(-monthMetrics.fees)}</span>
-              </div>
-              <div className="flex items-center justify-between border-t border-line pt-1.5 text-sm">
-                <span className="font-medium text-content-secondary">Net</span>
-                <span className={`tabular-nums font-bold ${toneOf(monthMetrics.totalPnl)}`}>{money(monthMetrics.totalPnl, true)}</span>
-              </div>
-              {monthFeeShare !== null && (
-                <p className={`pt-1 text-xs ${monthFeeShare >= 50 ? 'text-loss' : 'text-content-muted'}`}>
-                  Costs are {monthFeeShare.toFixed(0)}% of gross edge.
-                </p>
-              )}
-            </div>
+          <div className="order-4 min-w-0 lg:col-span-3">
+            <RecentTrades
+              trades={trades}
+              since={since}
+              maxRiskPercent={parseFloat(appSettings.maxRiskPercent) || 0}
+              onAddTrade={() => setIsModalOpen(true)}
+            />
           </div>
 
-          <div className="rounded-card bg-surface p-4 shadow-elev-1 md:p-5">
-            <CardLabel icon={Percent}>Returns</CardLabel>
-            <div className="grid grid-cols-2 gap-2.5">
-              {[
-                { label: 'Day', value: percentSummary.day },
-                { label: 'Week', value: percentSummary.week },
-                { label: 'Month', value: percentSummary.month },
-                { label: 'Year', value: percentSummary.year },
-              ].map(({ label, value }) => (
-                <div
-                  key={label}
-                  className={`rounded-control px-3 py-2.5 ring-1 ${value >= 0 ? 'bg-profit-soft ring-profit/15' : 'bg-loss-soft ring-loss/15'}`}
-                >
-                  <p className="mb-0.5 text-xs text-content-muted">{label}</p>
-                  <p className={`text-lg font-bold tabular-nums ${toneOf(value)}`}>
-                    {value >= 0 ? '+' : ''}{value.toFixed(1)}%
-                  </p>
-                </div>
-              ))}
-            </div>
-          </div>
-        </div>
-
-        <div className="min-w-0 min-[1700px]:order-1 min-[1700px]:col-span-2">
-          <RecentTrades
-            trades={trades}
-            since={since}
-            maxRiskPercent={parseFloat(appSettings.maxRiskPercent) || 0}
-            onAddTrade={() => setIsModalOpen(true)}
-          />
-        </div>
-      </div>
-
-      {/* Reference material: pinned playbooks beside the performance read-out */}
-      {(pinnedNotes.length > 0 || performanceIdentity) && (
-        <div className="grid gap-4 lg:grid-cols-3 lg:gap-5">
           {pinnedNotes.length > 0 && (
-            <div className={`rounded-card bg-surface p-4 shadow-elev-1 md:p-5 ${performanceIdentity ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
+            <div className={`order-5 rounded-card bg-surface p-4 shadow-elev-1 md:p-5 ${performanceIdentity ? 'lg:col-span-2' : 'lg:col-span-3'}`}>
               <h2 className="mb-3 flex items-center gap-2 text-sm font-semibold text-content-primary">
                 <Pin size={14} className="text-warn" />
                 Pinned Playbooks
@@ -796,7 +619,7 @@ function Dashboard({ onNavigate }) {
             </div>
           )}
           {performanceIdentity && (
-            <div className={`rounded-card bg-surface p-4 shadow-elev-1 md:p-5 ${pinnedNotes.length > 0 ? '' : 'lg:col-span-3'}`}>
+            <div className={`order-6 rounded-card bg-surface p-4 shadow-elev-1 md:p-5 ${pinnedNotes.length > 0 ? '' : 'lg:col-span-3'}`}>
               <p className="mb-3 text-xs font-semibold uppercase tracking-wider text-brand">Performance Identity</p>
               <div className="space-y-1.5">
                 {performanceIdentity.map((line, i) => (
@@ -806,7 +629,212 @@ function Dashboard({ onNavigate }) {
             </div>
           )}
         </div>
-      )}
+
+        <div className="contents min-[1700px]:flex min-[1700px]:min-w-0 min-[1700px]:flex-[1_1_0%] min-[1700px]:flex-col min-[1700px]:gap-5">
+          <div className="order-2 card-glow glow-brand space-y-4 rounded-card bg-surface p-4 shadow-elev-1 md:p-5">
+            <CardLabel icon={Sun} className="text-brand">Today</CardLabel>
+
+            {todaysFocus && (
+              <div className="space-y-1">
+                {todaysFocus.map((item, i) => (
+                  <p key={i} className="text-sm text-content-primary">→ {item}</p>
+                ))}
+              </div>
+            )}
+
+            <div className="flex items-center justify-between gap-3 border-t border-line pt-4">
+              <div className="flex min-w-0 items-center gap-2">
+                <ClipboardCheck size={16} className={toReview.length ? 'text-warn' : 'text-profit'} aria-hidden="true" />
+                <p className="truncate text-sm text-content-primary">
+                  {toReview.length
+                    ? `${toReview.length} trade${toReview.length === 1 ? '' : 's'} to review`
+                    : 'All trades reviewed'}
+                </p>
+              </div>
+              {toReview.length > 0 && (
+                <button
+                  type="button"
+                  onClick={() => setReviewIds(toReview.map((t) => t.id))}
+                  className="flex-shrink-0 rounded-control bg-brand px-3 py-1.5 text-xs font-medium text-content-primary transition-colors hover:bg-brand-hover"
+                >
+                  Start review
+                </button>
+              )}
+            </div>
+
+            {routines.length > 0 && (
+              <div className="space-y-1.5 border-t border-line pt-4">
+                {routines.map((r) => (
+                  <button
+                    key={r.id}
+                    type="button"
+                    onClick={() => onNavigate?.('routines')}
+                    className="flex w-full items-center justify-between gap-3 rounded-control py-1 text-left hover:opacity-80"
+                  >
+                    <span className="flex min-w-0 items-center gap-2">
+                      <ListChecks size={16} className={r.complete ? 'text-profit' : 'text-content-muted'} aria-hidden="true" />
+                      <span className={`truncate text-sm ${r.complete ? 'text-content-muted line-through' : 'text-content-primary'}`}>{r.name}</span>
+                    </span>
+                    <span className="flex flex-shrink-0 items-center gap-2 text-xs tabular-nums">
+                      <span className={r.complete ? 'text-profit' : 'text-content-muted'}>{r.doneCount}/{r.steps.length}</span>
+                      <span className={`inline-flex items-center gap-0.5 ${r.streak > 0 ? 'text-warn' : 'text-content-muted'}`}>
+                        <Flame size={12} aria-hidden="true" />{r.streak}
+                      </span>
+                    </span>
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {lastTen.length > 0 && (
+              <div className="border-t border-line pt-4">
+                <div className="mb-2 flex items-center justify-between">
+                  <p className="text-xs text-content-muted">Last {lastTen.length} trades</p>
+                  <p className={`text-xs font-bold tabular-nums ${lastTenWins >= lastTenLosses ? 'text-profit' : 'text-loss'}`}>
+                    {lastTenWins}W · {lastTenLosses}L{lastTenScratches > 0 ? ` · ${lastTenScratches}S` : ''}
+                  </p>
+                </div>
+                <div className="flex items-center gap-1.5" role="list" aria-label="Last trades, oldest to newest">
+                  {lastTen.map((t) => {
+                    const pnl = Number(t.gainLoss) || 0;
+                    const word = t.outcome === 'win' ? 'Win' : t.outcome === 'loss' ? 'Loss' : 'Scratch';
+                    const label = `${getTradeDate(t).toLocaleDateString()} · ${word} · ${money(pnl, true)}`;
+                    return (
+                      <span
+                        key={t.id}
+                        role="listitem"
+                        title={label}
+                        aria-label={label}
+                        className={`h-3.5 flex-1 rounded-full ${
+                          t.outcome === 'win'
+                            ? 'bg-profit shadow-[0_0_8px_rgba(52,211,153,0.35)]'
+                            : t.outcome === 'loss' ? 'bg-loss/80' : 'bg-content-muted/50'
+                        }`}
+                      />
+                    );
+                  })}
+                </div>
+                <p className="mt-1.5 text-[11px] text-content-muted">Oldest → newest</p>
+              </div>
+            )}
+
+            {dailyGoalProgress && (
+              <div className="border-t border-line pt-4">
+                <div className="mb-1.5 flex items-center justify-between">
+                  <p className="text-xs text-content-muted">
+                    {dailyGoalProgress.mode === 'loss' ? 'Daily loss limit' : 'Daily goal'}
+                  </p>
+                  <p className={`text-xs font-bold tabular-nums ${
+                    dailyGoalProgress.mode === 'loss' ? 'text-loss' : dailyGoalProgress.hit ? 'text-profit' : 'text-content-secondary'
+                  }`}>
+                    {dailyGoalProgress.dayPct >= 0 ? '+' : ''}{dailyGoalProgress.dayPct.toFixed(1)}%
+                    {' / '}
+                    {dailyGoalProgress.mode === 'loss' ? `-${dailyGoalProgress.limit}%` : `+${dailyGoalProgress.goal}%`}
+                  </p>
+                </div>
+                <ProgressBar
+                  value={dailyGoalProgress.progress}
+                  tone={dailyGoalProgress.mode === 'loss' ? 'bg-loss' : dailyGoalProgress.hit ? 'bg-profit' : 'bg-brand'}
+                />
+                <p className={`mt-1 text-xs ${
+                  dailyGoalProgress.hit ? (dailyGoalProgress.mode === 'loss' ? 'text-loss' : 'text-profit') : 'text-content-muted'
+                }`}>
+                  {dailyGoalProgress.mode === 'loss'
+                    ? dailyGoalProgress.hit
+                      ? 'Daily loss limit hit — done for today.'
+                      : `${dailyGoalProgress.remaining.toFixed(1)}% of account left before your limit.`
+                    : dailyGoalProgress.hit
+                      ? '✓ Daily goal reached — protect your gains.'
+                      : dailyGoalProgress.dayPct < 0
+                        ? "Down on the day. Don't chase the goal."
+                        : `${dailyGoalProgress.remaining.toFixed(1)}% to go to today's target`}
+                </p>
+              </div>
+            )}
+
+            {(aiCoachSummary || weekBanner) && (
+              <div className="space-y-1.5 border-t border-line pt-4">
+                <p className="text-xs font-semibold uppercase tracking-wider text-brand">Daily coach</p>
+                {aiCoachSummary && <p className="text-sm leading-relaxed text-content-primary">{aiCoachSummary}</p>}
+                {weekBanner && <p className="text-xs text-content-muted">{weekBanner}</p>}
+              </div>
+            )}
+
+            {dashGoal && (
+              <div className="border-t border-line pt-4">
+                <div className="mb-1.5 flex items-baseline justify-between">
+                  <p className="text-xs text-content-muted">Account goal</p>
+                  <p className="text-xs tabular-nums text-content-secondary">${dashGoal.balance.toFixed(2)} / ${dashGoal.goalAmt.toFixed(2)}</p>
+                </div>
+                <ProgressBar value={dashGoal.progress} done={dashGoal.progress >= 100} />
+                <div className="mt-1 flex justify-between text-xs text-content-muted">
+                  <span>{dashGoal.progress.toFixed(1)}% complete</span>
+                  {dashGoal.progress >= 100
+                    ? <span className="text-profit">Goal reached!</span>
+                    : <span>${dashGoal.remaining.toFixed(2)} to go</span>}
+                </div>
+              </div>
+            )}
+          </div>
+
+          <div className="order-3 grid gap-4 md:grid-cols-2 lg:col-span-3 lg:gap-5 min-[1700px]:grid-cols-1">
+            {/* Gross / fees / net for the calendar month, whatever the range.
+                The net figure alone hides how much of the edge the costs eat. */}
+            <div className={`card-glow ${monthMetrics.totalPnl >= 0 ? 'glow-profit' : 'glow-loss'} rounded-card bg-surface p-4 shadow-elev-1 md:p-5`}>
+              <CardLabel icon={CalendarDays} right={<p className="text-xs text-content-muted">{monthLabel}</p>}>
+                Monthly P&amp;L
+              </CardLabel>
+              <p className={`text-3xl font-bold tabular-nums leading-none ${toneOf(monthMetrics.totalPnl)}`}>
+                {money(monthMetrics.totalPnl)}
+              </p>
+              <p className="mb-4 mt-1 text-sm text-content-muted">
+                {monthMetrics.wins}W · {monthMetrics.losses}L{monthMetrics.scratches ? ` · ${monthMetrics.scratches} scratch` : ''}
+              </p>
+              <div className="space-y-1.5">
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-content-muted">Gross</span>
+                  <span className={`tabular-nums font-medium ${toneOf(monthMetrics.grossPnl)}`}>{money(monthMetrics.grossPnl, true)}</span>
+                </div>
+                <div className="flex items-center justify-between text-sm">
+                  <span className="text-content-muted">Fees</span>
+                  <span className="tabular-nums font-medium text-loss">{money(-monthMetrics.fees)}</span>
+                </div>
+                <div className="flex items-center justify-between border-t border-line pt-1.5 text-sm">
+                  <span className="font-medium text-content-secondary">Net</span>
+                  <span className={`tabular-nums font-bold ${toneOf(monthMetrics.totalPnl)}`}>{money(monthMetrics.totalPnl, true)}</span>
+                </div>
+                {monthFeeShare !== null && (
+                  <p className={`pt-1 text-xs ${monthFeeShare >= 50 ? 'text-loss' : 'text-content-muted'}`}>
+                    Costs are {monthFeeShare.toFixed(0)}% of gross edge.
+                  </p>
+                )}
+              </div>
+            </div>
+
+            <div className="rounded-card bg-surface p-4 shadow-elev-1 md:p-5">
+              <CardLabel icon={Percent}>Returns</CardLabel>
+              <div className="grid grid-cols-2 gap-2.5">
+                {[
+                  { label: 'Day', value: percentSummary.day },
+                  { label: 'Week', value: percentSummary.week },
+                  { label: 'Month', value: percentSummary.month },
+                  { label: 'Year', value: percentSummary.year },
+                ].map(({ label, value }) => (
+                  <div
+                    key={label}
+                    className={`rounded-control px-3 py-2.5 ring-1 ${value >= 0 ? 'bg-profit-soft ring-profit/15' : 'bg-loss-soft ring-loss/15'}`}
+                  >
+                    <p className="mb-0.5 text-xs text-content-muted">{label}</p>
+                    <p className={`text-lg font-bold tabular-nums ${toneOf(value)}`}>
+                      {value >= 0 ? '+' : ''}{value.toFixed(1)}%
+                    </p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
 
       {/* Trade Modal — the FAB moved to the top bar's "New Trade" action; this
           instance still backs the empty-state CTA in RecentTrades. */}
