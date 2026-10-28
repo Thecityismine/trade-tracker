@@ -77,6 +77,8 @@ open the gateway. The endpoint uses the gateway's Firestore service account
       "stop": 80866,
       "target": 78937,
       "leverage": 40,
+      "timeframe": "10m",
+      "exchange": "hyperliquid",
       "result": "loss",
       "pnlUsd": -17.18,
       "feesUsd": 2,
@@ -100,6 +102,11 @@ open the gateway. The endpoint uses the gateway's Firestore service account
   gross of fees, and `null` without a stop.
 - `result` is `win` or `loss` as recorded. The tracker's scratch band (a small
   % of the account) is not applied here.
+- `timeframe` is the chart the trade was taken on, as Chart Lab names
+  timeframes (`1m` … `30m`, `1H` … `12H`, `1D`). `exchange` is one of
+  `hyperliquid`, `bitunix`, `asterdex`, `zoomex` or `bingx`. Both are optional
+  and `null` on trades logged before they existed (added 2026-10-28, additive
+  to v1).
 - `asset` is whatever ticker was logged. Today it is BTC or ETH. A chart should
   skip assets it doesn't carry.
 
@@ -123,7 +130,7 @@ when matching.
 ## Deep link (tracker → Chart Lab)
 
 ```
-https://skyline-chart-lab.vercel.app/?trade=<id>&asset=BTC&t=<unix seconds>
+https://skyline-chart-lab.vercel.app/?trade=<id>&asset=BTC&t=<unix seconds>&tf=10m
 ```
 
 | Param | |
@@ -131,8 +138,7 @@ https://skyline-chart-lab.vercel.app/?trade=<id>&asset=BTC&t=<unix seconds>
 | `trade` | Feed id. Chart Lab resolves it with `?ids=<id>`. |
 | `asset` | Open this coin straight away |
 | `t` | A rough time (opened in the app, else logged), for centring before the feed answers. The feed's `entry.time` wins. |
-
-Chart Lab picks the timeframe. A later `tf` parameter would be additive.
+| `tf` | *(only when logged)* The trade's timeframe. Chart Lab opens that chart, or its nearest one when it doesn't draw that timeframe (it has no 1m/3m/5m charts). Without `tf`, Chart Lab picks. |
 
 The tracker builds the link in `src/utils/chartLab.js`. The base URL can be
 overridden with `VITE_CHART_LAB_URL`.

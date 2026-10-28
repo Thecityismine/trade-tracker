@@ -56,6 +56,8 @@ const trade = (doc, ctx) => {
     stopLoss: num(doc.stopLoss),
     targetPrice: num(doc.targetPrice),
     leverage: num(doc.leverage),
+    timeframe: text(doc.timeframe),
+    exchange: text(doc.exchange),
     result,
     realizedPnlUsd: pnl,
     feesUsd: num(doc.fee),

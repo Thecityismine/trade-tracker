@@ -8,6 +8,7 @@ import Button from './ui/Button';
 import Select from './ui/Select';
 import DateField from './ui/DateField';
 import { EmotionPicker, TagInput } from './TradeTagFields';
+import { EXCHANGES, TIMEFRAMES } from '../utils/tradeVenue';
 
 // The submit button lives in the Modal footer, outside the <form>, so it binds
 // back to it by id.
@@ -108,6 +109,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     stopLoss: '',
     targetPrice: '',
     leverage: '25',
+    timeframe: '',
+    exchange: '',
     gainLoss: '',
     fee: '',
     result: 'win',
@@ -200,6 +203,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       stopLoss: editTrade.stopLoss?.toString() || '',
       targetPrice: editTrade.targetPrice?.toString() || '',
       leverage: editTrade.leverage?.toString() || '25',
+      timeframe: editTrade.timeframe || '',
+      exchange: editTrade.exchange || '',
       gainLoss: editTrade.gainLoss?.toString() || '',
       fee: editTrade.fee?.toString() || '',
       result: normalizedResult,
@@ -287,8 +292,14 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       if (!snapshot.empty) {
         const lastTrade = snapshot.docs[0].data();
         setLastTicker(lastTrade.ticker || 'BTC');
-        if (!editTrade && lastTrade.leverage) {
-          setFormData(prev => ({ ...prev, leverage: lastTrade.leverage.toString() }));
+        if (!editTrade) {
+          // Leverage, timeframe and exchange rarely change trade to trade.
+          setFormData(prev => ({
+            ...prev,
+            ...(lastTrade.leverage ? { leverage: lastTrade.leverage.toString() } : {}),
+            timeframe: prev.timeframe || lastTrade.timeframe || '',
+            exchange: prev.exchange || lastTrade.exchange || '',
+          }));
         }
       }
     } catch (error) {
@@ -367,6 +378,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
         targetPrice: parseFloat(formData.targetPrice) || null,
         plannedRR,
         leverage: parseFloat(formData.leverage),
+        timeframe: formData.timeframe || null,
+        exchange: formData.exchange || null,
         entryReason: formData.entryReason || null,
         // An open position has no result yet. Null these rather than writing
         // zeros — a 0 would read as a real break-even trade downstream.
@@ -430,6 +443,8 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
           stopLoss: '',
           targetPrice: '',
           leverage: formData.leverage,
+          timeframe: formData.timeframe,
+          exchange: formData.exchange,
           gainLoss: '',
           fee: '',
           result: 'win',
@@ -642,6 +657,31 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                 >
                   SHORT
                 </button>
+              </div>
+            </div>
+
+            {/* Where the trade was taken: lets Chart Lab open it on the same
+                chart, and splits fees and results by exchange later. */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-content-secondary text-sm mb-2">Timeframe <span className="text-content-muted">(optional)</span></label>
+                <Select
+                  name="timeframe"
+                  value={formData.timeframe}
+                  onChange={(v) => handleInputChange({ target: { name: 'timeframe', value: v } })}
+                  placeholder="—"
+                  options={[{ value: '', label: '—' }, ...TIMEFRAMES.map((tf) => ({ value: tf, label: tf }))]}
+                />
+              </div>
+              <div>
+                <label className="block text-content-secondary text-sm mb-2">Exchange <span className="text-content-muted">(optional)</span></label>
+                <Select
+                  name="exchange"
+                  value={formData.exchange}
+                  onChange={(v) => handleInputChange({ target: { name: 'exchange', value: v } })}
+                  placeholder="—"
+                  options={[{ value: '', label: '—' }, ...EXCHANGES]}
+                />
               </div>
             </div>
 

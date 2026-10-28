@@ -16,6 +16,7 @@ const opened = {
   chartImageUrl: shot('BTCUSDC.P_2026-10-27_08-58-51'),
   exitChartImageUrl: shot('BTCUSDC.P_2026-10-27_17-33-38'),
   strategyId: 's1', strategyName: 'NY 8pm Session',
+  timeframe: '10m', exchange: 'hyperliquid',
 };
 
 test('screenshot filenames convert from New York time, across DST', () => {
@@ -31,6 +32,15 @@ test('a trade opened in the app uses both screenshots', () => {
   assert.deepEqual(t.exit, { price: 81004, time: '2026-10-27T21:33:38.000Z', timeSource: 'screenshot' });
   assert.equal(t.rMultiple, -1.29);
   assert.deepEqual(t.strategy, { id: 's1', name: 'NY 8pm Session' });
+  assert.equal(t.timeframe, '10m');
+  assert.equal(t.exchange, 'hyperliquid');
+});
+
+test('every trade has the same keys, timeframe and exchange included', () => {
+  const bare = feedTrade({ id: 'b', status: 'closed', entryPrice: 1, exitPrice: 2 });
+  assert.deepEqual(Object.keys(bare).sort(), Object.keys(feedTrade(opened)).sort());
+  assert.equal(bare.timeframe, null);
+  assert.equal(bare.exchange, null);
 });
 
 test('without screenshots, app times are used', () => {

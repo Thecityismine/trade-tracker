@@ -10,6 +10,7 @@ import { useTrades } from '../context/TradesContext';
 import { accountLossPercent, balancesBeforeTrades, isOverRisk as exceedsRiskLimit } from '../utils/accountMath';
 import { emotionLabel } from '../utils/tradeTags';
 import { chartLabUrl } from '../utils/chartLab';
+import { exchangeLabel } from '../utils/tradeVenue';
 
 const MISTAKE_TAGS = [
   { id: 'over-risk', label: 'Over-Risk' },
@@ -486,6 +487,18 @@ function TradeDetailsModal({ trade, maxRiskPercent = 0, onClose }) {
                       ${trade.fee?.toFixed(2) || '0.00'}
                     </div>
                   </div>
+                  {(trade.timeframe || trade.exchange) && (
+                    <>
+                      <div className="bg-surface-raised rounded-control p-4">
+                        <div className="text-content-muted text-xs mb-1">Timeframe</div>
+                        <div className="text-lg font-bold text-content-primary">{trade.timeframe || '—'}</div>
+                      </div>
+                      <div className="bg-surface-raised rounded-control p-4">
+                        <div className="text-content-muted text-xs mb-1">Exchange</div>
+                        <div className="text-lg font-bold text-content-primary">{exchangeLabel(trade.exchange) || '—'}</div>
+                      </div>
+                    </>
+                  )}
                 </div>
               </div>
 

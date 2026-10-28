@@ -1,8 +1,8 @@
 /**
  * Deep links into Chart Lab (the swing-trading chart app). Chart Lab reads
- * the trade itself from /api/trade-feed by id; `asset` and `t` only let it
- * open the right chart while that loads. Parameter names are part of the
- * contract in TRADE_FEED.md.
+ * the trade itself from /api/trade-feed by id; `asset`, `t` and `tf` only
+ * let it open the right chart while that loads. Parameter names are part of
+ * the contract in TRADE_FEED.md.
  */
 export const CHART_LAB_URL = (import.meta.env.VITE_CHART_LAB_URL || 'https://skyline-chart-lab.vercel.app').replace(/\/$/, '');
 
@@ -14,5 +14,6 @@ export function chartLabUrl(trade) {
   // opened in the app, else when it was logged.
   const when = toDate(trade.status === 'open' ? trade.tradeDate : trade.entryDate || trade.tradeDate);
   if (when && !Number.isNaN(when.getTime())) params.set('t', String(Math.floor(when.getTime() / 1000)));
+  if (trade.timeframe) params.set('tf', trade.timeframe);
   return `${CHART_LAB_URL}/?${params}`;
 }

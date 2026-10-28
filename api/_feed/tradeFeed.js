@@ -121,6 +121,9 @@ export function feedTrade(doc, { appUrl = '', timeZone = DEFAULT_SCREENSHOT_TZ }
     stop: num(doc.stopLoss),
     target: num(doc.targetPrice),
     leverage: num(doc.leverage),
+    // Chart timeframe and exchange as logged (optional; added in v1, additive).
+    timeframe: text(doc.timeframe),
+    exchange: text(doc.exchange),
     result: isOpen ? null : text(doc.result),
     pnlUsd: isOpen ? null : num(doc.gainLoss),
     feesUsd: num(doc.fee),
