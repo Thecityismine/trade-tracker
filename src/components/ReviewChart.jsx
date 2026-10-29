@@ -48,6 +48,25 @@ const alpha = (hex, a) => {
 /** [[t, v]] pairs → line data on the candle times; gaps become whitespace. */
 const toLine = (pairs) => (pairs || []).map(([time, value]) => (value === null || value === undefined ? { time } : { time, value }));
 
+/**
+ * Asks for every layer, and if Chart Lab refuses one it doesn't have yet
+ * ("unknown layer sessions (layers: …)"), asks again without it, so a layer
+ * added here first never blanks the whole chart.
+ */
+async function fetchSeries(params, layerIds) {
+  let ids = [...layerIds];
+  for (let attempt = 0; attempt < layerIds.length; attempt++) {
+    try {
+      return await fetchChartData('series', { ...params, layers: ids.join(',') });
+    } catch (error) {
+      const unknown = /unknown layer[s]?\s+([a-z0-9_]+)/i.exec(error.message || '')?.[1];
+      if (!unknown || !ids.includes(unknown)) throw error;
+      ids = ids.filter((id) => id !== unknown);
+    }
+  }
+  throw new Error('Chart Lab refused every layer.');
+}
+
 /** Index of the last candle that opened at or before `t`. */
 function candleAt(candles, t) {
   let lo = 0, hi = candles.length - 1, found = -1;
@@ -90,7 +109,7 @@ function ReviewChart({ asset, tf, trade, layers, onState }) {
     setData(null);
     onState?.({ status: 'loading' });
     const to = trade ? windowEnd(trade, tf) : undefined;
-    fetchChartData('series', { asset, tf, to, bars: 320, layers: 'wt,skyline,nyliq,sessions,ema,ribbon' })
+    fetchSeries({ asset, tf, to, bars: 320 }, LAYERS.map((l) => l.id))
       .catch(async (error) => {
         // The local dev server has no /api functions; draw sample data so the
         // page can be worked on. Never used in a deployed build.

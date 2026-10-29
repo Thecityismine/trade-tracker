@@ -79,7 +79,7 @@ Nothing is hard-coded to BTC and ETH. `asset` is the plain coin name (`BTC`,
 | `tf` | `10m` | Required. One of `timeframes`. Accepts `1h`/`4h` too, like Chart Lab's URL. |
 | `to` | `1793142000` | Unix seconds. The last candle returned is the last closed one at or before `to`. Default: now. |
 | `bars` | `400` | How many closed candles to return, ending at `to`. Default 400, max 1500. |
-| `layers` | `wt,skyline,nyliq,sessions,ema,ribbon` | Default: all six |
+| `layers` | `wt,skyline,nyliq,sessions,ema,ribbon` | Default: all six. **Unknown names are ignored, not an error**, so either app can add a layer first. Leave a layer you don't serve out of `layers`. |
 
 Indicators are calculated over the full cached history, as Chart Lab does
 today, then cut to the window. So the first candle in the window already
