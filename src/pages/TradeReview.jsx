@@ -116,7 +116,9 @@ function TradeReview() {
   const [selectedId, setSelectedId] = useState(null);
   const [assetOverride, setAssetOverride] = useState(null);
   const [tfOverride, setTfOverride] = useState(null);
-  const [layers, setLayers] = useState({ wt: true, skyline: true, nyliq: true, sessions: true, ema: true, ribbon: true });
+  // The page opens on candles, your trade and WaveTrend; every other layer
+  // starts off and you turn on what you want to check.
+  const [layers, setLayers] = useState({ wt: true, skyline: false, nyliq: false, sessions: false, ema: false, ribbon: false });
   const [chartState, setChartState] = useState({ status: 'loading' });
   const [readout, setReadout] = useState({ status: 'idle' });
   const [note, setNote] = useState('');

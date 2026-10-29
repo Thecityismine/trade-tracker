@@ -135,7 +135,14 @@ function ReviewChart({ asset, tf, trade, layers, onState }) {
     const L = data.layers || {};
 
     const main = createChart(mainRef.current, baseOptions(420));
-    const wt = createChart(wtRef.current, { ...baseOptions(140), timeScale: { ...baseOptions(140).timeScale, visible: false } });
+    // The WaveTrend panel follows the main chart: it can't be scrolled or
+    // zoomed on its own, so its resizing (e.g. from hidden to shown) never
+    // pushes a range back onto the main chart.
+    const wt = createChart(wtRef.current, {
+      ...baseOptions(140),
+      timeScale: { ...baseOptions(140).timeScale, visible: false },
+      handleScroll: false, handleScale: false,
+    });
 
     const line = (chart, color, extra = {}) => chart.addLineSeries({ color, lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, ...extra });
     const groups = { ema: [], ribbon: [], skyline: [], nyliq: [], sessions: [] };
@@ -245,14 +252,10 @@ function ReviewChart({ asset, tf, trade, layers, onState }) {
       ].sort((a, b) => a.time - b.time));
     }
 
-    // Keep the two time scales together.
-    let syncing = false;
-    const sync = (from, to) => (range) => {
-      if (syncing || !range) return;
-      syncing = true; to.timeScale().setVisibleLogicalRange(range); syncing = false;
-    };
-    main.timeScale().subscribeVisibleLogicalRangeChange(sync(main, wt));
-    wt.timeScale().subscribeVisibleLogicalRangeChange(sync(wt, main));
+    // Keep the WaveTrend panel on the main chart's bars.
+    main.timeScale().subscribeVisibleLogicalRangeChange((range) => {
+      if (range) wt.timeScale().setVisibleLogicalRange(range);
+    });
     if (focus) main.timeScale().setVisibleLogicalRange({ from: focus[0], to: focus[1] });
     else main.timeScale().fitContent();
 
@@ -267,6 +270,14 @@ function ReviewChart({ asset, tf, trade, layers, onState }) {
     for (const [id, series] of Object.entries(ch.groups)) series.forEach((s) => s.applyOptions({ visible: Boolean(layers[id]) }));
     const shown = [...ch.markers.trade, ...['skyline', 'nyliq', 'sessions'].flatMap((id) => (layers[id] ? ch.markers[id] : []))];
     ch.candleSeries.setMarkers(shown.sort((a, b) => a.time - b.time));
+    // Shown after starting hidden, the panel only has its width a frame
+    // later: line it up with the main chart then.
+    if (layers.wt) {
+      requestAnimationFrame(() => {
+        const range = ch.main.timeScale().getVisibleLogicalRange();
+        if (range && charts.current === ch) ch.wt.timeScale().setVisibleLogicalRange(range);
+      });
+    }
   }, [layers, data]);
 
   const t = TF_SECONDS[tf] ? tf : '10m';
