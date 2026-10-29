@@ -116,8 +116,9 @@ function TradeReview() {
   const [selectedId, setSelectedId] = useState(null);
   const [assetOverride, setAssetOverride] = useState(null);
   const [tfOverride, setTfOverride] = useState(null);
-  // The page opens on candles, your trade and WaveTrend; every other layer
-  // starts off and you turn on what you want to check.
+  // Every visit opens the same way: candles, your trade and WaveTrend.
+  // WaveTrend is always on (it has no toggle); the other layers start off
+  // and you turn on what you want to check. Nothing is remembered.
   const [layers, setLayers] = useState({ wt: true, skyline: false, nyliq: false, sessions: false, ema: false, ribbon: false });
   const [chartState, setChartState] = useState({ status: 'loading' });
   const [readout, setReadout] = useState({ status: 'idle' });
@@ -233,7 +234,7 @@ function TradeReview() {
               </div>
               <div className="flex-1" />
               <div className="flex flex-wrap gap-1.5" role="group" aria-label="Indicator layers">
-                {LAYERS.map((l) => (
+                {LAYERS.filter((l) => l.id !== 'wt').map((l) => (
                   <button
                     key={l.id}
                     type="button"
