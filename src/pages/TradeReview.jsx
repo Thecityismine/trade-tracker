@@ -303,7 +303,7 @@ function TradeReview() {
                   {period === 'today' ? 'No trades today yet. Pick Week or Month to review earlier ones.' : 'No trades in this period.'}
                 </p>
               ) : (
-                <ol className="max-h-[420px] space-y-1 overflow-y-auto pr-1">
+                <ol className="max-h-[420px] space-y-1 overflow-y-auto overflow-x-hidden pr-1">
                   {list.map((t, i) => {
                     const on = t.id === selected?.id;
                     const tr = rMultiple(t);
@@ -314,19 +314,23 @@ function TradeReview() {
                           type="button"
                           onClick={() => setSelectedId(t.id)}
                           aria-current={on ? 'true' : undefined}
-                          className={`flex min-h-[44px] w-full items-center gap-3 rounded-control border px-3 py-1.5 text-left transition-colors ${on ? 'border-brand/45 bg-brand-muted' : 'border-transparent bg-surface-raised hover:bg-surface-hover'}`}
+                          className={`flex min-h-[44px] w-full items-center gap-2 rounded-control border px-2.5 py-1.5 text-left transition-colors sm:gap-3 sm:px-3 ${on ? 'border-brand/45 bg-brand-muted' : 'border-transparent bg-surface-raised hover:bg-surface-hover'}`}
                         >
                           <span className="w-5 font-mono text-xs text-content-muted">{i + 1}</span>
                           <span className="w-11 flex-none whitespace-nowrap text-sm text-content-secondary sm:w-24">
                             <span className="hidden sm:inline">{getTradeDate(t).toLocaleDateString(undefined, { weekday: 'short' })} </span>
                             {getTradeDate(t).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' })}
                           </span>
-                          <span className="w-24 flex-none whitespace-nowrap text-sm font-semibold text-content-primary">
-                            {normalizeAsset(t.ticker)} <span className={t.direction === 'short' ? 'text-loss' : 'text-profit'}>{t.direction === 'short' ? 'Short' : 'Long'}</span>
+                          <span className="w-14 flex-none whitespace-nowrap text-sm font-semibold text-content-primary sm:w-24">
+                            {normalizeAsset(t.ticker)}{' '}
+                            {/* L / S on phones, Long / Short from sm up */}
+                            <span className={t.direction === 'short' ? 'text-loss' : 'text-profit'}>
+                              {t.direction === 'short' ? 'S' : 'L'}<span className="hidden sm:inline">{t.direction === 'short' ? 'hort' : 'ong'}</span>
+                            </span>
                           </span>
                           <span className="hidden min-w-0 flex-1 truncate text-sm text-content-secondary sm:block">{t.strategyName || '—'}</span>
                           <span className={`ml-auto w-16 flex-none whitespace-nowrap text-right font-mono text-sm tabular-nums sm:ml-0 ${tr === null ? 'text-content-muted' : toneOf(tr)}`}>{rText(tr)}</span>
-                          <span className={`w-20 flex-none whitespace-nowrap text-right font-mono text-sm tabular-nums ${toneOf(g)}`}>{money(g)}</span>
+                          <span className={`w-[4.25rem] flex-none whitespace-nowrap text-right font-mono text-sm tabular-nums sm:w-20 ${toneOf(g)}`}>{money(g)}</span>
                           <span className={`hidden w-20 rounded-full py-0.5 text-center text-[11px] md:block ${isReviewed(t) ? 'bg-profit-soft text-profit' : 'bg-warn-soft text-warn'}`}>
                             {isReviewed(t) ? 'Reviewed' : 'To review'}
                           </span>

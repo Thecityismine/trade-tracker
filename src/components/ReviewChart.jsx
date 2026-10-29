@@ -5,7 +5,7 @@ import { fetchChartData, TF_SECONDS, tradeTimes, windowEnd } from '../utils/char
 // Chart Lab's colours for the layers George already reads, so the two charts
 // look the same; surfaces and text follow this app's theme.
 const C = {
-  bg: '#131316', grid: 'rgba(255,255,255,0.04)', text: '#8A8A93', border: 'rgba(255,255,255,0.07)',
+  bg: '#131316', text: '#8A8A93', border: 'rgba(255,255,255,0.07)',
   up: '#E4E4E7', down: '#3B82F6',
   ema200: '#E05252', ema400: '#3FB37F', ema5: '#A78BFA', ema13: '#F472B6', ema89: '#FB923C',
   bull: '#34D399', bear: '#F87171', liq: '#FBBF24', session: '#FF5D00', takeout: '#F23645',
@@ -29,7 +29,7 @@ function baseOptions(height) {
     height,
     autoSize: true,
     layout: { background: { color: C.bg }, textColor: C.text, fontFamily: "'JetBrains Mono', ui-monospace, monospace", fontSize: 11 },
-    grid: { vertLines: { color: C.grid }, horzLines: { color: C.grid } },
+    grid: { vertLines: { visible: false }, horzLines: { visible: false } },
     crosshair: { mode: CrosshairMode.Normal },
     rightPriceScale: { borderColor: C.border },
     timeScale: { borderColor: C.border, timeVisible: true, secondsVisible: false, rightOffset: 6 },
@@ -285,7 +285,7 @@ function ReviewChart({ asset, tf, trade, layers, onState }) {
     <div className="min-w-0">
       <div ref={mainRef} className="h-[420px] w-full" aria-label={`${asset} ${t} chart`} role="img" />
       <div className={`border-t border-line ${layers.wt ? '' : 'hidden'}`}>
-        <p className="px-3 pt-1.5 text-[11px] text-content-muted">WaveTrend <span className="text-content-muted/70">(approx. Market Cipher)</span></p>
+        <p className="px-3 pt-1.5 text-[11px] text-content-muted">WaveTrend</p>
         <div ref={wtRef} className="h-[140px] w-full" />
       </div>
     </div>
