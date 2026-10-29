@@ -29,6 +29,7 @@ const MorningBrief = lazy(() => import('./pages/MorningBrief'));
 const Alarms = lazy(() => import('./pages/Alarms'));
 const Routines = lazy(() => import('./pages/Routines'));
 const Coach = lazy(() => import('./pages/Coach'));
+const TradeReview = lazy(() => import('./pages/TradeReview'));
 
 const RAIL_KEY = 'tt:sidebar-collapsed';
 
@@ -120,6 +121,8 @@ function App() {
         return <Notebook />;
       case 'coach':
         return <Coach />;
+      case 'review':
+        return <TradeReview />;
       case 'routines':
         return <Routines onNavigate={setActiveTab} />;
       case 'mindset':

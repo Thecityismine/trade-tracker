@@ -15,6 +15,7 @@ import {
   Settings as SettingsIcon,
   ListChecks,
   Sparkles,
+  CandlestickChart,
 } from 'lucide-react';
 
 // Single source of truth for routing, the sidebar, the contextual top bar and
@@ -24,6 +25,7 @@ export const NAV_GROUPS = [
     label: 'Overview',
     items: [
       { id: 'dashboard', label: 'Dashboard', icon: BarChart3, key: 'd', title: 'Dashboard', description: 'Your account at a glance' },
+      { id: 'review', label: 'Trade Review', icon: CandlestickChart, key: 'v', title: 'Trade Review', description: 'Your trades on the chart, with the indicators you trade by' },
       { id: 'analytics', label: 'Analytics', icon: TrendingUp, key: 'a', title: 'Analytics', description: 'Where your edge comes from' },
       { id: 'weekly', label: 'Weekly', icon: Calendar, key: 'w', title: 'Weekly Tracker', description: 'Week by week performance and AI reviews' },
       { id: 'monthly', label: 'Monthly', icon: CalendarDays, key: 'm', title: 'Monthly Tracker', description: 'Monthly stats and calendar' },

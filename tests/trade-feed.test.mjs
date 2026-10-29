@@ -134,3 +134,12 @@ test('tracker link is built from the app URL when known', () => {
   assert.equal(feedTrade(opened, { appUrl: 'https://app.example' }).trackerUrl, 'https://app.example/#journal');
   assert.equal(feedTrade(opened).trackerUrl, null);
 });
+
+test('chart proxy forwards only whitelisted paths and params', async () => {
+  const { buildQuery } = await import('../api/chart.js');
+  assert.equal(buildQuery('series', { asset: 'BTC', tf: '10m', bars: 300, evil: '1', to: '' }), 'asset=BTC&tf=10m&bars=300');
+  assert.equal(buildQuery('readout', { asset: 'ETH', tf: '1H', t: 1793105931, price: 2315.25 }), 'asset=ETH&tf=1H&t=1793105931&price=2315.25');
+  assert.equal(buildQuery('assets', { asset: 'BTC' }), '');
+  assert.equal(buildQuery('../alerts', {}), null);
+  assert.equal(buildQuery('board', {}), null);
+});

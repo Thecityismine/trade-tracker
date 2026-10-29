@@ -90,6 +90,10 @@ export function compactTrade(t, ref) {
     whyEntered: clip(t.entryReason, 200) || undefined,
     comment: clip(t.comment, 200) || undefined,
     lesson: clip(t.reviewNote, 200) || undefined,
+    // Chart Lab readout at the entry candle, when the Review page has fetched it.
+    indicatorsAtEntry: t.entryReadout?.readout
+      ? { timeframe: t.entryReadout.tf, ...t.entryReadout.readout }
+      : undefined,
   };
 }
 
