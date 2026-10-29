@@ -72,6 +72,25 @@ export function mockSeries({ asset, tf, trade, to = Math.floor(Date.now() / 1000
   const boxC = c.slice(boxFrom, boxTo + 1);
   const hi = Math.max(...boxC.map((k) => k[2])), lo = Math.min(...boxC.map((k) => k[3]));
 
+  // Same hours and colours as Chart Lab's luxsessions.py (UTC).
+  const SESS = [['Tokyo', 0, 9, '#E91E63'], ['London', 7, 16, '#2157F3'], ['New York', 13.5, 20, '#FF5D00']];
+  const shown = c.slice(off);
+  const sessBoxes = [], takeouts = [];
+  for (let day = Math.floor(shown[0][0] / 86400) * 86400; day <= shown[shown.length - 1][0]; day += 86400) {
+    for (const [label, a, b, color] of SESS) {
+      const start = day + a * 3600, end = day + b * 3600;
+      const inside = shown.filter((k) => k[0] >= start && k[0] < end);
+      if (!inside.length) continue;
+      const high = Math.max(...inside.map((k) => k[2])), low = Math.min(...inside.map((k) => k[3]));
+      const done = shown[shown.length - 1][0] >= end;
+      sessBoxes.push({ label, start, end: inside[inside.length - 1][0], high, low, color, done });
+      if (done) {
+        const hit = shown.find((k) => k[0] >= end && (k[2] > high || k[3] < low));
+        if (hit) takeouts.push({ t: hit[0], position: hit[2] > high ? 'above' : 'below', text: '×', color: '#F23645', label: `${label} ${hit[2] > high ? 'high' : 'low'} taken` });
+      }
+    }
+  }
+
   return {
     version: 1, asset, symbol: `${asset}-USDT`, source: 'sample (dev)', verified: false, tf, tfSeconds: step,
     candles: c.slice(off).map((k) => k.map((v, j) => (j === 0 || j === 5 ? v : Number(v.toFixed(2))))),
@@ -86,6 +105,7 @@ export function mockSeries({ asset, tf, trade, to = Math.floor(Date.now() / 1000
         lines: [{ label: '8pm H', price: hi, start: c[boxTo][0], end: null, style: 'dashed' }],
         markers: [],
       },
+      sessions: { boxes: sessBoxes, lines: [], markers: takeouts.sort((a, b) => a.t - b.t) },
     },
   };
 }
@@ -101,6 +121,7 @@ export function mockReadout({ asset, tf }) {
       { label: 'Last WT cross', value: 'green · 3 bars ago', tone: 'bull' },
       { label: 'EMA 5/13/89', value: 'trend up · gap 1.1 ATR', tone: 'bull' },
       { label: 'NY Liq Suite', value: 'sample', tone: 'muted' },
+      { label: 'Sessions', value: 'sample', tone: 'muted' },
     ],
   };
 }

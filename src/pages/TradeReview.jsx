@@ -116,7 +116,7 @@ function TradeReview() {
   const [selectedId, setSelectedId] = useState(null);
   const [assetOverride, setAssetOverride] = useState(null);
   const [tfOverride, setTfOverride] = useState(null);
-  const [layers, setLayers] = useState({ wt: true, skyline: true, nyliq: true, ema: true, ribbon: true });
+  const [layers, setLayers] = useState({ wt: true, skyline: true, nyliq: true, sessions: true, ema: true, ribbon: true });
   const [chartState, setChartState] = useState({ status: 'loading' });
   const [readout, setReadout] = useState({ status: 'idle' });
   const [note, setNote] = useState('');

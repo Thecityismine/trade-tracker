@@ -8,7 +8,7 @@ const C = {
   bg: '#131316', grid: 'rgba(255,255,255,0.04)', text: '#8A8A93', border: 'rgba(255,255,255,0.07)',
   up: '#E4E4E7', down: '#3B82F6',
   ema200: '#E05252', ema400: '#3FB37F', ema5: '#A78BFA', ema13: '#F472B6', ema89: '#FB923C',
-  bull: '#34D399', bear: '#F87171', liq: '#FBBF24',
+  bull: '#34D399', bear: '#F87171', liq: '#FBBF24', session: '#FF5D00', takeout: '#F23645',
   wt1: '#7FB8FF', wt2: '#2B5C99',
   entry: '#60A5FA', stop: '#F87171', target: '#34D399', win: '#34D399', loss: '#F472B6',
 };
@@ -17,6 +17,7 @@ export const LAYERS = [
   { id: 'wt', label: 'WaveTrend', color: C.wt1 },
   { id: 'skyline', label: 'Skyline', color: C.bull },
   { id: 'nyliq', label: 'NY Liq Suite', color: C.liq },
+  { id: 'sessions', label: 'Sessions', color: C.session },
   { id: 'ema', label: 'EMA 200/400', color: C.ema200 },
   { id: 'ribbon', label: 'EMA 5/13/89', color: C.ema5 },
 ];
@@ -35,6 +36,14 @@ function baseOptions(height) {
     localization: { timeFormatter: fmtTime },
   };
 }
+
+/** '#RRGGBB' → rgba() at the given opacity. */
+const alpha = (hex, a) => {
+  const m = /^#([0-9a-f]{6})$/i.exec(hex || '');
+  if (!m) return hex;
+  const n = parseInt(m[1], 16);
+  return `rgba(${n >> 16}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+};
 
 /** [[t, v]] pairs → line data on the candle times; gaps become whitespace. */
 const toLine = (pairs) => (pairs || []).map(([time, value]) => (value === null || value === undefined ? { time } : { time, value }));
@@ -81,7 +90,7 @@ function ReviewChart({ asset, tf, trade, layers, onState }) {
     setData(null);
     onState?.({ status: 'loading' });
     const to = trade ? windowEnd(trade, tf) : undefined;
-    fetchChartData('series', { asset, tf, to, bars: 320, layers: 'wt,skyline,nyliq,ema,ribbon' })
+    fetchChartData('series', { asset, tf, to, bars: 320, layers: 'wt,skyline,nyliq,sessions,ema,ribbon' })
       .catch(async (error) => {
         // The local dev server has no /api functions; draw sample data so the
         // page can be worked on. Never used in a deployed build.
@@ -110,7 +119,7 @@ function ReviewChart({ asset, tf, trade, layers, onState }) {
     const wt = createChart(wtRef.current, { ...baseOptions(140), timeScale: { ...baseOptions(140).timeScale, visible: false } });
 
     const line = (chart, color, extra = {}) => chart.addLineSeries({ color, lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, ...extra });
-    const groups = { ema: [], ribbon: [], skyline: [], nyliq: [] };
+    const groups = { ema: [], ribbon: [], skyline: [], nyliq: [], sessions: [] };
 
     // Draw order: context lines under the candles.
     if (L.ema) {
@@ -131,24 +140,34 @@ function ReviewChart({ asset, tf, trade, layers, onState }) {
         : { time, value, color: regime.get(time) === 'BEAR' ? C.bear : C.bull })));
       groups.skyline.push(s);
     }
-    if (L.nyliq) {
-      // Boxes as top and bottom edges over their span; lines run to their end
-      // (or the right edge). Lightweight Charts has no filled rectangles.
-      const times = candles.map((c) => c[0]);
-      const span = (start, end, value) => times.map((time) => (time >= start && (end === null || time <= end) ? { time, value } : { time }));
-      for (const box of (L.nyliq.boxes || []).slice(-8)) {
-        const color = box.color || C.liq;
-        const hi = line(main, color, { lineStyle: LineStyle.Solid });
-        const lo = line(main, color, { lineStyle: LineStyle.Solid });
-        hi.setData(span(box.start, box.end, box.high)); lo.setData(span(box.start, box.end, box.low));
-        groups.nyliq.push(hi, lo);
+    // NY Liq Suite and Sessions arrive as drawing primitives (CHART_DATA.md).
+    // A box is a baseline series filled between its high and low over its
+    // span; lines run to their end, or the right edge.
+    const times = candles.map((c) => c[0]);
+    const span = (start, end, value) => times.map((time) => (time >= start && (end === null || time <= end) ? { time, value } : { time }));
+    const drawPrimitives = (group, prim, fallback, maxBoxes) => {
+      for (const box of (prim.boxes || []).slice(-maxBoxes)) {
+        const color = box.color || fallback;
+        const fill = main.addBaselineSeries({
+          baseValue: { type: 'price', price: box.low },
+          topLineColor: color, topFillColor1: alpha(color, 0.13), topFillColor2: alpha(color, 0.13),
+          bottomLineColor: 'transparent', bottomFillColor1: 'transparent', bottomFillColor2: 'transparent',
+          lineWidth: 1, priceLineVisible: false, lastValueVisible: false, crosshairMarkerVisible: false, baseLineVisible: false,
+          title: box.done === false ? `${box.label || ''} (live)` : '',
+        });
+        fill.setData(span(box.start, box.end, box.high));
+        const low = line(main, alpha(color, 0.6));
+        low.setData(span(box.start, box.end, box.low));
+        groups[group].push(fill, low);
       }
-      for (const ln of (L.nyliq.lines || []).slice(-10)) {
-        const s = line(main, ln.color || C.liq, { lineStyle: ln.style === 'dotted' ? LineStyle.Dotted : LineStyle.Dashed, title: ln.label || '' });
+      for (const ln of (prim.lines || []).slice(-10)) {
+        const s = line(main, ln.color || fallback, { lineStyle: ln.style === 'dotted' ? LineStyle.Dotted : LineStyle.Dashed, title: ln.label || '' });
         s.setData(span(ln.start, ln.end, ln.price));
-        groups.nyliq.push(s);
+        groups[group].push(s);
       }
-    }
+    };
+    if (L.nyliq) drawPrimitives('nyliq', L.nyliq, C.liq, 8);
+    if (L.sessions) drawPrimitives('sessions', L.sessions, C.session, 45);
 
     const candleSeries = main.addCandlestickSeries({
       upColor: C.up, downColor: C.down, wickUpColor: C.up, wickDownColor: C.down, borderVisible: false,
@@ -157,7 +176,7 @@ function ReviewChart({ asset, tf, trade, layers, onState }) {
 
     // Trade markers and levels. Markers are kept per layer so a toggle can
     // take a layer's markers off with its lines.
-    const markers = { trade: [], skyline: [], nyliq: [] };
+    const markers = { trade: [], skyline: [], nyliq: [], sessions: [] };
     let focus = null;
     if (trade) {
       const short = trade.direction === 'short';
@@ -183,6 +202,9 @@ function ReviewChart({ asset, tf, trade, layers, onState }) {
     }
     if (L.skyline?.flips) {
       for (const f of L.skyline.flips) markers.skyline.push({ time: f.t, position: f.to === 'BULL' ? 'belowBar' : 'aboveBar', shape: 'circle', color: f.to === 'BULL' ? C.bull : C.bear, size: 0.6 });
+    }
+    if (L.sessions?.markers) {
+      for (const m of L.sessions.markers) markers.sessions.push({ time: m.t, position: m.position === 'below' ? 'belowBar' : 'aboveBar', shape: 'circle', color: m.color || C.takeout, text: m.text || '×', size: 0.4 });
     }
     if (L.nyliq?.markers) {
       for (const m of L.nyliq.markers) markers.nyliq.push({ time: m.t, position: m.position === 'below' ? 'belowBar' : 'aboveBar', shape: 'circle', color: m.color || C.liq, text: m.text || '', size: 0.5 });
@@ -224,7 +246,7 @@ function ReviewChart({ asset, tf, trade, layers, onState }) {
     const ch = charts.current;
     if (!ch) return;
     for (const [id, series] of Object.entries(ch.groups)) series.forEach((s) => s.applyOptions({ visible: Boolean(layers[id]) }));
-    const shown = [...ch.markers.trade, ...(layers.skyline ? ch.markers.skyline : []), ...(layers.nyliq ? ch.markers.nyliq : [])];
+    const shown = [...ch.markers.trade, ...['skyline', 'nyliq', 'sessions'].flatMap((id) => (layers[id] ? ch.markers[id] : []))];
     ch.candleSeries.setMarkers(shown.sort((a, b) => a.time - b.time));
   }, [layers, data]);
 

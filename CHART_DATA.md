@@ -79,7 +79,7 @@ Nothing is hard-coded to BTC and ETH. `asset` is the plain coin name (`BTC`,
 | `tf` | `10m` | Required. One of `timeframes`. Accepts `1h`/`4h` too, like Chart Lab's URL. |
 | `to` | `1793142000` | Unix seconds. The last candle returned is the last closed one at or before `to`. Default: now. |
 | `bars` | `400` | How many closed candles to return, ending at `to`. Default 400, max 1500. |
-| `layers` | `wt,skyline,nyliq,ema,ribbon` | Default: all five |
+| `layers` | `wt,skyline,nyliq,sessions,ema,ribbon` | Default: all six |
 
 Indicators are calculated over the full cached history, as Chart Lab does
 today, then cut to the window. So the first candle in the window already
@@ -110,6 +110,15 @@ has its EMA 400 and Skyline values.
       "boxes": [{ "label": "8pm range", "start": 1793059200, "end": 1793073600, "high": 80500.0, "low": 80120.0, "color": "#FBBF24" }],
       "lines": [{ "label": "8pm H", "price": 80500.0, "start": 1793073600, "end": null, "style": "dashed", "color": "#FBBF24" }],
       "markers": [{ "t": 1793104000, "position": "above", "text": "sweep", "color": "#FBBF24" }]
+    },
+    "sessions": {
+      "boxes": [
+        { "label": "Tokyo", "start": 1793059200, "end": 1793091600, "high": 80610.0, "low": 79980.0, "color": "#E91E63", "done": true },
+        { "label": "London", "start": 1793084400, "end": 1793116800, "high": 80790.0, "low": 80150.0, "color": "#2157F3", "done": true },
+        { "label": "New York", "start": 1793107800, "end": 1793131200, "high": 81320.0, "low": 80290.0, "color": "#FF5D00", "done": false }
+      ],
+      "lines": [],
+      "markers": [{ "t": 1793112000, "position": "above", "text": "×", "color": "#F23645", "label": "London high taken" }]
     }
   }
 }
@@ -120,11 +129,17 @@ has its EMA 400 and Skyline values.
   `forming` is `null` when the window ends in the past.
 - Series are `[time, value]` pairs on the same times as `candles`. A value
   can be `null` where an indicator has no value yet.
-- **NY Liq Suite is sent as drawing primitives** (`boxes`, `lines`,
-  `markers`), the same way Chart Lab already draws it. The tracker draws them
-  without knowing the suite's logic, so Chart Lab can change the suite
+- **NY Liq Suite and Sessions are sent as drawing primitives** (`boxes`,
+  `lines`, `markers`), the same way Chart Lab already draws them. The tracker
+  draws them without knowing their logic, so Chart Lab can change either one
   without a contract change. `end: null` on a line means it runs to the
   right edge.
+- **Sessions** is Chart Lab's version of George's "LuxAlgo - Sessions" (UTC,
+  ranges only, Sydney off): one box per Tokyo (00:00–09:00), London
+  (07:00–16:00) and New York (13:30–20:00) session, coloured as on his
+  chart, with `done: false` while the session is still running. A
+  `markers` entry (red ×) marks the first candle that takes out a finished
+  session's high or low. Added 2026-10-28, additive to v1.
 - Colours are optional hints. The tracker may use its own palette.
 
 ## `GET /api/data/readout`
@@ -153,6 +168,7 @@ AI review.
     "ribbon": { "trend": "up", "gapAtr": 1.16, "barsSinceStart": 0 },
     "ema": { "above200": true, "above400": true },
     "nyliq": { "summary": "Swept the 8pm range high 2 bars before entry" },
+    "sessions": { "active": ["London", "New York"], "takenOut": ["Tokyo high"], "summary": "NY open, inside London; Tokyo high taken" },
     "close": 80330.0
   },
   "rows": [
@@ -161,7 +177,8 @@ AI review.
     { "label": "WaveTrend",   "value": "WT1 70.6 · WT2 60.4", "tone": "warn" },
     { "label": "Last WT cross", "value": "green · 3 bars ago", "tone": "bull" },
     { "label": "EMA 5/13/89", "value": "trend up · gap 1.16 ATR", "tone": "bull" },
-    { "label": "NY Liq Suite", "value": "Swept 8pm high", "tone": "warn" }
+    { "label": "NY Liq Suite", "value": "Swept 8pm high", "tone": "warn" },
+    { "label": "Sessions", "value": "NY + London · Tokyo high taken", "tone": "muted" }
   ]
 }
 ```
