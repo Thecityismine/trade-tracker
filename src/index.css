@@ -226,3 +226,9 @@ textarea,
     background-image: none;
   }
 }
+
+/* Sideways-scrolling toolbars (Trade Review chart header): scroll without a bar. */
+@layer utilities {
+  .no-scrollbar { scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .no-scrollbar::-webkit-scrollbar { display: none; }
+}

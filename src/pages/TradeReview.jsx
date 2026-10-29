@@ -221,26 +221,29 @@ function TradeReview() {
 
           {/* Chart */}
           <Card className="min-w-0 overflow-hidden">
-            <div className="flex flex-wrap items-center gap-2 border-b border-line px-3 py-2.5">
-              <div className="flex rounded-control bg-surface-raised p-0.5" role="group" aria-label="Asset">
-                {(assets.includes(asset) ? assets : [asset, ...assets]).slice(0, 6).map((a) => (
-                  <Toggle key={a} on={a === asset} onClick={() => setAssetOverride(a === tradeAsset ? null : a)}>{a}</Toggle>
-                ))}
+            {/* Two rows that scroll sideways on a phone (coin + timeframe, then
+                indicators); one line on a wide screen. */}
+            <div className="flex flex-col gap-2 border-b border-line px-3 py-2.5 xl:flex-row xl:items-center xl:justify-between">
+              <div className="no-scrollbar -mx-3 flex flex-nowrap items-center gap-2 overflow-x-auto px-3 xl:mx-0 xl:px-0">
+                <div className="flex flex-none rounded-control bg-surface-raised p-0.5" role="group" aria-label="Asset">
+                  {(assets.includes(asset) ? assets : [asset, ...assets]).slice(0, 6).map((a) => (
+                    <Toggle key={a} on={a === asset} onClick={() => setAssetOverride(a === tradeAsset ? null : a)}>{a}</Toggle>
+                  ))}
+                </div>
+                <div className="flex flex-none font-mono" role="group" aria-label="Timeframe">
+                  {REVIEW_TFS.map((x) => (
+                    <Toggle key={x} on={x === tf} onClick={() => setTfOverride(x === chartTf(selected?.timeframe) ? null : x)}>{x}</Toggle>
+                  ))}
+                </div>
               </div>
-              <div className="flex flex-wrap font-mono" role="group" aria-label="Timeframe">
-                {REVIEW_TFS.map((x) => (
-                  <Toggle key={x} on={x === tf} onClick={() => setTfOverride(x === chartTf(selected?.timeframe) ? null : x)}>{x}</Toggle>
-                ))}
-              </div>
-              <div className="flex-1" />
-              <div className="flex flex-wrap gap-1.5" role="group" aria-label="Indicator layers">
+              <div className="no-scrollbar -mx-3 flex flex-nowrap gap-1.5 overflow-x-auto px-3 xl:mx-0 xl:px-0" role="group" aria-label="Indicator layers">
                 {LAYERS.filter((l) => l.id !== 'wt').map((l) => (
                   <button
                     key={l.id}
                     type="button"
                     aria-pressed={layers[l.id]}
-                    onClick={() => setLayers((s) => ({ ...s, [l.id]: !s[l.id] }))}
-                    className={`inline-flex h-8 items-center gap-1.5 rounded-control border px-2.5 text-xs transition-colors ${layers[l.id] ? 'border-brand/45 bg-brand-muted text-content-primary' : 'border-line-strong text-content-secondary hover:text-content-primary'}`}
+                    onClick={() => setLayers((st) => ({ ...st, [l.id]: !st[l.id] }))}
+                    className={`inline-flex h-8 flex-none items-center gap-1.5 whitespace-nowrap rounded-control border px-2.5 text-xs transition-colors ${layers[l.id] ? 'border-brand/45 bg-brand-muted text-content-primary' : 'border-line-strong text-content-secondary hover:text-content-primary'}`}
                   >
                     <span className="h-2 w-2 rounded-full border" style={{ borderColor: l.color, background: layers[l.id] ? l.color : 'transparent' }} />
                     {l.label}
@@ -264,7 +267,7 @@ function TradeReview() {
               </div>
             )}
             <div className={`relative ${chartState.status === 'error' ? 'hidden' : ''}`}>
-              <div className="pointer-events-none absolute left-3 top-2 z-10 flex flex-wrap items-baseline gap-x-3 font-mono text-xs text-content-secondary">
+              <div className="pointer-events-none absolute left-3 right-24 top-2 z-10 flex flex-wrap items-baseline gap-x-3 font-mono text-xs text-content-secondary">
                 <span className="font-semibold text-content-primary">{asset} · {tf}</span>
                 {chartTrade && <span>{getTradeDate(chartTrade).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' })}</span>}
                 {chartState.data && !chartState.data.verified && !sampleData && <span className="text-warn">indicators not yet checked against TradingView for {asset}</span>}
@@ -314,13 +317,16 @@ function TradeReview() {
                           className={`flex min-h-[44px] w-full items-center gap-3 rounded-control border px-3 py-1.5 text-left transition-colors ${on ? 'border-brand/45 bg-brand-muted' : 'border-transparent bg-surface-raised hover:bg-surface-hover'}`}
                         >
                           <span className="w-5 font-mono text-xs text-content-muted">{i + 1}</span>
-                          <span className="w-20 text-sm text-content-secondary">{getTradeDate(t).toLocaleDateString(undefined, { weekday: 'short', month: 'numeric', day: 'numeric' })}</span>
-                          <span className="w-24 text-sm font-semibold text-content-primary">
+                          <span className="w-11 flex-none whitespace-nowrap text-sm text-content-secondary sm:w-24">
+                            <span className="hidden sm:inline">{getTradeDate(t).toLocaleDateString(undefined, { weekday: 'short' })} </span>
+                            {getTradeDate(t).toLocaleDateString(undefined, { month: 'numeric', day: 'numeric' })}
+                          </span>
+                          <span className="w-24 flex-none whitespace-nowrap text-sm font-semibold text-content-primary">
                             {normalizeAsset(t.ticker)} <span className={t.direction === 'short' ? 'text-loss' : 'text-profit'}>{t.direction === 'short' ? 'Short' : 'Long'}</span>
                           </span>
                           <span className="hidden min-w-0 flex-1 truncate text-sm text-content-secondary sm:block">{t.strategyName || '—'}</span>
-                          <span className={`ml-auto w-16 text-right font-mono text-sm tabular-nums sm:ml-0 ${tr === null ? 'text-content-muted' : toneOf(tr)}`}>{rText(tr)}</span>
-                          <span className={`w-20 text-right font-mono text-sm tabular-nums ${toneOf(g)}`}>{money(g)}</span>
+                          <span className={`ml-auto w-16 flex-none whitespace-nowrap text-right font-mono text-sm tabular-nums sm:ml-0 ${tr === null ? 'text-content-muted' : toneOf(tr)}`}>{rText(tr)}</span>
+                          <span className={`w-20 flex-none whitespace-nowrap text-right font-mono text-sm tabular-nums ${toneOf(g)}`}>{money(g)}</span>
                           <span className={`hidden w-20 rounded-full py-0.5 text-center text-[11px] md:block ${isReviewed(t) ? 'bg-profit-soft text-profit' : 'bg-warn-soft text-warn'}`}>
                             {isReviewed(t) ? 'Reviewed' : 'To review'}
                           </span>
