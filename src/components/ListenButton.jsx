@@ -1,6 +1,6 @@
 import { useEffect, useSyncExternalStore } from 'react';
 import { Pause, Play, Square, Volume2 } from 'lucide-react';
-import { cycleRate, getState, pause, resume, speak, speechSupported, stop, subscribe } from '../utils/speech';
+import { currentVoiceURI, cycleRate, getState, listVoices, pause, resume, setVoice, speak, speechSupported, stop, subscribe, voiceLabel } from '../utils/speech';
 
 /**
  * Reads `text` aloud with the browser's built-in voice. One reading at a time
@@ -28,7 +28,7 @@ function ListenButton({ id, text, compact = false, className = '' }) {
   }
 
   return (
-    <div className={`inline-flex items-center gap-1.5 ${className}`} role="group" aria-label="Read aloud controls">
+    <div className={`inline-flex flex-wrap items-center gap-1.5 ${className}`} role="group" aria-label="Read aloud controls">
       <button
         type="button"
         onClick={s.status === 'speaking' ? pause : resume}
@@ -49,6 +49,17 @@ function ListenButton({ id, text, compact = false, className = '' }) {
       >
         {s.rate}×
       </button>
+      {/* Native select: on iPhone it opens the system wheel. Lists every
+          English voice installed, best first, novelty voices left out. */}
+      <label className="sr-only" htmlFor={`voice-${id}`}>Voice</label>
+      <select
+        id={`voice-${id}`}
+        value={currentVoiceURI()}
+        onChange={(e) => setVoice(e.target.value)}
+        className={`${compact ? 'h-8 text-xs' : 'h-9 text-sm'} max-w-[11rem] truncate rounded-control border border-line-strong bg-surface-raised px-2 text-content-secondary focus:border-brand focus:outline-none`}
+      >
+        {listVoices().map((v) => <option key={v.voiceURI} value={v.voiceURI}>{voiceLabel(v)}</option>)}
+      </select>
     </div>
   );
 }
