@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Plus, Search, X, Pencil, Trash2, ImageIcon, Upload, FileText } from 'lucide-react';
+import ListenButton from '../components/ListenButton';
 import { db, storage } from '../config/firebase';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 import Page from '../components/ui/Page';
@@ -466,6 +467,18 @@ function TradeJournal() {
                     Next action: {entry.nextAction}
                   </p>
                 )}
+
+                <ListenButton
+                  compact
+                  id={`journal-${entry.id}`}
+                  text={[
+                    `${entry.title || 'Journal entry'}. ${entry.result || ''}${entry.setupType ? `, ${entry.setupType}` : ''}.`,
+                    entry.whyGoodIdea && `Why it made sense: ${entry.whyGoodIdea}`,
+                    entry.whatWentWrong && `What went wrong: ${entry.whatWentWrong}`,
+                    entry.feedbackForFuture && `Feedback: ${entry.feedbackForFuture}`,
+                    entry.nextAction && `Next action: ${entry.nextAction}`,
+                  ].filter(Boolean).join('\n')}
+                />
 
                 <div className="grid grid-cols-3 gap-2 text-xs">
                   <div className="bg-surface-hover rounded-chip px-2 py-1 text-content-secondary">

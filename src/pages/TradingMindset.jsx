@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp } from 'firebase/firestore';
 import { Brain, CheckSquare, Lightbulb, Search, Trash2 } from 'lucide-react';
+import ListenButton from '../components/ListenButton';
 import { db } from '../config/firebase';
 import Page from '../components/ui/Page';
 import Select from '../components/ui/Select';
@@ -455,6 +456,17 @@ function TradingMindset() {
                       Next: {entry.actionItem}
                     </p>
                   )}
+
+                  <ListenButton
+                    compact
+                    className="mt-3"
+                    id={`mindset-${entry.id}`}
+                    text={[
+                      `${entry.title || 'Mindset entry'}. Mood: ${moodMeta[entry.mood]?.label || 'neutral'}.`,
+                      entry.reflection,
+                      entry.actionItem && `Next: ${entry.actionItem}`,
+                    ].filter(Boolean).join('\n')}
+                  />
 
                   <div className="grid grid-cols-2 lg:grid-cols-4 gap-2 mt-3 text-xs">
                     <div className="bg-surface-hover rounded-chip px-2 py-1 text-content-secondary">

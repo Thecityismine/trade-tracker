@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { addDoc, collection, deleteDoc, doc, onSnapshot, orderBy, query, serverTimestamp, updateDoc } from 'firebase/firestore';
 import { Plus, Search, X, Pencil, Trash2, Pin, PinOff, Copy, Upload, StickyNote, BarChart3, Receipt, LayoutTemplate } from 'lucide-react';
+import ListenButton from '../components/ListenButton';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { db, storage } from '../config/firebase';
@@ -1013,6 +1014,8 @@ function Notebook() {
             </div>
 
             <div className="p-4 border-t border-line bg-surface flex flex-wrap gap-2 shadow-elev-1">
+              <ListenButton id={`note-${activeNote.id}`} text={`${activeNote.title || ''}.
+${activeNote.content || ''}`} />
               <button
                 type="button"
                 onClick={() => openEditModal(activeNote)}
