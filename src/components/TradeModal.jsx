@@ -100,6 +100,33 @@ const mergeDateWithExistingTime = (dateString, existingDate) => {
   return merged;
 };
 
+// Hyperliquid's "Closed PnL" on the close fill already has the closing fee
+// taken out but not the opening one, so typing it in as net overstates the
+// trade. Given the position size, net comes straight from the fills instead:
+// price move × size, minus every fee paid on the way in and out.
+const netFromFills = ({ direction, entryPrice, exitPrice, size, fee }) => {
+  const entry = parseFloat(entryPrice);
+  const exit = parseFloat(exitPrice);
+  const qty = parseFloat(size);
+  if (![entry, exit, qty].every((n) => Number.isFinite(n) && n > 0)) return null;
+  const gross = (direction === 'short' ? entry - exit : exit - entry) * qty;
+  const fees = parseFloat(fee) || 0;
+  return { gross, fees, net: gross - fees };
+};
+
+const NET_INPUTS = new Set(['direction', 'entryPrice', 'exitPrice', 'size', 'fee']);
+
+// Applies a form change and, when the fills are complete, refills Net P&L and
+// the result from them. Typing into Net P&L directly still overrides it until
+// one of the fill inputs changes again.
+const withNetFromFills = (prev, patch) => {
+  const next = { ...prev, ...patch };
+  const calc = netFromFills(next);
+  if (!calc) return next;
+  const net = Math.round(calc.net * 100) / 100;
+  return { ...next, gainLoss: net.toString(), result: net < 0 ? 'loss' : 'win' };
+};
+
 function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
   const [formData, setFormData] = useState({
     ticker: 'BTC',
@@ -111,6 +138,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
     leverage: '25',
     timeframe: '',
     exchange: '',
+    size: '',
     gainLoss: '',
     fee: '',
     result: 'win',
@@ -205,6 +233,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
       leverage: editTrade.leverage?.toString() || '25',
       timeframe: editTrade.timeframe || '',
       exchange: editTrade.exchange || '',
+      size: editTrade.size?.toString() || '',
       gainLoss: editTrade.gainLoss?.toString() || '',
       fee: editTrade.fee?.toString() || '',
       result: normalizedResult,
@@ -309,7 +338,9 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
 
   const handleInputChange = (e) => {
     const { name, value } = e.target;
-    setFormData((prev) => ({ ...prev, [name]: value }));
+    setFormData((prev) => (
+      NET_INPUTS.has(name) ? withNetFromFills(prev, { [name]: value }) : { ...prev, [name]: value }
+    ));
   };
 
   const handleImageUpload = (slot) => (e) => {
@@ -380,6 +411,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
         leverage: parseFloat(formData.leverage),
         timeframe: formData.timeframe || null,
         exchange: formData.exchange || null,
+        size: parseFloat(formData.size) || null,
         entryReason: formData.entryReason || null,
         // An open position has no result yet. Null these rather than writing
         // zeros — a 0 would read as a real break-even trade downstream.
@@ -445,6 +477,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
           leverage: formData.leverage,
           timeframe: formData.timeframe,
           exchange: formData.exchange,
+          size: '',
           gainLoss: '',
           fee: '',
           result: 'win',
@@ -636,7 +669,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                 <button
                   type="button"
                   disabled={isClosingPlannedTrade}
-                  onClick={() => setFormData((prev) => ({ ...prev, direction: 'long' }))}
+                  onClick={() => setFormData((prev) => withNetFromFills(prev, { direction: 'long' }))}
                   className={`py-2 rounded-lg text-sm font-medium transition-colors ${
                     formData.direction === 'long'
                       ? 'bg-profit text-canvas'
@@ -648,7 +681,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                 <button
                   type="button"
                   disabled={isClosingPlannedTrade}
-                  onClick={() => setFormData((prev) => ({ ...prev, direction: 'short' }))}
+                  onClick={() => setFormData((prev) => withNetFromFills(prev, { direction: 'short' }))}
                   className={`py-2 rounded-lg text-sm font-medium transition-colors ${
                     formData.direction === 'short'
                       ? 'bg-loss text-canvas'
@@ -827,10 +860,43 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               <div></div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
+            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+              <div>
+                <label className="block text-content-secondary text-sm mb-2">
+                  Size <span className="text-content-muted">({formData.ticker || 'coins'})</span>
+                </label>
+                <input
+                  type="number"
+                  name="size"
+                  value={formData.size}
+                  onChange={handleInputChange}
+                  step="any"
+                  min="0"
+                  placeholder="0.00000"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
+                />
+              </div>
+
               {!isOpenPosition && (
                 <div>
-                  <label className="block text-content-secondary text-sm mb-2">Net P&amp;L Gain</label>
+                  <label className="block text-content-secondary text-sm mb-2">
+                    Fees <span className="text-content-muted">(open + close)</span>
+                  </label>
+                  <input
+                    type="number"
+                    name="fee"
+                    value={formData.fee}
+                    onChange={handleInputChange}
+                    step="0.01"
+                    placeholder="0.00"
+                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
+                  />
+                </div>
+              )}
+
+              {!isOpenPosition && (
+                <div>
+                  <label className="block text-content-secondary text-sm mb-2">Net P&amp;L</label>
                   <input
                     type="number"
                     name="gainLoss"
@@ -848,21 +914,16 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                         : 'Marked Loss but P&L is positive — double-check.'}
                     </p>
                   )}
-                </div>
-              )}
-
-              {!isOpenPosition && (
-                <div>
-                  <label className="block text-content-secondary text-sm mb-2">Fee (USD)</label>
-                  <input
-                    type="number"
-                    name="fee"
-                    value={formData.fee}
-                    onChange={handleInputChange}
-                    step="0.01"
-                    placeholder="0.00"
-                    className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
-                  />
+                  {!resultSignMismatch && (() => {
+                    const calc = netFromFills(formData);
+                    return (
+                      <p className="text-xs text-content-muted mt-1">
+                        {calc
+                          ? `Move $${calc.gross.toFixed(2)} − fees $${calc.fees.toFixed(2)}`
+                          : 'After both fees. Add size to work it out.'}
+                      </p>
+                    );
+                  })()}
                 </div>
               )}
 
