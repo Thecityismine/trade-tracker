@@ -860,7 +860,10 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
               <div></div>
             </div>
 
-            <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+            {/* Two rows of two: what was traded (size, leverage), then what it
+                cost and made (fees, net). Labels stay on one line so the
+                inputs line up; hints sit under the inputs. */}
+            <div className="grid grid-cols-2 gap-3">
               <div>
                 <label className="block text-content-secondary text-sm mb-2">
                   Size <span className="text-content-muted">({formData.ticker || 'coins'})</span>
@@ -877,11 +880,23 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                 />
               </div>
 
+              <div>
+                <label className="block text-content-secondary text-sm mb-2">Leverage</label>
+                <input
+                  type="number"
+                  name="leverage"
+                  value={formData.leverage}
+                  onChange={handleInputChange}
+                  step="1"
+                  placeholder="25"
+                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
+                  required
+                />
+              </div>
+
               {!isOpenPosition && (
                 <div>
-                  <label className="block text-content-secondary text-sm mb-2">
-                    Fees <span className="text-content-muted">(open + close)</span>
-                  </label>
+                  <label className="block text-content-secondary text-sm mb-2">Fees (USD)</label>
                   <input
                     type="number"
                     name="fee"
@@ -891,6 +906,7 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                     placeholder="0.00"
                     className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
                   />
+                  <p className="text-xs text-content-muted mt-1">Open fee + close fee</p>
                 </div>
               )}
 
@@ -920,26 +936,12 @@ function TradeModal({ isOpen, onClose, editTrade = null, onSaved = null }) {
                       <p className="text-xs text-content-muted mt-1">
                         {calc
                           ? `Move $${calc.gross.toFixed(2)} − fees $${calc.fees.toFixed(2)}`
-                          : 'After both fees. Add size to work it out.'}
+                          : 'Fills in from size and fees'}
                       </p>
                     );
                   })()}
                 </div>
               )}
-
-              <div>
-                <label className="block text-content-secondary text-sm mb-2">Leverage</label>
-                <input
-                  type="number"
-                  name="leverage"
-                  value={formData.leverage}
-                  onChange={handleInputChange}
-                  step="1"
-                  placeholder="25"
-                  className="w-full bg-surface-raised border border-line-strong rounded-lg px-4 py-2 text-content-primary focus:outline-none focus:border-brand"
-                  required
-                />
-              </div>
             </div>
 
             {/* An open position has no exit yet, so only the entry chart is asked for. */}
