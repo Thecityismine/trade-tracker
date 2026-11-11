@@ -20,6 +20,7 @@ import { useTrades } from '../context/TradesContext';
 import { MAX_IMAGE_SIZE_BYTES, uploadImageWithFallback } from '../utils/imageUpload';
 import Page from '../components/ui/Page';
 import EmptyState from '../components/ui/EmptyState';
+import StrategyPnlChart from '../components/StrategyPnlChart';
 import Select from '../components/ui/Select';
 import { useDismissable } from '../hooks/useDismissable';
 import { useToast } from '../components/ui/Toast';
@@ -713,6 +714,8 @@ function Strategies() {
         </div>
       </div>
 
+      <StrategyPnlChart trades={trades} strategies={strategies} onSelect={setActiveStrategy} />
+
       {/* Search & sort */}
       <div className="bg-surface rounded-card p-4 sm:p-6 shadow-elev-1">
         <div className="flex flex-col lg:flex-row lg:items-center gap-3 mb-4">
@@ -809,7 +812,7 @@ function Strategies() {
                   <div className="bg-surface-hover rounded-chip p-2">
                     <p className="text-[10px] text-content-muted uppercase">P&L</p>
                     <p className={`font-semibold text-sm ${stats.totalPnl >= 0 ? 'text-profit' : 'text-loss'}`}>
-                      {stats.totalPnl >= 0 ? '+' : '-'}${Math.abs(stats.totalPnl).toFixed(0)}
+                      {stats.totalPnl >= 0 ? '+' : '-'}${Math.abs(stats.totalPnl).toFixed(2)}
                     </p>
                   </div>
                 </div>
